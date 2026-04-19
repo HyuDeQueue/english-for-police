@@ -1,5 +1,5 @@
-import React from 'react';
-import type { Unit } from '../../types';
+import React from "react";
+import type { Unit } from "../../types";
 
 interface LessonViewProps {
   unit: Unit;
@@ -7,21 +7,27 @@ interface LessonViewProps {
   onStartPractice: (unit: Unit) => void;
 }
 
-export const LessonView: React.FC<LessonViewProps> = ({ unit, onBack, onStartPractice }) => {
+export const LessonView: React.FC<LessonViewProps> = ({
+  unit,
+  onBack,
+  onStartPractice,
+}) => {
   const playAudio = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
+    utterance.lang = "en-US";
     window.speechSynthesis.speak(utterance);
   };
 
   return (
     <div className="view-lesson animate-fade-in">
-      <button className="back-btn" onClick={onBack}>← BACK TO OPS</button>
-      
+      <button className="back-btn" onClick={onBack}>
+        ← QUAY LẠI LỘ TRÌNH
+      </button>
+
       <section className="lesson-part">
         <div className="part-header">
           <span className="part-num">01</span>
-          <h2>SPECIALIZED VOCABULARY</h2>
+          <h2>TỪ VỰNG CHUYÊN NGÀNH</h2>
         </div>
         <div className="grid cols-3">
           {unit.vocabulary.map((v, i) => (
@@ -32,8 +38,14 @@ export const LessonView: React.FC<LessonViewProps> = ({ unit, onBack, onStartPra
               </div>
               <div className="phonetic">{v.phonetic}</div>
               <div className="meaning">{v.meaning}</div>
-              <button className="audio-btn" onClick={(e) => { e.stopPropagation(); playAudio(v.word); }}>
-                🔊 Listen
+              <button
+                className="audio-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playAudio(v.word);
+                }}
+              >
+                🔊 Nghe phát âm
               </button>
               <div className="example">
                 <em>Ex: {v.example}</em>
@@ -46,7 +58,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ unit, onBack, onStartPra
       <section className="lesson-part">
         <div className="part-header">
           <span className="part-num">02</span>
-          <h2>PROFESSIONAL PHRASES</h2>
+          <h2>CẤU TRÚC CHUYÊN NGHIỆP</h2>
         </div>
         <div className="grid cols-2">
           {unit.phrases.map((p, i) => (
@@ -55,7 +67,7 @@ export const LessonView: React.FC<LessonViewProps> = ({ unit, onBack, onStartPra
               <div className="phrase-translation">{p.translation}</div>
               <div className="phrase-context">{p.context}</div>
               <button className="audio-btn" onClick={() => playAudio(p.text)}>
-                🔊 Play Audio
+                🔊 Nghe
               </button>
             </div>
           ))}
@@ -65,27 +77,32 @@ export const LessonView: React.FC<LessonViewProps> = ({ unit, onBack, onStartPra
       <section className="lesson-part">
         <div className="part-header">
           <span className="part-num">03</span>
-          <h2>MEMORY BOOST</h2>
+          <h2>GHI NHỚ NHANH</h2>
         </div>
         <div className="grid cols-2">
           <div className="card boost-card">
-            <h3>Collocations</h3>
+            <h3>Cụm từ đi kèm</h3>
             <ul className="collocation-list">
               {unit.memoryBoost.collocations.map((c, i) => (
-                <li key={i}><strong>{c.verb}</strong> + {c.noun}</li>
+                <li key={i}>
+                  <strong>{c.verb}</strong> + {c.noun}
+                </li>
               ))}
             </ul>
           </div>
           <div className="card boost-card">
-            <h3>Mission Summary</h3>
+            <h3>Tóm tắt nhiệm vụ</h3>
             <p>{unit.memoryBoost.summary}</p>
           </div>
         </div>
       </section>
 
       <div className="action-row">
-        <button className="primary-gradient large-btn" onClick={() => onStartPractice(unit)}>
-          PROCEED TO TRAINING GROUND
+        <button
+          className="primary-gradient large-btn"
+          onClick={() => onStartPractice(unit)}
+        >
+          BẮT ĐẦU LUYỆN TẬP
         </button>
       </div>
     </div>

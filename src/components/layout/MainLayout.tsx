@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface MainLayoutProps {
   selectedUnitId?: number;
@@ -6,22 +6,25 @@ interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ selectedUnitId, onLogoClick, children }) => {
+export const MainLayout: React.FC<MainLayoutProps> = ({
+  selectedUnitId,
+  onLogoClick,
+  children,
+}) => {
   return (
     <div className="app-container">
       <header className="primary-gradient glass">
         <div className="container header-content">
           <div className="logo-section clickable" onClick={onLogoClick}>
-            <span className="unit-label">UNIT-{selectedUnitId?.toString().padStart(2, '0') || '00'}</span>
-            <h1>WEEKLY POLICE ENGLISH</h1>
+            <span className="unit-label">
+              BÀI-{selectedUnitId?.toString().padStart(2, "0") || "00"}
+            </span>
+            <h1>TIẾNG ANH CẢNH SÁT</h1>
           </div>
         </div>
       </header>
 
-      <main className="container">
-        {children}
-      </main>
-
+      <main className="container">{children}</main>
     </div>
   );
 };

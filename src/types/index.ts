@@ -3,7 +3,7 @@ export interface Vocabulary {
   phonetic: string;
   meaning: string;
   example: string;
-  type: 'Noun' | 'Verb' | 'Expression';
+  type: "Noun" | "Verb" | "Expression" | "Adjective" | "Adverb";
   audioUrl?: string; // Optional if we use TTS
 }
 
@@ -21,7 +21,13 @@ export interface Collocation {
 
 export interface Question {
   id: string;
-  type: 'MCQ' | 'Matching' | 'FillInBlank' | 'Dictation' | 'Arrangement' | 'Speaking';
+  type:
+    | "MCQ"
+    | "Matching"
+    | "FillInBlank"
+    | "Dictation"
+    | "Arrangement"
+    | "Speaking";
   prompt: string;
   options?: string[]; // For MCQ
   answer: string | string[]; // Single string or array for matching/arrangement

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import type { Unit } from '../../types';
-import { ReflexWheel } from './ReflexWheel';
+import React, { useState } from "react";
+import type { Unit } from "../../types";
+import { SpeakingPractice } from "./SpeakingPractice";
 
 interface TrainingGroundProps {
   unit: Unit;
@@ -8,36 +8,49 @@ interface TrainingGroundProps {
   onBack: () => void;
 }
 
-export const TrainingGround: React.FC<TrainingGroundProps> = ({ unit, onComplete, onBack }) => {
+export const TrainingGround: React.FC<TrainingGroundProps> = ({
+  unit,
+  onComplete,
+  onBack,
+}) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
-  const [userAnswer, setUserAnswer] = useState('');
-  const [feedback, setFeedback] = useState<{ correct: boolean, msg: string } | null>(null);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [feedback, setFeedback] = useState<{
+    correct: boolean;
+    msg: string;
+  } | null>(null);
 
   const currentQuestion = unit.practice[currentQuestionIndex];
 
   const handleMCQ = (option: string) => {
     const isCorrect = option === currentQuestion.answer;
-    setFeedback({ 
-      correct: isCorrect, 
-      msg: isCorrect ? 'Mission objective achieved. Proceeding to next objective.' : `Target missed. Correct response was: ${currentQuestion.answer}` 
+    setFeedback({
+      correct: isCorrect,
+      msg: isCorrect
+        ? "Đã hoàn thành mục tiêu. Đang chuyển sang nội dung tiếp theo."
+        : `Không chính xác. Đáp án đúng là: ${currentQuestion.answer}`,
     });
-    if (isCorrect) setScore(s => s + 1);
+    if (isCorrect) setScore((s) => s + 1);
   };
 
   const handleInputSubmit = () => {
-    const isCorrect = userAnswer.trim().toLowerCase() === (currentQuestion.answer as string).toLowerCase();
-    setFeedback({ 
-      correct: isCorrect, 
-      msg: isCorrect ? 'Input verified. Target summarized correctly.' : `Data mismatch. Expected: ${currentQuestion.answer}` 
+    const isCorrect =
+      userAnswer.trim().toLowerCase() ===
+      (currentQuestion.answer as string).toLowerCase();
+    setFeedback({
+      correct: isCorrect,
+      msg: isCorrect
+        ? "Dữ liệu đã được xác nhận chính xác."
+        : `Dữ liệu không khớp. Yêu cầu: ${currentQuestion.answer}`,
     });
-    if (isCorrect) setScore(s => s + 1);
+    if (isCorrect) setScore((s) => s + 1);
   };
 
   const nextQuestion = () => {
     setFeedback(null);
-    setUserAnswer('');
+    setUserAnswer("");
     if (currentQuestionIndex < unit.practice.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
@@ -49,25 +62,36 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({ unit, onComplete
     return (
       <div className="card animate-fade-in text-center result-card">
         <div className="asymmetry-label">END</div>
-        <h2>TRAINING COMPLETE</h2>
+        <h2>HOÀN THÀNH HUẤN LUYỆN</h2>
         <div className="result-score">
-          <span className="score-val">{Math.round((score / unit.practice.length) * 100)}%</span>
-          <label>ACCURACY RATING</label>
+          <span className="score-val">
+            {Math.round((score / unit.practice.length) * 100)}%
+          </span>
+          <label>ĐỘ CHÍNH XÁC</label>
         </div>
-        <p>The mission has been concluded. Your performance has been logged.</p>
-        <button className="primary-gradient" onClick={onComplete}>RETURN TO OPS</button>
+        <p>Nhiệm vụ đã kết thúc. Kết quả của bạn đã được ghi lại hệ thống.</p>
+        <button className="primary-gradient" onClick={onComplete}>
+          QUAY LẠI LỘ TRÌNH
+        </button>
       </div>
     );
   }
 
   return (
     <div className="practice-container animate-fade-in">
-      <button className="back-btn" onClick={onBack}>← BACK TO BRIEFING</button>
+      <button className="back-btn" onClick={onBack}>
+        ← QUAY LẠI PHẦN HỌC
+      </button>
       <div className="card">
-        <div className="progress-bar-container" style={{marginBottom: '2rem'}}>
-          <div 
-            className="progress-bar-fill" 
-            style={{ width: `${((currentQuestionIndex + 1) / unit.practice.length) * 100}%` }}
+        <div
+          className="progress-bar-container"
+          style={{ marginBottom: "2rem" }}
+        >
+          <div
+            className="progress-bar-fill"
+            style={{
+              width: `${((currentQuestionIndex + 1) / unit.practice.length) * 100}%`,
+            }}
           ></div>
         </div>
 
@@ -75,21 +99,31 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({ unit, onComplete
           {/* Left Column: Mission Details */}
           <div className="mission-sidebar">
             <div className="question-header">
-              <span className="type-tag">{currentQuestion.type}</span>
+              <span className="type-tag">
+                {currentQuestion.type === "MCQ"
+                  ? "Trắc nghiệm"
+                  : currentQuestion.type === "FillInBlank"
+                    ? "Điền khuyết"
+                    : currentQuestion.type === "Dictation"
+                      ? "Chép chính tả"
+                      : "Luyện nói"}
+              </span>
               <h3>{currentQuestion.prompt}</h3>
-              {currentQuestion.vnPrompt && <div className="vn-prompt-text">{currentQuestion.vnPrompt}</div>}
+              {currentQuestion.vnPrompt && (
+                <div className="vn-prompt-text">{currentQuestion.vnPrompt}</div>
+              )}
             </div>
           </div>
 
           {/* Right Column: Interaction & Feedback */}
           <div className="action-center">
             <div className="question-body">
-              {currentQuestion.type === 'MCQ' && (
-                <div className="grid cols-1 options-grid">
+              {currentQuestion.type === "MCQ" && (
+                <div className="options-grid">
                   {currentQuestion.options?.map((opt, i) => (
-                    <button 
-                      key={i} 
-                      className={`option-btn ${feedback ? (opt === currentQuestion.answer ? 'correct' : (opt === userAnswer ? 'wrong' : '')) : ''}`}
+                    <button
+                      key={i}
+                      className={`option-btn ${feedback ? (opt === currentQuestion.answer ? "correct" : opt === userAnswer ? "wrong" : "") : ""}`}
                       onClick={() => {
                         if (feedback) return;
                         setUserAnswer(opt);
@@ -102,28 +136,39 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({ unit, onComplete
                 </div>
               )}
 
-              {(currentQuestion.type === 'FillInBlank' || currentQuestion.type === 'Dictation') && (
+              {(currentQuestion.type === "FillInBlank" ||
+                currentQuestion.type === "Dictation") && (
                 <div className="input-group">
-                  <input 
-                    type="text" 
-                    value={userAnswer} 
+                  <input
+                    type="text"
+                    value={userAnswer}
                     onChange={(e) => setUserAnswer(e.target.value)}
-                    placeholder="Type your response..."
+                    placeholder="Nhập câu trả lời của bạn..."
                     disabled={!!feedback}
-                    onKeyPress={(e) => e.key === 'Enter' && handleInputSubmit()}
+                    onKeyPress={(e) => e.key === "Enter" && handleInputSubmit()}
                     className="practice-input"
                   />
-                  {!feedback && <button onClick={handleInputSubmit} className="submit-btn primary-gradient">SUBMIT</button>}
+                  {!feedback && (
+                    <button
+                      onClick={handleInputSubmit}
+                      className="submit-btn primary-gradient"
+                    >
+                      XÁC NHẬN
+                    </button>
+                  )}
                 </div>
               )}
 
-              {currentQuestion.type === 'Speaking' && (
-                <ReflexWheel 
-                  prompt={currentQuestion.prompt} 
+              {currentQuestion.type === "Speaking" && (
+                <SpeakingPractice
+                  prompt={currentQuestion.prompt}
                   answer={currentQuestion.answer as string}
                   onCorrect={() => {
-                    setScore(s => s + 1);
-                    setFeedback({ correct: true, msg: 'Speech verified. Authentication granted.' });
+                    setScore((s) => s + 1);
+                    setFeedback({
+                      correct: true,
+                      msg: "Giọng nói đã được xác minh. Chấp nhận kết quả.",
+                    });
                   }}
                 />
               )}
@@ -131,12 +176,18 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({ unit, onComplete
 
             <div className="feedback-container">
               {feedback && (
-                <div className={`feedback-alert animate-fade-in ${feedback.correct ? 'success' : 'fail'}`}>
+                <div
+                  className={`feedback-alert animate-fade-in ${feedback.correct ? "success" : "fail"}`}
+                >
                   <div className="feedback-status">
-                    <span className="status-icon">{feedback.correct ? '✓' : '⚠'}</span>
+                    <span className="status-icon">
+                      {feedback.correct ? "✓" : "⚠"}
+                    </span>
                     <p>{feedback.msg}</p>
                   </div>
-                  <button className="next-btn" onClick={nextQuestion}>NEXT TASK →</button>
+                  <button className="next-btn" onClick={nextQuestion}>
+                    NHIỆM VỤ TIẾP THEO →
+                  </button>
                 </div>
               )}
             </div>
