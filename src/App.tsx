@@ -11,10 +11,10 @@ import { AdminView } from "./components/views/AdminView";
 import { TrainingGround } from "./components/practice/TrainingGround";
 import {
   FlashcardReview,
-  FlashcardSessionResults,
-  getFlashcardStatusStorageKey,
   type FlashcardSessionSummary,
-} from "./components/practice";
+} from "./components/practice/FlashcardReview";
+import { FlashcardSessionResults } from "./components/practice/FlashcardSessionResults";
+import { getFlashcardStatusStorageKey } from "./components/practice/flashcardStorage";
 
 function App() {
   const [currentView, setCurrentView] = useState<
