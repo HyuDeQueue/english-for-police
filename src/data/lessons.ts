@@ -1,4 +1,5 @@
 import type { Unit } from "../types";
+import { practiceQuestionsByUnit } from "./practiceQuestions";
 
 export const initialLessons: Unit[] = [
   {
@@ -302,48 +303,7 @@ export const initialLessons: Unit[] = [
       summary:
         "Khi tiếp xúc ban đầu, cần giới thiệu công vụ rõ ràng, yêu cầu giấy tờ đúng quy định và xác minh thông tin cá nhân một cách lịch sự, chính xác.",
     },
-    practice: [
-      {
-        id: "u1_q1",
-        type: "MCQ",
-        prompt: "What does 'identification' mean?",
-        options: ["Hộ chiếu", "Thị thực", "Giấy tờ tùy thân", "Địa chỉ"],
-        answer: "Giấy tờ tùy thân",
-      },
-      {
-        id: "u1_q2",
-        type: "FillInBlank",
-        prompt: "Please remain calm and ____ with us.",
-        answer: "cooperate",
-      },
-      {
-        id: "u1_q3",
-        type: "Dictation",
-        prompt: "Hộ chiếu của bạn ở đâu?",
-        vnPrompt: "Ông/bà có mang theo hộ chiếu không?",
-        answer: "Do you have your passport with you?",
-      },
-      {
-        id: "u1_q4",
-        type: "Speaking",
-        prompt: "Tôi là cảnh sát đang làm nhiệm vụ.",
-        vnPrompt: "Chào ông/bà. Chúng tôi là Cảnh sát đang làm nhiệm vụ.",
-        answer: "Good morning. We are police officers on duty.",
-      },
-      {
-        id: "u1_q5",
-        type: "FillInBlank",
-        prompt: "This information is required for ____ purposes.",
-        answer: "verification",
-      },
-      {
-        id: "u1_q6",
-        type: "Speaking",
-        prompt: "Đề nghị ông/bà cho biết họ và tên đầy đủ.",
-        vnPrompt: "Đề nghị ông/bà cho biết họ và tên đầy đủ.",
-        answer: "Could you please state your full name?",
-      },
-    ],
+    practice: practiceQuestionsByUnit[1],
   },
   {
     id: 2,
@@ -704,54 +664,7 @@ export const initialLessons: Unit[] = [
       summary:
         "Trong giao tiếp công vụ, cần tiếp cận lịch sự, giải thích rõ thẩm quyền pháp lý, hỗ trợ người dân đúng quy định và hướng dẫn bình tĩnh trong các tình huống công cộng.",
     },
-    practice: [
-      {
-        id: "u2_q1",
-        type: "MCQ",
-        prompt: "What does 'civilian' mean?",
-        options: ["Nghi phạm", "Người dân", "Nạn nhân", "Nhân chứng"],
-        answer: "Người dân",
-      },
-      {
-        id: "u2_q2",
-        type: "FillInBlank",
-        prompt: "Please remain calm and ____. ",
-        answer: "cooperative",
-      },
-      {
-        id: "u2_q3",
-        type: "Dictation",
-        prompt: "Chúng tôi đang tuần tra khu vực.",
-        vnPrompt: "Chúng tôi đang tuần tra khu vực.",
-        answer: "We are conducting patrols in this area.",
-      },
-      {
-        id: "u2_q4",
-        type: "Speaking",
-        prompt: "Đề nghị anh/chị giữ bình tĩnh và làm theo hướng dẫn.",
-        vnPrompt: "Đề nghị anh/chị giữ bình tĩnh và làm theo hướng dẫn.",
-        answer: "Please stay calm and follow our instructions.",
-      },
-      {
-        id: "u2_q5",
-        type: "MCQ",
-        prompt: "What is the best translation of 'public order'?",
-        options: [
-          "An toàn công cộng",
-          "Trật tự công cộng",
-          "Thẩm quyền",
-          "Quy định",
-        ],
-        answer: "Trật tự công cộng",
-      },
-      {
-        id: "u2_q6",
-        type: "Speaking",
-        prompt: "Chúng tôi có thẩm quyền thực hiện nhiệm vụ này.",
-        vnPrompt: "Chúng tôi có thẩm quyền thực hiện nhiệm vụ này.",
-        answer: "We are authorized to carry out this task.",
-      },
-    ],
+    practice: practiceQuestionsByUnit[2],
   },
   {
     id: 3,
@@ -1108,49 +1021,6 @@ export const initialLessons: Unit[] = [
       summary:
         "Khi tiếp nhận thông tin vụ việc, cần hỏi rõ nhân chứng và nạn nhân, xác minh thời gian-địa điểm-hành vi, sau đó kết thúc bằng hướng dẫn rõ ràng về bước xử lý tiếp theo.",
     },
-    practice: [
-      {
-        id: "u3_q1",
-        type: "MCQ",
-        prompt: "What does 'witness' mean?",
-        options: ["Nạn nhân", "Nhân chứng", "Nghi phạm", "Điều tra"],
-        answer: "Nhân chứng",
-      },
-      {
-        id: "u3_q2",
-        type: "FillInBlank",
-        prompt: "Can you ____ the suspect?",
-        answer: "describe",
-      },
-      {
-        id: "u3_q3",
-        type: "Dictation",
-        prompt: "Anh/chị có chứng kiến sự việc xảy ra tại đây không?",
-        vnPrompt: "Anh/chị có chứng kiến sự việc xảy ra tại đây không?",
-        answer: "Did you see what happened here?",
-      },
-      {
-        id: "u3_q4",
-        type: "Speaking",
-        prompt: "Ông/bà có bị thương trong vụ việc không?",
-        vnPrompt: "Ông/bà có bị thương trong vụ việc không?",
-        answer: "Were you injured during the incident?",
-      },
-      {
-        id: "u3_q5",
-        type: "Speaking",
-        prompt: "Chúng tôi sẽ thông báo cho ông/bà khi có diễn biến tiếp theo.",
-        vnPrompt:
-          "Chúng tôi sẽ thông báo cho ông/bà khi có diễn biến tiếp theo.",
-        answer: "We will keep you informed of any further developments.",
-      },
-      {
-        id: "u3_q6",
-        type: "MCQ",
-        prompt: "Which word means 'chứng cứ'?",
-        options: ["statement", "witness", "evidence", "scene"],
-        answer: "evidence",
-      },
-    ],
+    practice: practiceQuestionsByUnit[3],
   },
 ];

@@ -12,9 +12,42 @@ export const SpeakingPractice: React.FC<SpeakingPracticeProps> = ({
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [manualInput, setManualInput] = useState("");
+  const [speechSupported, setSpeechSupported] = useState(true);
   const [feedbackStatus, setFeedbackStatus] = useState<
     "idle" | "success" | "error"
   >("idle");
+
+  const normalizeText = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/[.,!?;]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const evaluateAnswer = (text: string) => {
+    const cleanText = normalizeText(text);
+    const cleanAnswer = normalizeText(answer);
+
+    if (!cleanText) {
+      setFeedbackStatus("error");
+      setTimeout(() => setFeedbackStatus("idle"), 2500);
+      return;
+    }
+
+    if (
+      cleanText === cleanAnswer ||
+      cleanText.includes(cleanAnswer) ||
+      cleanAnswer.includes(cleanText)
+    ) {
+      setFeedbackStatus("success");
+      onCorrect();
+      return;
+    }
+
+    setFeedbackStatus("error");
+    setTimeout(() => setFeedbackStatus("idle"), 2500);
+  };
 
   const startRecording = () => {
     interface ISpeechRecognitionEvent {
@@ -48,7 +81,8 @@ export const SpeakingPractice: React.FC<SpeakingPracticeProps> = ({
       ).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Trình duyệt này không hỗ trợ nhận diện giọng nói.");
+      setSpeechSupported(false);
+      setTranscript("Trình duyệt không hỗ trợ nhận diện giọng nói.");
       return;
     }
 
@@ -67,26 +101,7 @@ export const SpeakingPractice: React.FC<SpeakingPracticeProps> = ({
     recognition.onresult = (event: ISpeechRecognitionEvent) => {
       const text = event.results[0][0].transcript;
       setTranscript(text);
-
-      const cleanText = text
-        .toLowerCase()
-        .replace(/[.,!?;]/g, "")
-        .trim();
-      const cleanAnswer = answer
-        .toLowerCase()
-        .replace(/[.,!?;]/g, "")
-        .trim();
-
-      if (
-        cleanText.includes(cleanAnswer.split(" ")[0]) ||
-        cleanText === cleanAnswer
-      ) {
-        setFeedbackStatus("success");
-        onCorrect();
-      } else {
-        setFeedbackStatus("error");
-        setTimeout(() => setFeedbackStatus("idle"), 2500);
-      }
+      evaluateAnswer(text);
     };
 
     recognition.onerror = (event: { error: string }) => {
@@ -105,6 +120,11 @@ export const SpeakingPractice: React.FC<SpeakingPracticeProps> = ({
     } catch (e) {
       console.error("Failed to start recognition:", e);
     }
+  };
+
+  const handleManualSubmit = () => {
+    setTranscript(manualInput);
+    evaluateAnswer(manualInput);
   };
 
   return (
@@ -137,8 +157,29 @@ export const SpeakingPractice: React.FC<SpeakingPracticeProps> = ({
         <p className="instruction-text">
           {isRecording
             ? "Hãy nói to câu phản xạ bên trên..."
-            : "Nhấn Micro để bắt đầu trả lời bằng giọng nói"}
+            : speechSupported
+              ? "Nhấn Micro để bắt đầu trả lời bằng giọng nói"
+              : "Thiết bị không hỗ trợ mic. Hãy nhập câu trả lời bằng văn bản."}
         </p>
+
+        {!speechSupported && (
+          <div className="input-group" style={{ marginTop: "1rem" }}>
+            <input
+              type="text"
+              value={manualInput}
+              onChange={(e) => setManualInput(e.target.value)}
+              placeholder="Nhập câu nói tiếng Anh của bạn..."
+              onKeyPress={(e) => e.key === "Enter" && handleManualSubmit()}
+              className="practice-input"
+            />
+            <button
+              onClick={handleManualSubmit}
+              className="submit-btn primary-gradient"
+            >
+              XAC NHAN
+            </button>
+          </div>
+        )}
 
         {transcript && (
           <div className={`transcript-box ${feedbackStatus}`}>

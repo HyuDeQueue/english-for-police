@@ -29,6 +29,7 @@ export interface Question {
     | "Arrangement"
     | "Speaking";
   prompt: string;
+  circumstance?: string; // Scenario context shown before answering
   options?: string[]; // For MCQ
   answer: string | string[]; // Single string or array for matching/arrangement
   vnPrompt?: string; // For translation/speaking

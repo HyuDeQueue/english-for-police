@@ -9,12 +9,21 @@ import { HomeView } from "./components/views/HomeView";
 import { LessonView } from "./components/views/LessonView";
 import { AdminView } from "./components/views/AdminView";
 import { TrainingGround } from "./components/practice/TrainingGround";
+import {
+  FlashcardReview,
+  FlashcardSessionResults,
+  getFlashcardStatusStorageKey,
+  type FlashcardSessionSummary,
+} from "./components/practice";
 
 function App() {
   const [currentView, setCurrentView] = useState<
-    "home" | "lesson" | "practice" | "admin"
+    "home" | "lesson" | "practice" | "flashcards" | "flashcardResults" | "admin"
   >("home");
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [flashcardRound, setFlashcardRound] = useState(1);
+  const [flashcardSummary, setFlashcardSummary] =
+    useState<FlashcardSessionSummary | null>(null);
   const [lessons, setLessons] = useState<Unit[]>(() => {
     const savedLessons = localStorage.getItem("police_english_lessons");
     return savedLessons ? JSON.parse(savedLessons) : initialLessons;
@@ -45,6 +54,10 @@ function App() {
     setSelectedUnit(unit);
     setCurrentView("practice");
   };
+  const navigateToFlashcards = (unit: Unit) => {
+    setSelectedUnit(unit);
+    setCurrentView("flashcards");
+  };
   const navigateToAdmin = () => setCurrentView("admin");
 
   return (
@@ -62,6 +75,7 @@ function App() {
           unit={selectedUnit}
           onBack={navigateToHome}
           onStartPractice={navigateToPractice}
+          onStartFlashcards={navigateToFlashcards}
         />
       )}
 
@@ -81,6 +95,34 @@ function App() {
           }}
         />
       )}
+
+      {currentView === "flashcards" && selectedUnit && (
+        <FlashcardReview
+          key={`${selectedUnit.id}-${flashcardRound}`}
+          unit={selectedUnit}
+          onBack={() => navigateToLesson(selectedUnit)}
+          onComplete={(summary) => {
+            setFlashcardSummary(summary);
+            setCurrentView("flashcardResults");
+          }}
+        />
+      )}
+
+      {currentView === "flashcardResults" &&
+        selectedUnit &&
+        flashcardSummary && (
+          <FlashcardSessionResults
+            summary={flashcardSummary}
+            onBackToLesson={() => navigateToLesson(selectedUnit)}
+            onRetry={() => {
+              localStorage.removeItem(
+                getFlashcardStatusStorageKey(selectedUnit.id),
+              );
+              setFlashcardRound((prev) => prev + 1);
+              setCurrentView("flashcards");
+            }}
+          />
+        )}
 
       {currentView === "admin" && (
         <AdminView

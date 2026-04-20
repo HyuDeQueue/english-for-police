@@ -109,6 +109,11 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                       : "Luyện nói"}
               </span>
               <h3>{currentQuestion.prompt}</h3>
+              {currentQuestion.circumstance && (
+                <p className="question-circumstance">
+                  Boi canh: {currentQuestion.circumstance}
+                </p>
+              )}
               {currentQuestion.vnPrompt && (
                 <div className="vn-prompt-text">{currentQuestion.vnPrompt}</div>
               )}

@@ -5,12 +5,14 @@ interface LessonViewProps {
   unit: Unit;
   onBack: () => void;
   onStartPractice: (unit: Unit) => void;
+  onStartFlashcards: (unit: Unit) => void;
 }
 
 export const LessonView: React.FC<LessonViewProps> = ({
   unit,
   onBack,
   onStartPractice,
+  onStartFlashcards,
 }) => {
   const playAudio = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -98,6 +100,13 @@ export const LessonView: React.FC<LessonViewProps> = ({
       </section>
 
       <div className="action-row">
+        <button
+          className="secondary large-btn"
+          onClick={() => onStartFlashcards(unit)}
+          style={{ marginRight: "1rem" }}
+        >
+          ÔN TẬP FLASHCARDS
+        </button>
         <button
           className="primary-gradient large-btn"
           onClick={() => onStartPractice(unit)}
