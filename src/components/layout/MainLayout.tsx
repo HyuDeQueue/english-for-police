@@ -13,8 +13,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 }) => {
   return (
     <div className="app-container">
-      <header className="primary-gradient glass">
-        <div className="container header-content">
+      <header className="primary-gradient glass compact-header">
+        <div className="container header-content header-container">
           <div className="logo-section clickable" onClick={onLogoClick}>
             <span className="unit-label">
               BÀI-{selectedUnitId?.toString().padStart(2, "0") || "00"}
