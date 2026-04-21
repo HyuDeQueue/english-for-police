@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { Unit } from "../../types";
 import {
+  type FlashcardDeckMode,
   getFlashcardHistoryStorageKey,
   getFlashcardStatusStorageKey,
 } from "./flashcardStorage";
@@ -32,6 +33,8 @@ interface FlashcardAttemptRecord {
 export interface FlashcardSessionSummary {
   unitId: number;
   unitTitle: string;
+  deckMode: FlashcardDeckMode;
+  deckTitle: string;
   totalCards: number;
   reviewedCount: number;
   knownCount: number;
@@ -42,18 +45,22 @@ export interface FlashcardSessionSummary {
   previousKnownRate: number | null;
 }
 
-const loadStatusByCard = (unitId: number) => {
+const loadStatusByCard = (unitId: number, deckMode: FlashcardDeckMode) => {
   try {
-    const saved = localStorage.getItem(getFlashcardStatusStorageKey(unitId));
+    const saved = localStorage.getItem(
+      getFlashcardStatusStorageKey(unitId, deckMode),
+    );
     return saved ? (JSON.parse(saved) as Record<string, ReviewStatus>) : {};
   } catch {
     return {};
   }
 };
 
-const loadAttemptHistory = (unitId: number) => {
+const loadAttemptHistory = (unitId: number, deckMode: FlashcardDeckMode) => {
   try {
-    const saved = localStorage.getItem(getFlashcardHistoryStorageKey(unitId));
+    const saved = localStorage.getItem(
+      getFlashcardHistoryStorageKey(unitId, deckMode),
+    );
     return saved ? (JSON.parse(saved) as FlashcardAttemptRecord[]) : [];
   } catch {
     return [];
@@ -65,8 +72,12 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   onBack,
   onComplete,
 }) => {
+  const initialDeckMode: FlashcardDeckMode =
+    unit.id === 1 ? "sentencePatterns" : "vocabulary";
+  const [deckMode, setDeckMode] = useState<FlashcardDeckMode>(initialDeckMode);
+
   const cards = useMemo<FlashcardItem[]>(() => {
-    const vocabularyCards = unit.vocabulary.map((word, index) => ({
+    const vocabularyCards = unit.vocabulary.slice(0, 10).map((word, index) => ({
       id: `vocab-${index}`,
       front: word.word,
       back: `${word.meaning}\n\nEx: ${word.example}`,
@@ -74,15 +85,15 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       category: "Vocabulary" as const,
     }));
 
-    const phraseCards = unit.phrases.map((phrase, index) => ({
+    const phraseCards = unit.phrases.slice(0, 10).map((phrase, index) => ({
       id: `phrase-${index}`,
       front: phrase.text,
       back: `${phrase.translation}\n\nContext: ${phrase.context}`,
       category: "Phrase" as const,
     }));
 
-    return [...vocabularyCards, ...phraseCards];
-  }, [unit]);
+    return deckMode === "vocabulary" ? vocabularyCards : phraseCards;
+  }, [unit, deckMode]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -91,7 +102,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   >("next");
   const [statusByCard, setStatusByCard] = useState<
     Record<string, ReviewStatus>
-  >(() => loadStatusByCard(unit.id));
+  >(() => loadStatusByCard(unit.id, initialDeckMode));
 
   const currentCard = cards[currentIndex];
 
@@ -110,10 +121,10 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
   useEffect(() => {
     localStorage.setItem(
-      getFlashcardStatusStorageKey(unit.id),
+      getFlashcardStatusStorageKey(unit.id, deckMode),
       JSON.stringify(statusByCard),
     );
-  }, [statusByCard, unit.id]);
+  }, [statusByCard, unit.id, deckMode]);
 
   useEffect(() => {
     if (!currentCard) {
@@ -127,11 +138,13 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       }
 
       if (event.key === "ArrowRight") {
+        setTransitionDirection("next");
         setCurrentIndex((prev) => Math.min(prev + 1, cards.length - 1));
         setIsFlipped(false);
       }
 
       if (event.key === "ArrowLeft") {
+        setTransitionDirection("prev");
         setCurrentIndex((prev) => Math.max(prev - 1, 0));
         setIsFlipped(false);
       }
@@ -154,6 +167,17 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       return;
     }
     setStatusByCard((prev) => ({ ...prev, [currentCard.id]: status }));
+  };
+
+  const changeDeckMode = (nextMode: FlashcardDeckMode) => {
+    if (nextMode === deckMode) {
+      return;
+    }
+    setDeckMode(nextMode);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setTransitionDirection("next");
+    setStatusByCard(loadStatusByCard(unit.id, nextMode));
   };
 
   const nextCard = () => {
@@ -182,7 +206,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       (card) => statusByCard[card.id] === "review",
     );
 
-    const history = loadAttemptHistory(unit.id);
+    const history = loadAttemptHistory(unit.id, deckMode);
     const previous = history.length > 0 ? history[history.length - 1] : null;
     const previousKnownRate =
       previous && previous.totalCards > 0
@@ -198,13 +222,18 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     };
 
     localStorage.setItem(
-      getFlashcardHistoryStorageKey(unit.id),
+      getFlashcardHistoryStorageKey(unit.id, deckMode),
       JSON.stringify([...history, currentAttempt].slice(-15)),
     );
 
     onComplete({
       unitId: unit.id,
       unitTitle: unit.title,
+      deckMode,
+      deckTitle:
+        deckMode === "vocabulary"
+          ? "PART 1 - VOCABULARY"
+          : "PART 2 - SENTENCE PATTERNS (2.1)",
       totalCards,
       reviewedCount,
       knownCount,
@@ -238,9 +267,23 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
       <section className="card flashcards-header">
         <div>
-          <span className="type-tag">DECK BÀI {unit.id}</span>
+          <span className="type-tag">TOPIC {unit.id}</span>
           <h2>ÔN TẬP NHANH KIỂU QUIZLET</h2>
           <p>{unit.title}</p>
+          <div className="flashcard-deck-tabs">
+            <button
+              className={`deck-tab ${deckMode === "vocabulary" ? "active" : ""}`}
+              onClick={() => changeDeckMode("vocabulary")}
+            >
+              PART 1 - VOCABULARY
+            </button>
+            <button
+              className={`deck-tab ${deckMode === "sentencePatterns" ? "active" : ""}`}
+              onClick={() => changeDeckMode("sentencePatterns")}
+            >
+              PART 2 - SENTENCE PATTERNS (2.1)
+            </button>
+          </div>
         </div>
         <div className="flashcards-stats">
           <div>

@@ -58,7 +58,7 @@ function App() {
     setSelectedUnit(unit);
     setCurrentView("flashcards");
   };
-  const navigateToAdmin = () => setCurrentView("admin");
+  // const navigateToAdmin = () => setCurrentView("admin");
 
   return (
     <MainLayout selectedUnitId={selectedUnit?.id} onLogoClick={navigateToHome}>
@@ -116,7 +116,10 @@ function App() {
             onBackToLesson={() => navigateToLesson(selectedUnit)}
             onRetry={() => {
               localStorage.removeItem(
-                getFlashcardStatusStorageKey(selectedUnit.id),
+                getFlashcardStatusStorageKey(
+                  selectedUnit.id,
+                  flashcardSummary.deckMode,
+                ),
               );
               setFlashcardRound((prev) => prev + 1);
               setCurrentView("flashcards");
@@ -135,7 +138,7 @@ function App() {
       )}
 
       {/* Hidden toggle for Admin if needed, or link in HomeView hero */}
-      {currentView === "home" && (
+      {/* {currentView === "home" && (
         <button
           onClick={navigateToAdmin}
           style={{
@@ -150,7 +153,7 @@ function App() {
         >
           [ACCESS INTEL MANAGEMENT]
         </button>
-      )}
+      )} */}
     </MainLayout>
   );
 }

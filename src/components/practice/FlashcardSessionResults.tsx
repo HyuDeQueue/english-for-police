@@ -24,6 +24,9 @@ export const FlashcardSessionResults: React.FC<
           <p>
             Bài {summary.unitId}: {summary.unitTitle}
           </p>
+          <p>
+            Deck: <strong>{summary.deckTitle}</strong>
+          </p>
         </div>
         <div className="result-score">
           <span className="score-val">{summary.currentKnownRate}%</span>
