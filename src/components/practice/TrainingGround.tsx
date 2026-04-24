@@ -145,7 +145,7 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
 
   const handleSubmit = () => {
     if (currentQuestion) recordTimeForQuestion(currentQuestion.id);
-    clearInterval(timerRef.current);
+    if (timerRef.current !== null) clearInterval(timerRef.current);
     setSubmitted(true);
 
     const times = Object.values(timeRecords);
