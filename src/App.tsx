@@ -1,29 +1,47 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { initialLessons } from "./data/lessons";
-import type { Unit, UserProgress } from "./types";
+import type { Unit, UserProgress, FlaggedItem } from "./types";
 import "./App.css";
 
-// Component Imports
 import { MainLayout } from "./components/layout/MainLayout";
 import { HomeView } from "./components/views/HomeView";
 import { LessonView } from "./components/views/LessonView";
 import { AdminView } from "./components/views/AdminView";
 import { TrainingGround } from "./components/practice/TrainingGround";
+import { SearchSidebar } from "./components/layout/SearchSidebar";
 import {
   FlashcardReview,
   type FlashcardSessionSummary,
 } from "./components/practice/FlashcardReview";
 import { FlashcardSessionResults } from "./components/practice/FlashcardSessionResults";
 import { getFlashcardStatusStorageKey } from "./components/practice/flashcardStorage";
+import { QuickTest } from "./components/practice/QuickTest";
+
+type ViewType =
+  | "home"
+  | "lesson"
+  | "practice"
+  | "flashcards"
+  | "flashcardResults"
+  | "quicktest"
+  | "admin";
+
+function parseHash(): { view: ViewType; unitId?: number } {
+  const hash = window.location.hash.replace("#", "");
+  if (!hash || hash === "/") return { view: "home" };
+  const parts = hash.split("/").filter(Boolean);
+  if (parts[0] === "lesson" && parts[1])
+    return { view: "lesson", unitId: Number(parts[1]) };
+  if (parts[0] === "practice" && parts[1])
+    return { view: "practice", unitId: Number(parts[1]) };
+  if (parts[0] === "flashcards" && parts[1])
+    return { view: "flashcards", unitId: Number(parts[1]) };
+  if (parts[0] === "quicktest") return { view: "quicktest" };
+  if (parts[0] === "admin") return { view: "admin" };
+  return { view: "home" };
+}
 
 function App() {
-  const [currentView, setCurrentView] = useState<
-    "home" | "lesson" | "practice" | "flashcards" | "flashcardResults" | "admin"
-  >("home");
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
-  const [flashcardRound, setFlashcardRound] = useState(1);
-  const [flashcardSummary, setFlashcardSummary] =
-    useState<FlashcardSessionSummary | null>(null);
   const [lessons, setLessons] = useState<Unit[]>(() => {
     const savedLessons = localStorage.getItem("police_english_lessons");
     return savedLessons ? JSON.parse(savedLessons) : initialLessons;
@@ -34,39 +52,101 @@ function App() {
       ? JSON.parse(savedProgress)
       : { completedUnits: [], scores: {} };
   });
+  const [flaggedItems, setFlaggedItems] = useState<FlaggedItem[]>(() => {
+    const saved = localStorage.getItem("police_english_flagged");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  // Persist changes to localStorage
+  const [currentView, setCurrentView] = useState<ViewType>("home");
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  const [flashcardRound, setFlashcardRound] = useState(1);
+  const [flashcardSummary, setFlashcardSummary] =
+    useState<FlashcardSessionSummary | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Sync from hash on mount & popstate
+  const syncFromHash = useCallback(() => {
+    const { view, unitId } = parseHash();
+    setCurrentView(view);
+    if (unitId) {
+      const unit = lessons.find((l) => l.id === unitId);
+      if (unit) setSelectedUnit(unit);
+    } else if (view === "home") {
+      setSelectedUnit(null);
+    }
+  }, [lessons]);
+
+  useEffect(() => {
+    syncFromHash();
+    window.addEventListener("popstate", syncFromHash);
+    return () => window.removeEventListener("popstate", syncFromHash);
+  }, [syncFromHash]);
+
+  // Persist
   useEffect(() => {
     localStorage.setItem("police_english_progress", JSON.stringify(progress));
   }, [progress]);
-
   useEffect(() => {
     localStorage.setItem("police_english_lessons", JSON.stringify(lessons));
   }, [lessons]);
+  useEffect(() => {
+    localStorage.setItem("police_english_flagged", JSON.stringify(flaggedItems));
+  }, [flaggedItems]);
 
-  // Navigation handlers
-  const navigateToHome = () => setCurrentView("home");
+  // Navigation helpers that update hash
+  const navigate = (hash: string) => {
+    window.location.hash = hash;
+  };
+  const navigateToHome = () => navigate("/");
   const navigateToLesson = (unit: Unit) => {
     setSelectedUnit(unit);
-    setCurrentView("lesson");
+    navigate(`/lesson/${unit.id}`);
   };
   const navigateToPractice = (unit: Unit) => {
     setSelectedUnit(unit);
-    setCurrentView("practice");
+    navigate(`/practice/${unit.id}`);
   };
   const navigateToFlashcards = (unit: Unit) => {
     setSelectedUnit(unit);
-    setCurrentView("flashcards");
+    navigate(`/flashcards/${unit.id}`);
   };
-  // const navigateToAdmin = () => setCurrentView("admin");
+  const navigateToQuickTest = () => navigate("/quicktest");
+
+  // Flagging
+  const toggleFlag = (item: FlaggedItem) => {
+    setFlaggedItems((prev) => {
+      const exists = prev.find(
+        (f) => f.unitId === item.unitId && f.type === item.type && f.key === item.key
+      );
+      if (exists) return prev.filter((f) => f !== exists);
+      return [...prev, item];
+    });
+  };
+  const isFlagged = (unitId: number, type: "vocabulary" | "phrase", key: string) =>
+    flaggedItems.some((f) => f.unitId === unitId && f.type === type && f.key === key);
+
+  const showHeaderActions = currentView === "lesson" && selectedUnit;
 
   return (
-    <MainLayout selectedUnitId={selectedUnit?.id} onLogoClick={navigateToHome}>
+    <MainLayout
+      selectedUnitId={selectedUnit?.id}
+      onLogoClick={navigateToHome}
+      showPracticeButtons={!!showHeaderActions}
+      onStartPractice={
+        showHeaderActions ? () => navigateToPractice(selectedUnit!) : undefined
+      }
+      onStartFlashcards={
+        showHeaderActions ? () => navigateToFlashcards(selectedUnit!) : undefined
+      }
+      onToggleSearch={() => setSearchOpen((p) => !p)}
+    >
       {currentView === "home" && (
         <HomeView
           lessons={lessons}
           progress={progress}
+          flaggedItems={flaggedItems}
           onSelectUnit={navigateToLesson}
+          onStartQuickTest={navigateToQuickTest}
         />
       )}
 
@@ -76,6 +156,8 @@ function App() {
           onBack={navigateToHome}
           onStartPractice={navigateToPractice}
           onStartFlashcards={navigateToFlashcards}
+          isFlagged={isFlagged}
+          toggleFlag={toggleFlag}
         />
       )}
 
@@ -87,7 +169,7 @@ function App() {
             const newProgress = {
               ...progress,
               completedUnits: Array.from(
-                new Set([...progress.completedUnits, selectedUnit.id]),
+                new Set([...progress.completedUnits, selectedUnit.id])
               ),
             };
             setProgress(newProgress);
@@ -118,8 +200,8 @@ function App() {
               localStorage.removeItem(
                 getFlashcardStatusStorageKey(
                   selectedUnit.id,
-                  flashcardSummary.deckMode,
-                ),
+                  flashcardSummary.deckMode
+                )
               );
               setFlashcardRound((prev) => prev + 1);
               setCurrentView("flashcards");
@@ -127,33 +209,28 @@ function App() {
           />
         )}
 
+      {currentView === "quicktest" && (
+        <QuickTest
+          lessons={lessons}
+          completedUnitIds={progress.completedUnits}
+          onBack={navigateToHome}
+        />
+      )}
+
       {currentView === "admin" && (
         <AdminView
           lessons={lessons}
           onBack={navigateToHome}
-          onSave={(newLessons) => {
-            setLessons(newLessons);
-          }}
+          onSave={(newLessons) => setLessons(newLessons)}
         />
       )}
 
-      {/* Hidden toggle for Admin if needed, or link in HomeView hero */}
-      {/* {currentView === "home" && (
-        <button
-          onClick={navigateToAdmin}
-          style={{
-            marginTop: "2rem",
-            opacity: 0.3,
-            background: "none",
-            border: "none",
-            color: "inherit",
-            cursor: "pointer",
-            fontSize: "0.8rem",
-          }}
-        >
-          [ACCESS INTEL MANAGEMENT]
-        </button>
-      )} */}
+      <SearchSidebar
+        lessons={lessons}
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigateToUnit={navigateToLesson}
+      />
     </MainLayout>
   );
 }

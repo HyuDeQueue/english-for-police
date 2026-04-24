@@ -3,12 +3,20 @@ import React from "react";
 interface MainLayoutProps {
   selectedUnitId?: number;
   onLogoClick: () => void;
+  showPracticeButtons?: boolean;
+  onStartPractice?: () => void;
+  onStartFlashcards?: () => void;
+  onToggleSearch?: () => void;
   children: React.ReactNode;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
   selectedUnitId,
   onLogoClick,
+  showPracticeButtons,
+  onStartPractice,
+  onStartFlashcards,
+  onToggleSearch,
   children,
 }) => {
   return (
@@ -20,6 +28,32 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               BÀI-{selectedUnitId?.toString().padStart(2, "0") || "00"}
             </span>
             <h1>TIẾNG ANH CẢNH SÁT</h1>
+          </div>
+
+          <div className="header-actions">
+            {showPracticeButtons && (
+              <>
+                <button
+                  className="header-action-btn"
+                  onClick={onStartFlashcards}
+                >
+                  📖 Ôn tập
+                </button>
+                <button
+                  className="header-action-btn primary-gradient"
+                  onClick={onStartPractice}
+                >
+                  ✍️ Kiểm tra
+                </button>
+              </>
+            )}
+            <button
+              className="header-action-btn search-toggle"
+              onClick={onToggleSearch}
+              title="Tìm kiếm từ vựng"
+            >
+              🔍
+            </button>
           </div>
         </div>
       </header>

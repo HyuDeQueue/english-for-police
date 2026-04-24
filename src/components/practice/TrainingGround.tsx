@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import type { Question, Unit } from "../../types";
 import { SpeakingPractice } from "./SpeakingPractice";
 
@@ -8,28 +8,33 @@ interface TrainingGroundProps {
   onBack: () => void;
 }
 
+type PracticeMode =
+  | "sentencePatterns"
+  | "vocabulary"
+  | "mixed"
+  | "fullTopicTest";
+
+const SECONDS_PER_QUESTION = 60;
+
 export const TrainingGround: React.FC<TrainingGroundProps> = ({
   unit,
   onComplete,
   onBack,
 }) => {
-  type PracticeMode =
-    | "sentencePatterns"
-    | "vocabulary"
-    | "mixed"
-    | "fullTopicTest";
-
   const [selectedMode, setSelectedMode] = useState<PracticeMode | null>(
     unit.id === 1 ? null : "fullTopicTest",
   );
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [score, setScore] = useState(0);
-  const [showResult, setShowResult] = useState(false);
-  const [userAnswer, setUserAnswer] = useState("");
-  const [feedback, setFeedback] = useState<{
-    correct: boolean;
-    msg: string;
-  } | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+  const [timeRecords, setTimeRecords] = useState<Record<string, number>>({});
+  const questionStartRef = useRef<number>(0);
+
+  const [totalTimeLeft, setTotalTimeLeft] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Refs for smooth scrolling to questions
+  const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const buildTopicOneVocabularyQuestions = (): Question[] =>
     unit.vocabulary.slice(0, 10).map((vocab, index) => ({
@@ -54,7 +59,6 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
     unit.id === 1 ? buildTopicOneVocabularyQuestions() : unit.practice;
   const sentencePatternQuestions =
     unit.id === 1 ? buildTopicOneSentencePatternQuestions() : unit.practice;
-
   const mixedQuestions =
     unit.id === 1
       ? [
@@ -62,75 +66,132 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
           ...vocabularyQuestions.slice(0, 5),
         ]
       : unit.practice;
-
   const fullTopicQuestions =
     unit.id === 1
       ? [...sentencePatternQuestions, ...vocabularyQuestions]
       : unit.practice;
 
+  const reorderByDifficulty = useCallback(
+    (questions: Question[]) => {
+      const diffKey = `police_english_difficult_${unit.id}`;
+      try {
+        const saved = localStorage.getItem(diffKey);
+        if (!saved) return questions;
+        const difficultIds: string[] = JSON.parse(saved);
+        const difficult = questions.filter((q) => difficultIds.includes(q.id));
+        const rest = questions.filter((q) => !difficultIds.includes(q.id));
+        return [...difficult, ...rest];
+      } catch {
+        return questions;
+      }
+    },
+    [unit.id],
+  );
+
   const activeQuestions =
     selectedMode === "sentencePatterns"
-      ? sentencePatternQuestions
+      ? reorderByDifficulty(sentencePatternQuestions)
       : selectedMode === "vocabulary"
-        ? vocabularyQuestions
+        ? reorderByDifficulty(vocabularyQuestions)
         : selectedMode === "mixed"
-          ? mixedQuestions
-          : fullTopicQuestions;
+          ? reorderByDifficulty(mixedQuestions)
+          : reorderByDifficulty(fullTopicQuestions);
 
   const currentQuestion = activeQuestions[currentQuestionIndex];
 
-  const modeLabel =
-    selectedMode === "sentencePatterns"
-      ? "Part 2 - Sentence Patterns"
-      : selectedMode === "vocabulary"
-        ? "Part 1 - Vocabulary"
-        : selectedMode === "mixed"
-          ? "Mixed Review"
-          : "Full Topic Test";
+  // Start timer when mode is selected
+  useEffect(() => {
+    if (selectedMode && !submitted) {
+      const total = activeQuestions.length * SECONDS_PER_QUESTION;
+      const id = setInterval(() => {
+        setTotalTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(id);
+            setSubmitted(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      timerRef.current = id;
+      setTimeout(() => setTotalTimeLeft(total), 0);
+      return () => clearInterval(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMode, submitted]);
+
+  useEffect(() => {
+    questionStartRef.current = performance.now();
+  }, [currentQuestionIndex]);
+
+  const recordTimeForQuestion = useCallback((qId: string) => {
+    const now = performance.now();
+    const elapsed = Math.round((now - questionStartRef.current) / 1000);
+    setTimeRecords((prev) => ({
+      ...prev,
+      [qId]: (prev[qId] || 0) + elapsed,
+    }));
+  }, []);
+
+  const setAnswer = (questionId: string, answer: string) => {
+    if (submitted) return;
+    setAnswers((prev) => ({ ...prev, [questionId]: answer }));
+  };
+
+  const goToQuestion = (index: number) => {
+    if (currentQuestion) recordTimeForQuestion(currentQuestion.id);
+    setCurrentQuestionIndex(index);
+  };
+
+  const handleSubmit = () => {
+    if (currentQuestion) recordTimeForQuestion(currentQuestion.id);
+    clearInterval(timerRef.current);
+    setSubmitted(true);
+
+    const times = Object.values(timeRecords);
+    if (times.length > 0) {
+      const avg = times.reduce((a, b) => a + b, 0) / times.length;
+      const difficultIds = Object.entries(timeRecords)
+        .filter(([, t]) => t > avg * 2)
+        .map(([id]) => id);
+      if (difficultIds.length > 0) {
+        localStorage.setItem(
+          `police_english_difficult_${unit.id}`,
+          JSON.stringify(difficultIds),
+        );
+      }
+    }
+  };
+
+  const getScore = () => {
+    let correct = 0;
+    for (const q of activeQuestions) {
+      const userAns = answers[q.id]?.trim().toLowerCase() || "";
+      const correctAns =
+        q.type === "Scenario"
+          ? (q.bestAnswer || (q.answer as string)).toLowerCase()
+          : (q.answer as string).toLowerCase();
+      if (userAns === correctAns) correct++;
+    }
+    return correct;
+  };
+
+  const answeredCount = activeQuestions.filter((q) => answers[q.id]).length;
+  const allAnswered = answeredCount === activeQuestions.length;
+  const formatTime = (s: number) =>
+    `${Math.floor(s / 60)
+      .toString()
+      .padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   const startMode = (mode: PracticeMode) => {
     setSelectedMode(mode);
     setCurrentQuestionIndex(0);
-    setScore(0);
-    setShowResult(false);
-    setUserAnswer("");
-    setFeedback(null);
+    setAnswers({});
+    setSubmitted(false);
+    setTimeRecords({});
   };
 
-  const handleMCQ = (option: string) => {
-    const isCorrect = option === currentQuestion.answer;
-    setFeedback({
-      correct: isCorrect,
-      msg: isCorrect
-        ? "Đã hoàn thành mục tiêu. Đang chuyển sang nội dung tiếp theo."
-        : `Không chính xác. Đáp án đúng là: ${currentQuestion.answer}`,
-    });
-    if (isCorrect) setScore((s) => s + 1);
-  };
-
-  const handleInputSubmit = () => {
-    const isCorrect =
-      userAnswer.trim().toLowerCase() ===
-      (currentQuestion.answer as string).toLowerCase();
-    setFeedback({
-      correct: isCorrect,
-      msg: isCorrect
-        ? "Dữ liệu đã được xác nhận chính xác."
-        : `Dữ liệu không khớp. Yêu cầu: ${currentQuestion.answer}`,
-    });
-    if (isCorrect) setScore((s) => s + 1);
-  };
-
-  const nextQuestion = () => {
-    setFeedback(null);
-    setUserAnswer("");
-    if (currentQuestionIndex < activeQuestions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    } else {
-      setShowResult(true);
-    }
-  };
-
+  // Mode selection
   if (unit.id === 1 && selectedMode === null) {
     return (
       <div className="practice-container animate-fade-in">
@@ -138,32 +199,29 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
           ← QUAY LẠI PHẦN HỌC
         </button>
         <div className="card">
-          <h2>TOPIC 1 - PRACTICE GROUPS</h2>
-          <p>
-            Học theo nhóm tuần tự: Sentence Patterns trước, sau đó Vocabulary,
-            rồi Mixed và Full Topic Test.
-          </p>
+          <h2>TOPIC 1 - CHỌN NHÓM LUYỆN TẬP</h2>
+          <p>Chọn nhóm bài tập phù hợp:</p>
           <div className="practice-mode-grid">
             <button
               className="primary-gradient"
               onClick={() => startMode("sentencePatterns")}
             >
-              PART 2 - SENTENCE PATTERNS (10)
+              MẪU CÂU (10)
             </button>
             <button
               className="secondary"
               onClick={() => startMode("vocabulary")}
             >
-              PART 1 - VOCABULARY (10)
+              TỪ VỰNG (10)
             </button>
             <button className="secondary" onClick={() => startMode("mixed")}>
-              MIXED REVIEW (10)
+              HỖN HỢP (10)
             </button>
             <button
               className="secondary"
               onClick={() => startMode("fullTopicTest")}
             >
-              FULL TOPIC TEST (20)
+              TOÀN BỘ (20)
             </button>
           </div>
         </div>
@@ -171,38 +229,94 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
     );
   }
 
-  if (showResult) {
+  // Results after submit
+  if (submitted) {
+    const score = getScore();
+    const total = activeQuestions.length;
+    const percent = Math.round((score / total) * 100);
+
+    // Find difficult ones
+    const times = Object.values(timeRecords);
+    const avg =
+      times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+
     return (
-      <div className="card animate-fade-in text-center result-card">
-        <div className="asymmetry-label">END</div>
-        <h2>HOÀN THÀNH HUẤN LUYỆN</h2>
-        <p className="type-tag">{modeLabel}</p>
-        <div className="result-score">
-          <span className="score-val">
-            {Math.round((score / activeQuestions.length) * 100)}%
-          </span>
-          <label>ĐỘ CHÍNH XÁC</label>
+      <div className="practice-container animate-fade-in">
+        <div className="card result-card text-center">
+          <div className="asymmetry-label">KẾT QUẢ</div>
+          <h2>HOÀN THÀNH KIỂM TRA</h2>
+          <div className="result-score">
+            <span className="score-val">{percent}%</span>
+            <label>
+              ĐỘ CHÍNH XÁC ({score}/{total})
+            </label>
+          </div>
         </div>
-        <p>Nhiệm vụ đã kết thúc. Kết quả của bạn đã được ghi lại hệ thống.</p>
-        {unit.id === 1 && (
-          <button
-            className="secondary"
-            style={{ marginRight: "0.75rem" }}
-            onClick={() => {
-              setSelectedMode(null);
-              setShowResult(false);
-              setCurrentQuestionIndex(0);
-              setScore(0);
-              setUserAnswer("");
-              setFeedback(null);
-            }}
-          >
-            CHỌN NHÓM KHÁC
+
+        <div className="results-review">
+          <h3>📋 Chi tiết kết quả</h3>
+          {activeQuestions.map((q, i) => {
+            const userAns = answers[q.id] || "(Chưa trả lời)";
+            const correctAns =
+              q.type === "Scenario"
+                ? q.bestAnswer || (q.answer as string)
+                : (q.answer as string);
+            const isCorrect =
+              userAns.trim().toLowerCase() === correctAns.toLowerCase();
+            const timeTaken = timeRecords[q.id] || 0;
+            const isDifficult = timeTaken > avg * 2;
+
+            return (
+              <div
+                key={q.id}
+                className={`card result-item ${isCorrect ? "correct" : "wrong"}`}
+              >
+                <div className="result-item-header">
+                  <span className="result-q-num">Câu {i + 1}</span>
+                  <span
+                    className={`result-badge ${isCorrect ? "success" : "fail"}`}
+                  >
+                    {isCorrect ? "✓ Đúng" : "✗ Sai"}
+                  </span>
+                  {isDifficult && (
+                    <span className="result-badge difficult">⏱ Câu khó</span>
+                  )}
+                </div>
+                <p className="result-prompt">{q.prompt}</p>
+                {!isCorrect && (
+                  <div className="result-answers">
+                    <div className="your-answer">Bạn: {userAns}</div>
+                    <div className="correct-answer">Đáp án: {correctAns}</div>
+                  </div>
+                )}
+                {q.explanation && (
+                  <p className="result-explanation">💡 {q.explanation}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="action-row">
+          {unit.id === 1 && (
+            <button
+              className="secondary"
+              style={{ marginRight: "0.75rem" }}
+              onClick={() => {
+                setSelectedMode(null);
+                setSubmitted(false);
+                setCurrentQuestionIndex(0);
+                setAnswers({});
+                setTimeRecords({});
+              }}
+            >
+              CHỌN NHÓM KHÁC
+            </button>
+          )}
+          <button className="primary-gradient" onClick={onComplete}>
+            QUAY LẠI LỘ TRÌNH
           </button>
-        )}
-        <button className="primary-gradient" onClick={onComplete}>
-          QUAY LẠI LỘ TRÌNH
-        </button>
+        </div>
       </div>
     );
   }
@@ -215,149 +329,173 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
         </button>
         <div className="card">
           <h2>KHÔNG CÓ DỮ LIỆU LUYỆN TẬP</h2>
-          <p>
-            Bài học hiện chưa có đủ câu hỏi cho chế độ này. Hãy chọn nhóm khác
-            hoặc bổ sung dữ liệu trong phần quản trị.
-          </p>
-          {unit.id === 1 && (
-            <button className="secondary" onClick={() => setSelectedMode(null)}>
-              CHỌN NHÓM KHÁC
-            </button>
-          )}
+          <p>Bài học hiện chưa có đủ câu hỏi cho chế độ này.</p>
         </div>
       </div>
     );
   }
 
+  // Main test UI
   return (
     <div className="practice-container animate-fade-in">
-      <button className="back-btn" onClick={onBack}>
-        ← QUAY LẠI PHẦN HỌC
-      </button>
-      <div className="card">
-        <div
-          className="progress-bar-container"
-          style={{ marginBottom: "2rem" }}
-        >
-          <div
-            className="progress-bar-fill"
-            style={{
-              width: `${((currentQuestionIndex + 1) / activeQuestions.length) * 100}%`,
-            }}
-          ></div>
-        </div>
-
-        <div className="mode-chip-row">
-          <span className="type-tag">{modeLabel}</span>
-          {unit.id === 1 && (
-            <button className="secondary" onClick={() => setSelectedMode(null)}>
-              ĐỔI NHÓM
-            </button>
-          )}
-        </div>
-
-        <div className="training-layout">
-          {/* Left Column: Mission Details */}
-          <div className="mission-sidebar">
-            <div className="question-header">
-              <span className="type-tag">
-                {currentQuestion.type === "MCQ"
-                  ? "Trắc nghiệm"
-                  : currentQuestion.type === "FillInBlank"
-                    ? "Điền khuyết"
-                    : currentQuestion.type === "Dictation"
-                      ? "Chép chính tả"
-                      : "Luyện nói"}
+      <div className="test-layout">
+        {/* Left: Sidebar (Timer + Question Grid) */}
+        <div className="test-sidebar">
+          <button
+            className="back-btn"
+            onClick={onBack}
+            style={{ marginBottom: "1rem", alignSelf: "flex-start" }}
+          >
+            ← QUAY LẠI PHẦN HỌC
+          </button>
+          <div className="card timer-card">
+            <div className="timer-display">
+              <span className="timer-icon">⏱</span>
+              <span
+                className={`timer-value ${totalTimeLeft < 60 ? "warning" : ""}`}
+              >
+                {formatTime(totalTimeLeft)}
               </span>
-              <h3>{currentQuestion.prompt}</h3>
-              {currentQuestion.circumstance && (
-                <p className="question-circumstance">
-                  Bối cảnh: {currentQuestion.circumstance}
-                </p>
-              )}
-              {currentQuestion.vnPrompt && (
-                <div className="vn-prompt-text">{currentQuestion.vnPrompt}</div>
-              )}
+            </div>
+            <div className="progress-bar-container">
+              <div
+                className="progress-bar-fill"
+                style={{
+                  width: `${(answeredCount / activeQuestions.length) * 100}%`,
+                }}
+              />
+            </div>
+            <small>
+              {answeredCount}/{activeQuestions.length} đã trả lời
+            </small>
+          </div>
+
+          <div className="card question-grid-card">
+            <h4>Danh sách câu hỏi</h4>
+            <div className="question-grid">
+              {activeQuestions.map((q, i) => {
+                const status = answers[q.id]
+                  ? "answered"
+                  : i === currentQuestionIndex
+                    ? "current"
+                    : "unanswered";
+                return (
+                  <button
+                    key={q.id}
+                    className={`q-grid-btn ${status}`}
+                    onClick={() => {
+                      goToQuestion(i);
+                      questionRefs.current[i]?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Right Column: Interaction & Feedback */}
-          <div className="action-center">
-            <div className="question-body">
-              {currentQuestion.type === "MCQ" && (
+          {/* Submit Button */}
+          <button
+            className={`submit-test-btn primary-gradient ${allAnswered ? "ready" : ""}`}
+            disabled={!allAnswered}
+            onClick={handleSubmit}
+          >
+            {allAnswered
+              ? "NỘP BÀI"
+              : `Còn ${activeQuestions.length - answeredCount} câu`}
+          </button>
+        </div>
+
+        {/* Right: Question Area (Scrolling List) */}
+        <div className="test-main">
+          {activeQuestions.map((q, i) => (
+            <div
+              key={q.id}
+              className="card test-question-card"
+              style={{ marginBottom: "1.5rem" }}
+              ref={(el) => {
+                questionRefs.current[i] = el;
+              }}
+              onClick={() => setCurrentQuestionIndex(i)}
+            >
+              <div className="test-question-header">
+                <span className="type-tag">
+                  {q.type === "MCQ"
+                    ? "Trắc nghiệm"
+                    : q.type === "FillInBlank"
+                      ? "Điền khuyết"
+                      : q.type === "Dictation"
+                        ? "Chép chính tả"
+                        : q.type === "Scenario"
+                          ? "Tình huống"
+                          : "Luyện nói"}
+                </span>
+                <span className="question-counter">
+                  Câu {i + 1}/{activeQuestions.length}
+                </span>
+              </div>
+
+              {q.scenarioDescription && (
+                <div className="scenario-box">
+                  <strong>Tình huống:</strong> {q.scenarioDescription}
+                </div>
+              )}
+
+              <h3 className="test-prompt">{q.prompt}</h3>
+
+              {q.circumstance && (
+                <p className="question-circumstance">
+                  Bối cảnh: {q.circumstance}
+                </p>
+              )}
+              {q.vnPrompt && <div className="vn-prompt-text">{q.vnPrompt}</div>}
+
+              {/* MCQ / Scenario */}
+              {(q.type === "MCQ" || q.type === "Scenario") && (
                 <div className="options-grid">
-                  {currentQuestion.options?.map((opt, i) => (
+                  {q.options?.map((opt, optIdx) => (
                     <button
-                      key={i}
-                      className={`option-btn ${feedback ? (opt === currentQuestion.answer ? "correct" : opt === userAnswer ? "wrong" : "") : ""}`}
-                      onClick={() => {
-                        if (feedback) return;
-                        setUserAnswer(opt);
-                        handleMCQ(opt);
-                      }}
+                      key={optIdx}
+                      className={`option-btn ${answers[q.id] === opt ? "selected" : ""}`}
+                      onClick={() => setAnswer(q.id, opt)}
                     >
+                      <span className="option-letter">
+                        {String.fromCharCode(65 + optIdx)}
+                      </span>
                       {opt}
                     </button>
                   ))}
                 </div>
               )}
 
-              {(currentQuestion.type === "FillInBlank" ||
-                currentQuestion.type === "Dictation") && (
+              {/* Fill / Dictation */}
+              {(q.type === "FillInBlank" || q.type === "Dictation") && (
                 <div className="input-group">
                   <input
                     type="text"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
+                    value={answers[q.id] || ""}
+                    onChange={(e) => setAnswer(q.id, e.target.value)}
+                    onFocus={() => setCurrentQuestionIndex(i)}
                     placeholder="Nhập câu trả lời của bạn..."
-                    disabled={!!feedback}
-                    onKeyPress={(e) => e.key === "Enter" && handleInputSubmit()}
                     className="practice-input"
                   />
-                  {!feedback && (
-                    <button
-                      onClick={handleInputSubmit}
-                      className="submit-btn primary-gradient"
-                    >
-                      XÁC NHẬN
-                    </button>
-                  )}
                 </div>
               )}
 
-              {currentQuestion.type === "Speaking" && (
+              {/* Speaking */}
+              {q.type === "Speaking" && (
                 <SpeakingPractice
-                  prompt={currentQuestion.prompt}
-                  answer={currentQuestion.answer as string}
-                  onCorrect={() => {
-                    setScore((s) => s + 1);
-                    setFeedback({
-                      correct: true,
-                      msg: "Giọng nói đã được xác minh. Chấp nhận kết quả.",
-                    });
-                  }}
+                  prompt={q.prompt}
+                  answer={q.answer as string}
+                  onCorrect={() => setAnswer(q.id, q.answer as string)}
                 />
               )}
             </div>
-
-            <div className="feedback-container">
-              {feedback && (
-                <div
-                  className={`feedback-alert animate-fade-in ${feedback.correct ? "success" : "fail"}`}
-                >
-                  <div className="feedback-status">
-                    <span className="status-icon">
-                      {feedback.correct ? "✓" : "⚠"}
-                    </span>
-                    <p>{feedback.msg}</p>
-                  </div>
-                  <button className="next-btn" onClick={nextQuestion}>
-                    NHIỆM VỤ TIẾP THEO →
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@ export interface Vocabulary {
   meaning: string;
   example: string;
   type: "Noun" | "Verb" | "Expression" | "Adjective" | "Adverb";
-  audioUrl?: string; // Optional if we use TTS
+  audioUrl?: string;
 }
 
 export interface Phrase {
@@ -12,6 +12,7 @@ export interface Phrase {
   translation: string;
   context: string;
   audioUrl?: string;
+  realWorldExamples?: string[];
 }
 
 export interface Collocation {
@@ -27,12 +28,17 @@ export interface Question {
     | "FillInBlank"
     | "Dictation"
     | "Arrangement"
-    | "Speaking";
+    | "Speaking"
+    | "Scenario";
   prompt: string;
-  circumstance?: string; // Scenario context shown before answering
-  options?: string[]; // For MCQ
-  answer: string | string[]; // Single string or array for matching/arrangement
-  vnPrompt?: string; // For translation/speaking
+  circumstance?: string;
+  scenarioDescription?: string;
+  options?: string[];
+  answer: string | string[];
+  bestAnswer?: string;
+  acceptableAnswers?: string[];
+  explanation?: string;
+  vnPrompt?: string;
 }
 
 export interface Unit {
@@ -46,9 +52,25 @@ export interface Unit {
     summary: string;
   };
   practice: Question[];
+  videoUrl?: string;
 }
 
 export interface UserProgress {
   completedUnits: number[];
   scores: Record<number, number>;
+}
+
+export interface FlaggedItem {
+  unitId: number;
+  type: "vocabulary" | "phrase";
+  key: string; // word or phrase text
+}
+
+export interface DailyTask {
+  date: string; // YYYY-MM-DD
+  tasks: {
+    id: string;
+    label: string;
+    completed: boolean;
+  }[];
 }

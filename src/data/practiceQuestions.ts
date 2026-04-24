@@ -101,6 +101,38 @@ export const practiceQuestionsByUnit: Record<number, Question[]> = {
       options: ["assist", "verification", "contact", "cooperate"],
       answer: "verification",
     },
+    {
+      id: "u1_scenario_1",
+      type: "Scenario",
+      prompt: "Bạn gặp một người nước ngoài đang đi bộ trong khu dân cư vào ban đêm. Câu nào phù hợp nhất để mở đầu cuộc tiếp xúc?",
+      scenarioDescription: "Bạn đang tuần tra khu dân cư lúc 22:00. Một người nước ngoài đi bộ một mình, trông có vẻ lạc đường. Bạn cần tiếp cận một cách lịch sự và chuyên nghiệp.",
+      options: [
+        "Stop! Show me your passport!",
+        "Good evening. We are police officers on duty. May I speak with you for a moment?",
+        "What are you doing here at night?",
+        "Do you have your passport with you?"
+      ],
+      answer: "Good evening. We are police officers on duty. May I speak with you for a moment?",
+      bestAnswer: "Good evening. We are police officers on duty. May I speak with you for a moment?",
+      acceptableAnswers: ["Do you have your passport with you?"],
+      explanation: "Câu B là phù hợp nhất vì giới thiệu công vụ rõ ràng, lịch sự và không gây hoảng sợ. Câu D cũng chấp nhận được nhưng thiếu phần giới thiệu."
+    },
+    {
+      id: "u1_scenario_2",
+      type: "Scenario",
+      prompt: "Một du khách từ chối xuất trình giấy tờ và tỏ ra lo lắng. Bạn nên nói gì?",
+      scenarioDescription: "Trong quá trình kiểm tra giấy tờ tại khu du lịch, một du khách lắc đầu và lùi lại khi bạn yêu cầu xuất trình hộ chiếu. Họ có vẻ sợ hãi chứ không phải chống đối.",
+      options: [
+        "You must cooperate with us immediately!",
+        "Please do not worry. This is a routine check. We are here to help and protect you.",
+        "I will arrest you if you don't show your passport.",
+        "This check is required under current regulations."
+      ],
+      answer: "Please do not worry. This is a routine check. We are here to help and protect you.",
+      bestAnswer: "Please do not worry. This is a routine check. We are here to help and protect you.",
+      acceptableAnswers: ["This check is required under current regulations."],
+      explanation: "Câu B giúp trấn an du khách và giải thích mục đích kiểm tra. Câu D cũng đúng nhưng thiếu sự đồng cảm cần thiết trong tình huống này."
+    },
   ],
   2: [
     {
@@ -208,6 +240,38 @@ export const practiceQuestionsByUnit: Record<number, Question[]> = {
         "You explain why routine checks happen before incidents occur.",
       options: ["Phòng ngừa", "Hỗ trợ", "Đánh giá", "Tiếp cận"],
       answer: "Phòng ngừa",
+    },
+    {
+      id: "u2_scenario_1",
+      type: "Scenario",
+      prompt: "Một nhóm du khách tụ tập chụp ảnh ở khu vực cấm. Bạn cần yêu cầu họ di chuyển. Câu nào phù hợp nhất?",
+      scenarioDescription: "Tại một khu vực đang thi công gần điểm du lịch, một nhóm 5-6 du khách nước ngoài đang chụp ảnh và không nhận ra biển cấm. Họ không có hành vi xấu.",
+      options: [
+        "Get out of here now!",
+        "For your safety, please keep clear of this area. We will guide you to a better spot.",
+        "This area is restricted. Leave immediately.",
+        "Please listen carefully to our instructions."
+      ],
+      answer: "For your safety, please keep clear of this area. We will guide you to a better spot.",
+      bestAnswer: "For your safety, please keep clear of this area. We will guide you to a better spot.",
+      acceptableAnswers: ["Please listen carefully to our instructions."],
+      explanation: "Câu B vừa cảnh báo vừa đề xuất giải pháp thay thế, thể hiện thái độ hỗ trợ. Câu D cũng chấp nhận được nhưng thiếu phần hướng dẫn cụ thể."
+    },
+    {
+      id: "u2_scenario_2",
+      type: "Scenario",
+      prompt: "Một người dân đến hỏi về thủ tục khai báo mất đồ nhưng bạn không phụ trách. Bạn nên nói gì?",
+      scenarioDescription: "Bạn đang làm nhiệm vụ tuần tra thì một người nước ngoài tiến đến hỏi về thủ tục trình báo mất hành lý. Đây là trách nhiệm của bộ phận tiếp nhận tại trụ sở.",
+      options: [
+        "I can't help you with that.",
+        "Please go to the local police office for further assistance. We will direct you to the appropriate department.",
+        "Wait here, I will call someone.",
+        "This matter can be resolved at the local police office."
+      ],
+      answer: "Please go to the local police office for further assistance. We will direct you to the appropriate department.",
+      bestAnswer: "Please go to the local police office for further assistance. We will direct you to the appropriate department.",
+      acceptableAnswers: ["This matter can be resolved at the local police office."],
+      explanation: "Câu B cung cấp hướng dẫn đầy đủ và chủ động nhất. Câu D cũng đúng nhưng chưa thể hiện sự sẵn sàng hỗ trợ dẫn đường."
     },
   ],
   3: [
