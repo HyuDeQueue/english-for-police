@@ -1,5 +1,14 @@
 import React, { useState, useMemo } from "react";
 import type { Unit } from "../../types";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search } from "lucide-react";
 
 interface SearchSidebarProps {
   lessons: Unit[];
@@ -66,46 +75,71 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   }, [query, lessons]);
 
   return (
-    <>
-      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
-      <aside className={`search-sidebar ${isOpen ? "open" : ""}`}>
-        <div className="sidebar-header">
-          <h3>🔍 Tìm kiếm</h3>
-          <button className="close-btn" onClick={onClose}>
-            ✕
-          </button>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent
+        side="right"
+        className="w-[400px] sm:w-[540px] p-0 flex flex-col bg-background shadow-2xl border-l"
+      >
+        <SheetHeader className="p-6 border-b bg-muted/20">
+          <SheetTitle className="flex items-center gap-2 font-heading text-primary">
+            <Search className="h-5 w-5" />
+            Tìm kiếm từ vựng
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="p-6">
+          <Input
+            placeholder="Nhập từ vựng hoặc mẫu câu..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-12 text-base focus-visible:ring-primary police-shadow"
+            autoFocus
+          />
         </div>
-        <input
-          type="text"
-          className="sidebar-search-input"
-          placeholder="Nhập từ vựng hoặc mẫu câu..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          autoFocus={isOpen}
-        />
-        <div className="sidebar-results">
-          {query.trim().length >= 2 && results.length === 0 && (
-            <p className="no-results">Không tìm thấy kết quả.</p>
-          )}
-          {results.map((r, i) => (
-            <div
-              key={i}
-              className="search-result-item"
-              onClick={() => {
-                onNavigateToUnit(r.unit);
-                onClose();
-              }}
-            >
-              <span className="result-type-badge">
-                {r.type === "vocabulary" ? "Từ vựng" : "Mẫu câu"}
-              </span>
-              <div className="result-primary">{r.primary}</div>
-              <div className="result-secondary">{r.secondary}</div>
-              <div className="result-unit">Tuần {r.unitId}</div>
-            </div>
-          ))}
+
+        <div className="flex-1 overflow-y-auto px-6 pb-10 custom-scrollbar">
+          <div className="space-y-4">
+            {query.trim().length >= 2 && results.length === 0 && (
+              <p className="text-center py-10 text-muted-foreground text-sm">
+                Không tìm thấy kết quả phù hợp.
+              </p>
+            )}
+
+            {results.map((r, i) => (
+              <div
+                key={i}
+                className="group p-5 rounded-xl border bg-card hover:bg-primary hover:border-primary hover:police-shadow cursor-pointer transition-all active:scale-[0.98]"
+                onClick={() => {
+                  onNavigateToUnit(r.unit);
+                  onClose();
+                }}
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <Badge
+                    variant={r.type === "vocabulary" ? "default" : "secondary"}
+                    className={`text-[10px] uppercase tracking-wider ${
+                      r.type === "vocabulary"
+                        ? "group-hover:bg-white group-hover:text-primary"
+                        : "group-hover:bg-white/20 group-hover:text-white border-none"
+                    }`}
+                  >
+                    {r.type === "vocabulary" ? "Từ vựng" : "Mẫu câu"}
+                  </Badge>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase group-hover:text-white/60">
+                    Tuần {r.unitId}
+                  </span>
+                </div>
+                <div className="font-bold text-primary text-base group-hover:text-white transition-colors">
+                  {r.primary}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1 group-hover:text-white/80 transition-colors">
+                  {r.secondary}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </aside>
-    </>
+      </SheetContent>
+    </Sheet>
   );
 };

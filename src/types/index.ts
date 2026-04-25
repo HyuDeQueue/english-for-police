@@ -63,14 +63,18 @@ export interface UserProgress {
 export interface FlaggedItem {
   unitId: number;
   type: "vocabulary" | "phrase";
-  key: string; // word or phrase text
+  key: string;
 }
 
 export interface DailyTask {
-  date: string; // YYYY-MM-DD
+  date: string;
   tasks: {
     id: string;
     label: string;
     completed: boolean;
+    current: number;
+    target: number;
   }[];
 }
+
+export type FlashcardStatus = "unseen" | "known" | "review";

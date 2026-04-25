@@ -1,5 +1,25 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { Unit, FlaggedItem } from "../../types";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  ChevronLeft,
+  Volume2,
+  Star,
+  BookOpen,
+  Video,
+  List,
+  Bookmark,
+  Zap,
+  Play,
+} from "lucide-react";
 
 interface LessonViewProps {
   unit: Unit;
@@ -12,6 +32,7 @@ interface LessonViewProps {
     key: string,
   ) => boolean;
   toggleFlag: (item: FlaggedItem) => void;
+  onPhraseAction?: () => void;
 }
 
 export const LessonView: React.FC<LessonViewProps> = ({
@@ -21,11 +42,20 @@ export const LessonView: React.FC<LessonViewProps> = ({
   onStartFlashcards,
   isFlagged,
   toggleFlag,
+  onPhraseAction,
 }) => {
-  const playAudio = (text: string, buttonEl?: HTMLButtonElement) => {
+  const playAudio = (
+    text: string,
+    buttonEl?: HTMLButtonElement,
+    isPhrase?: boolean,
+  ) => {
     if (buttonEl) {
-      buttonEl.classList.add("playing");
+      buttonEl.classList.add("text-primary", "animate-pulse");
       buttonEl.disabled = true;
+    }
+
+    if (isPhrase && onPhraseAction) {
+      onPhraseAction();
     }
 
     const utterance = new SpeechSynthesisUtterance(text);
@@ -33,7 +63,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
 
     utterance.onend = () => {
       if (buttonEl) {
-        buttonEl.classList.remove("playing");
+        buttonEl.classList.remove("text-primary", "animate-pulse");
         buttonEl.disabled = false;
       }
     };
@@ -41,368 +71,438 @@ export const LessonView: React.FC<LessonViewProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
-  const [expandedPhrases, setExpandedPhrases] = useState<Set<number>>(
-    new Set(),
-  );
   const [activeSection, setActiveSection] = useState<string>("summary");
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
-  const togglePhraseExpand = (index: number) => {
-    setExpandedPhrases((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) next.delete(index);
-      else next.add(index);
-      return next;
-    });
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
+    const element = sectionRefs.current[id];
+    if (element) {
+      const headerOffset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition =
+        elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+    }
   };
 
+  // Intersection Observer to update active TOC item on scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute("data-section");
+            if (id) setActiveSection(id);
+          }
+        });
+      },
+      { rootMargin: "-100px 0px -70% 0px" },
+    );
+
+    Object.values(sectionRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const flaggedVocab = unit.vocabulary.filter((v) =>
+    isFlagged(unit.id, "vocabulary", v.word),
+  );
+
   return (
-    <div className="view-lesson animate-fade-in">
-      <aside className="lesson-sidebar">
-        <div className="lesson-toc-sidebar">
-          <h4>Mục lục</h4>
-          <button
-            className="back-btn"
-            onClick={onBack}
-            style={{
-              width: "100%",
-              textAlign: "left",
-              marginBottom: "1rem",
-              padding: "0.5rem",
-            }}
-          >
-            ← Quay lại
-          </button>
-          <ul className="toc-list">
-            <li className="toc-item">
+    <div className="flex flex-col lg:flex-row gap-8 items-start">
+      {/* Sticky TOC Sidebar */}
+      <aside className="w-full lg:w-64 lg:sticky lg:top-24 space-y-6">
+        <div className="bg-card rounded-xl border police-shadow overflow-hidden">
+          <div className="p-4 border-b bg-muted/50">
+            <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
+              <List className="h-4 w-4 text-primary" />
+              MỤC LỤC
+            </h4>
+          </div>
+          <div className="p-2 space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-xs font-bold text-muted-foreground hover:text-primary"
+              onClick={onBack}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              QUAY LẠI
+            </Button>
+
+            {[
+              { id: "summary", label: "Tóm tắt bài học", icon: BookOpen },
+              ...(unit.videoUrl
+                ? [{ id: "video", label: "Video thực tế", icon: Video }]
+                : []),
+              { id: "vocabulary", label: "01 Từ vựng", icon: Zap },
+              { id: "phrases", label: "02 Cấu trúc", icon: List },
+              { id: "memory", label: "03 Ghi nhớ", icon: Bookmark },
+            ].map((item) => (
               <button
-                className={`toc-link ${activeSection === "summary" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveSection("summary");
-                  sectionRefs.current["summary"]?.scrollIntoView({
-                    behavior: "smooth",
-                  });
-                }}
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-3 ${
+                  activeSection === item.id
+                    ? "bg-primary text-white font-bold police-shadow"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
+                }`}
               >
-                Tóm tắt
+                <item.icon
+                  className={`h-4 w-4 ${activeSection === item.id ? "text-secondary" : ""}`}
+                />
+                {item.label}
               </button>
-            </li>
-            {unit.videoUrl && (
-              <li className="toc-item">
-                <button
-                  className={`toc-link ${activeSection === "video" ? "active" : ""}`}
-                  onClick={() => {
-                    setActiveSection("video");
-                    sectionRefs.current["video"]?.scrollIntoView({
-                      behavior: "smooth",
-                    });
-                  }}
-                >
-                  🎬 Video
-                </button>
-              </li>
-            )}
-            <li className="toc-item">
-              <button
-                className={`toc-link ${activeSection === "vocabulary" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveSection("vocabulary");
-                  sectionRefs.current["vocabulary"]?.scrollIntoView({
-                    behavior: "smooth",
-                  });
-                }}
-              >
-                01 Từ vựng
-              </button>
-            </li>
-            <li className="toc-item">
-              <button
-                className={`toc-link ${activeSection === "phrases" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveSection("phrases");
-                  sectionRefs.current["phrases"]?.scrollIntoView({
-                    behavior: "smooth",
-                  });
-                }}
-              >
-                02 Cấu trúc
-              </button>
-            </li>
-            <li className="toc-item">
-              <button
-                className={`toc-link ${activeSection === "memory" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveSection("memory");
-                  sectionRefs.current["memory"]?.scrollIntoView({
-                    behavior: "smooth",
-                  });
-                }}
-              >
-                03 Ghi nhớ
-              </button>
-            </li>
-          </ul>
+            ))}
+          </div>
         </div>
 
-        <div className="lesson-progress-sidebar">
-          <h4>Đánh dấu</h4>
-          <div>
-            {unit.vocabulary.some((v) =>
-              isFlagged(unit.id, "vocabulary", v.word),
-            ) ? (
-              unit.vocabulary.map((v, i) =>
-                isFlagged(unit.id, "vocabulary", v.word) ? (
-                  <div key={i} className="progress-item flagged" title={v.word}>
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
+        {/* Flagged Items Sidebar */}
+        <div className="bg-card rounded-xl border police-shadow overflow-hidden">
+          <div className="p-4 border-b bg-muted/50">
+            <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
+              <Star className="h-4 w-4 text-secondary fill-current" />
+              ĐANG ĐÁNH DẤU
+            </h4>
+          </div>
+          <div className="p-4">
+            {flaggedVocab.length > 0 ? (
+              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                {flaggedVocab.map((v, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-2 group cursor-default py-1"
+                    title={v.meaning}
+                  >
+                    <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0" />
+                    <span className="text-xs font-medium truncate group-hover:text-primary transition-colors">
                       {v.word}
                     </span>
                   </div>
-                ) : null,
-              )
+                ))}
+              </div>
             ) : (
-              <p style={{ fontSize: "0.8rem", opacity: "0.6", margin: "0" }}>
-                Không có từ nào được đánh dấu
+              <p className="text-xs text-muted-foreground italic">
+                Chưa có từ nào được đánh dấu ôn tập.
               </p>
             )}
           </div>
         </div>
       </aside>
 
-      <div className="lesson-main-content">
-        <div className="summary-video-grid">
+      {/* Main Content Area */}
+      <div className="flex-1 space-y-12 pb-24">
+        {/* 1. Summary & Video */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
           <section
-            className="lesson-part summary-section"
+            data-section="summary"
             ref={(el) => {
-              if (el) sectionRefs.current["summary"] = el;
+              sectionRefs.current["summary"] = el;
             }}
+            className="scroll-mt-24"
           >
-            <div className="card boost-card summary-hero">
-              <h3>Tóm tắt bài học</h3>
-              <p>{unit.memoryBoost.summary}</p>
-            </div>
+            <Card className="border-none primary-gradient police-shadow">
+              <CardHeader>
+                <CardTitle className="text-xl text-white font-heading">
+                  Tóm tắt bài học
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-white/90 leading-relaxed">
+                {unit.memoryBoost.summary}
+              </CardContent>
+            </Card>
           </section>
 
-          {unit.videoUrl ? (
+          {unit.videoUrl && (
             <section
-              className="lesson-part"
+              data-section="video"
               ref={(el) => {
-                if (el) sectionRefs.current["video"] = el;
+                sectionRefs.current["video"] = el;
               }}
+              className="scroll-mt-24"
             >
-              <div className="part-header">
-                <h2>VIDEO THỰC TẾ</h2>
-              </div>
-              <div className="video-container">
-                <iframe
-                  src={unit.videoUrl}
-                  title="Video thực tế"
-                  allowFullScreen
-                  style={{
-                    width: "100%",
-                    aspectRatio: "16/9",
-                    border: "none",
-                    borderRadius: "0.375rem",
-                  }}
-                />
-              </div>
-            </section>
-          ) : (
-            <section className="lesson-part">
-              <div className="card video-placeholder">
-                <span>🎬</span>
-                <p>Video thực tế sẽ được cập nhật sớm</p>
-              </div>
+              <Card className="overflow-hidden border-none police-shadow">
+                <div className="aspect-video relative group">
+                  <iframe
+                    src={unit.videoUrl}
+                    title="Video thực tế"
+                    allowFullScreen
+                    className="w-full h-full border-none"
+                  />
+                  <div className="absolute inset-0 bg-primary/20 pointer-events-none group-hover:opacity-0 transition-opacity flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+                      <Play className="h-6 w-6 text-white fill-current" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
             </section>
           )}
         </div>
 
+        {/* 2. Vocabulary */}
         <section
-          className="lesson-part"
+          data-section="vocabulary"
           ref={(el) => {
-            if (el) sectionRefs.current["vocabulary"] = el;
+            sectionRefs.current["vocabulary"] = el;
           }}
+          className="scroll-mt-24"
         >
-          <div className="part-header">
-            <span className="part-num">01</span>
-            <h2>TỪ VỰNG CHUYÊN NGÀNH</h2>
+          <div className="flex items-center gap-4 mb-6">
+            <Badge
+              variant="outline"
+              className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
+            >
+              01
+            </Badge>
+            <h2 className="text-2xl font-heading font-extrabold tracking-tight">
+              TỪ VỰNG CHUYÊN NGÀNH
+            </h2>
           </div>
-          <div className="grid cols-3">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {unit.vocabulary.map((v, i) => {
               const flagged = isFlagged(unit.id, "vocabulary", v.word);
               return (
-                <div
+                <Card
                   key={i}
-                  className={`card vocab-card ${flagged ? "flagged" : ""}`}
+                  className={`group relative hover:police-shadow transition-all border-l-4 ${flagged ? "border-l-secondary" : "border-l-primary/20 hover:border-l-primary"}`}
                 >
-                  <div className="vocab-word">
-                    <strong>{v.word}</strong>
-                    <div className="vocab-actions">
-                      <span className="type-tag">{v.type}</span>
-                      <button
-                        className={`flag-btn ${flagged ? "active" : ""}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xl font-bold text-primary">
+                            {v.word}
+                          </h3>
+                          <Badge variant="outline" className="text-[10px] py-0">
+                            {v.type}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {v.phonetic}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 rounded-full ${flagged ? "text-secondary" : "text-muted-foreground"}`}
+                        onClick={() =>
                           toggleFlag({
                             unitId: unit.id,
                             type: "vocabulary",
                             key: v.word,
-                          });
-                        }}
-                        title={flagged ? "Bỏ đánh dấu" : "Đánh dấu ôn lại"}
-                      >
-                        {flagged ? "⭐" : "☆"}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="phonetic">{v.phonetic}</div>
-                  <div className="meaning">{v.meaning}</div>
-                  <button
-                    className="audio-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      playAudio(v.word, e.currentTarget);
-                    }}
-                  >
-                    🔊 Nghe
-                  </button>
-                  <div className="example">
-                    <em>Ex: {v.example}</em>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section
-          className="lesson-part"
-          ref={(el) => {
-            if (el) sectionRefs.current["phrases"] = el;
-          }}
-        >
-          <div className="part-header">
-            <span className="part-num">02</span>
-            <h2>CẤU TRÚC CHUYÊN NGHIỆP</h2>
-          </div>
-          <div className="grid cols-1">
-            {unit.phrases.map((p, i) => {
-              const expanded = expandedPhrases.has(i);
-              const flagged = isFlagged(unit.id, "phrase", p.text);
-              return (
-                <div
-                  key={i}
-                  className={`card phrase-card ${flagged ? "flagged" : ""}`}
-                >
-                  <div className="phrase-main">
-                    <div className="phrase-content">
-                      <div className="phrase-text">{p.text}</div>
-                      <div className="phrase-translation">{p.translation}</div>
-                    </div>
-                    <div className="phrase-actions">
-                      <button
-                        className={`flag-btn ${flagged ? "active" : ""}`}
-                        onClick={() =>
-                          toggleFlag({
-                            unitId: unit.id,
-                            type: "phrase",
-                            key: p.text,
                           })
                         }
-                        title={flagged ? "Bỏ đánh dấu" : "Đánh dấu ôn lại"}
                       >
-                        {flagged ? "⭐" : "☆"}
-                      </button>
-                      <button
-                        className="audio-btn"
-                        onClick={(e) => {
-                          playAudio(p.text, e.currentTarget);
-                        }}
-                      >
-                        🔊
-                      </button>
-                      <button
-                        className="expand-btn"
-                        onClick={() => togglePhraseExpand(i)}
-                      >
-                        {expanded ? "▲" : "▼"} Chi tiết
-                      </button>
+                        <Star
+                          className={`h-4 w-4 ${flagged ? "fill-current" : ""}`}
+                        />
+                      </Button>
                     </div>
-                  </div>
-                  {expanded && (
-                    <div className="phrase-details animate-fade-in">
-                      <div className="phrase-context-detail">
-                        <strong>Ngữ cảnh:</strong> {p.context}
-                      </div>
-                      {p.realWorldExamples && p.realWorldExamples.length > 0 ? (
-                        <div className="real-world-examples">
-                          <strong>Ví dụ thực tế:</strong>
-                          <ul>
-                            {p.realWorldExamples.map((ex, j) => (
-                              <li key={j}>{ex}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ) : (
-                        <div className="real-world-examples">
-                          <em>
-                            Tình huống: Khi tiếp xúc với người nước ngoài trong
-                            khu vực tuần tra, sử dụng câu này để{" "}
-                            {p.context.toLowerCase()}.
-                          </em>
-                        </div>
-                      )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="font-bold text-base leading-tight">
+                      {v.meaning}
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full text-xs font-bold group-hover:bg-primary group-hover:text-white transition-all"
+                        onClick={(e) => playAudio(v.word, e.currentTarget)}
+                      >
+                        <Volume2 className="h-3 w-3 mr-1.5" />
+                        PHÁT ÂM
+                      </Button>
                     </div>
-                  )}
-                </div>
+                    <div className="bg-muted/50 p-3 rounded-lg border italic text-xs leading-relaxed">
+                      "Ex: {v.example}"
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
         </section>
 
+        {/* 3. Phrases */}
         <section
-          className="lesson-part"
+          data-section="phrases"
           ref={(el) => {
-            if (el) sectionRefs.current["memory"] = el;
+            sectionRefs.current["phrases"] = el;
           }}
+          className="scroll-mt-24"
         >
-          <div className="part-header">
-            <span className="part-num">03</span>
-            <h2>GHI NHỚ NHANH</h2>
+          <div className="flex items-center gap-4 mb-6">
+            <Badge
+              variant="outline"
+              className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
+            >
+              02
+            </Badge>
+            <h2 className="text-2xl font-heading font-extrabold tracking-tight">
+              CẤU TRÚC CHUYÊN NGHIỆP
+            </h2>
           </div>
-          <div className="grid cols-2">
-            <div className="card boost-card">
-              <h3>Cụm từ đi kèm</h3>
-              <ul className="collocation-list">
-                {unit.memoryBoost.collocations.map((c, i) => (
-                  <li key={i}>
-                    <strong>{c.verb}</strong> + {c.noun}
-                  </li>
-                ))}
-              </ul>
-            </div>
+
+          <div className="space-y-4">
+            {unit.phrases.map((p, i) => {
+              const flagged = isFlagged(unit.id, "phrase", p.text);
+              return (
+                <Card
+                  key={i}
+                  className={`overflow-hidden border-l-4 ${flagged ? "border-l-secondary" : "border-l-primary/20"}`}
+                >
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value={`item-${i}`} className="border-none">
+                      <div className="px-6 py-4 flex items-center justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-bold text-primary text-lg mb-1">
+                            {p.text}
+                          </h4>
+                          <p className="text-muted-foreground font-medium">
+                            {p.translation}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={`h-9 w-9 rounded-full ${flagged ? "text-secondary" : "text-muted-foreground"}`}
+                            onClick={() =>
+                              toggleFlag({
+                                unitId: unit.id,
+                                type: "phrase",
+                                key: p.text,
+                              })
+                            }
+                          >
+                            <Star
+                              className={`h-5 w-5 ${flagged ? "fill-current" : ""}`}
+                            />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 rounded-full hover:bg-primary hover:text-white"
+                            onClick={(e) =>
+                              playAudio(p.text, e.currentTarget, true)
+                            }
+                          >
+                            <Volume2 className="h-5 w-5" />
+                          </Button>
+                          <AccordionTrigger className="hover:no-underline p-0 ml-2" />
+                        </div>
+                      </div>
+                      <AccordionContent className="px-6 pb-6 pt-2 bg-muted/30">
+                        <div className="space-y-4 text-sm">
+                          <div className="flex gap-2">
+                            <Badge
+                              variant="outline"
+                              className="h-fit shrink-0 bg-white"
+                            >
+                              NGỮ CẢNH
+                            </Badge>
+                            <p className="leading-relaxed">{p.context}</p>
+                          </div>
+                          <div className="space-y-2">
+                            <Badge variant="outline" className="bg-white">
+                              VÍ DỤ THỰC TẾ
+                            </Badge>
+                            <ul className="list-disc pl-5 space-y-1.5 marker:text-primary">
+                              {p.realWorldExamples &&
+                              p.realWorldExamples.length > 0 ? (
+                                p.realWorldExamples.map((ex, j) => (
+                                  <li
+                                    key={j}
+                                    className="italic text-muted-foreground"
+                                  >
+                                    {ex}
+                                  </li>
+                                ))
+                              ) : (
+                                <li className="italic text-muted-foreground opacity-60">
+                                  Sử dụng trong các tình huống giao tiếp tuần
+                                  tra thực tế.
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </Card>
+              );
+            })}
           </div>
         </section>
 
-        <div className="action-row">
-          <button
-            className="secondary large-btn"
+        {/* 4. Memory Boost */}
+        <section
+          data-section="memory"
+          ref={(el) => {
+            sectionRefs.current["memory"] = el;
+          }}
+          className="scroll-mt-24"
+        >
+          <div className="flex items-center gap-4 mb-6">
+            <Badge
+              variant="outline"
+              className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
+            >
+              03
+            </Badge>
+            <h2 className="text-2xl font-heading font-extrabold tracking-tight">
+              GHI NHỚ NHANH
+            </h2>
+          </div>
+          <Card className="police-shadow border-none bg-secondary/5 overflow-hidden">
+            <CardHeader className="bg-secondary/10 border-b border-secondary/20">
+              <CardTitle className="text-lg flex items-center gap-2 text-primary">
+                <Zap className="h-5 w-5 fill-current text-secondary" />
+                Cụm từ đi kèm (Collocations)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {unit.memoryBoost.collocations.map((c, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-secondary/10 hover:border-secondary transition-colors"
+                  >
+                    <span className="font-bold text-primary">{c.verb}</span>
+                    <span className="text-muted-foreground">+</span>
+                    <span className="font-medium">{c.noun}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Action Row */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-8">
+          <Button
+            variant="outline"
+            className="flex-1 h-14 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5 rounded-xl transition-all"
             onClick={() => onStartFlashcards(unit)}
-            style={{ marginRight: "1rem" }}
           >
             ÔN TẬP FLASHCARDS
-          </button>
-          <button
-            className="primary-gradient large-btn"
+          </Button>
+          <Button
+            className="flex-1 h-14 text-lg font-bold primary-gradient police-shadow rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
             onClick={() => onStartPractice(unit)}
           >
             BẮT ĐẦU KIỂM TRA
-          </button>
+          </Button>
         </div>
       </div>
     </div>

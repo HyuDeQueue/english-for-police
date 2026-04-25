@@ -1,5 +1,10 @@
 import React from "react";
 import type { FlashcardSessionSummary } from "./FlashcardReview";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle2, XCircle, RotateCcw, BookOpen } from "lucide-react";
 
 interface FlashcardSessionResultsProps {
   summary: FlashcardSessionSummary;
@@ -11,92 +16,146 @@ export const FlashcardSessionResults: React.FC<
   FlashcardSessionResultsProps
 > = ({ summary, onRetry, onBackToLesson }) => {
   const knownDelta =
-    summary.previousKnownRate === null
+    summary.previousKnownRate === 0
       ? null
       : summary.currentKnownRate - summary.previousKnownRate;
 
   return (
-    <div className="flashcard-results-view animate-fade-in">
-      <section className="card flashcard-results-hero">
-        <div>
-          <span className="type-tag">MISSION COMPLETE</span>
-          <h2>KẾT QUẢ PHIÊN ÔN FLASHCARD</h2>
-          <p>
+    <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fade-in">
+      {/* Hero Section */}
+      <Card className="police-shadow border-none overflow-hidden text-center">
+        <div className="primary-gradient p-10 text-white">
+          <Badge className="bg-white/20 text-white border-none mb-4 px-3 py-1 font-bold">
+            MISSION COMPLETE
+          </Badge>
+          <h2 className="text-3xl font-heading font-black uppercase tracking-widest mb-2">
+            Kết quả ôn tập Flashcard
+          </h2>
+          <p className="text-white/80 font-medium">
             Bài {summary.unitId}: {summary.unitTitle}
           </p>
-          <p>
-            Deck: <strong>{summary.deckTitle}</strong>
-          </p>
+          <div className="mt-8 inline-flex flex-col items-center justify-center h-40 w-40 rounded-full bg-white/10 backdrop-blur-md border-4 border-white/20">
+            <span className="text-5xl font-black">
+              {summary.currentKnownRate}%
+            </span>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">
+                Tỷ lệ thuộc bài
+              </span>
+              {knownDelta !== null && knownDelta !== 0 && (
+                <Badge
+                  className={`border-none px-1 py-0 h-4 text-[9px] ${knownDelta > 0 ? "bg-green-400 text-green-950" : "bg-red-400 text-red-950"}`}
+                >
+                  {knownDelta > 0 ? "+" : ""}
+                  {knownDelta}%
+                </Badge>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="result-score">
-          <span className="score-val">{summary.currentKnownRate}%</span>
-          <label>TỈ LỆ THUỘC BÀI</label>
-        </div>
-      </section>
+      </Card>
 
-      <section className="flashcard-results-kpis">
-        <div className="card">
-          <label>ĐÃ REVIEW</label>
-          <strong>
-            {summary.reviewedCount}/{summary.totalCards}
-          </strong>
-        </div>
-        <div className="card">
-          <label>KNOWN</label>
-          <strong>{summary.knownCount}</strong>
-        </div>
-        <div className="card">
-          <label>NEEDS REVIEW</label>
-          <strong>{summary.reviewCount}</strong>
-        </div>
-      </section>
+      {/* KPI Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="police-shadow border-none">
+          <CardContent className="pt-6 text-center">
+            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
+              Đã review
+            </div>
+            <div className="text-3xl font-black text-primary">
+              {summary.reviewedCount}/{summary.totalCards}
+            </div>
+            <Progress
+              value={(summary.reviewedCount / summary.totalCards) * 100}
+              className="h-1.5 mt-3"
+            />
+          </CardContent>
+        </Card>
+        <Card className="police-shadow border-none border-b-4 border-b-green-500">
+          <CardContent className="pt-6 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-widest mb-1 text-green-600">
+              Đã thuộc
+            </div>
+            <div className="text-3xl font-black text-green-600">
+              {summary.knownCount}
+            </div>
+            <p className="text-[10px] font-medium text-muted-foreground mt-2 italic">
+              Làm tốt lắm!
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="police-shadow border-none border-b-4 border-b-secondary">
+          <CardContent className="pt-6 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-widest mb-1 text-secondary">
+              Cần ôn lại
+            </div>
+            <div className="text-3xl font-black text-secondary">
+              {summary.reviewCount}
+            </div>
+            <p className="text-[10px] font-medium text-muted-foreground mt-2 italic">
+              Cần cố gắng thêm
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-      <section className="card flashcard-results-trend">
-        <h3>Xu hướng hôm nay</h3>
-        <p>
-          Hiện tại: <strong>{summary.currentKnownRate}%</strong>
-          {summary.previousKnownRate !== null && (
-            <>
-              {" "}
-              | Lần trước: <strong>{summary.previousKnownRate}%</strong> | Chênh
-              lệch:{" "}
-              <strong>
-                {knownDelta && knownDelta > 0 ? `+${knownDelta}` : knownDelta}%
-              </strong>
-            </>
+      {/* Weak Cards List */}
+      <Card className="police-shadow border-none">
+        <CardHeader className="border-b bg-muted/20">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <RotateCcw className="h-5 w-5 text-secondary" />
+            Các thẻ cần chú ý
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          {summary.weakCards.length === 0 ? (
+            <div className="text-center py-10">
+              <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4 opacity-20" />
+              <p className="text-muted-foreground font-medium italic">
+                Tuyệt vời! Bạn không có thẻ nào cần ôn lại.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {summary.weakCards.map((card) => (
+                <div
+                  key={card.id}
+                  className="flex items-start gap-3 p-4 rounded-xl border-2 border-secondary/10 hover:border-secondary/30 transition-all bg-secondary/5 group"
+                >
+                  <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
+                    <XCircle className="h-4 w-4 text-secondary" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-bold text-primary group-hover:text-secondary transition-colors">
+                      {card.front}
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {card.back.split("\n")[0]}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-        </p>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="card flashcard-results-weak-list">
-        <h3>Thẻ cần ôn lại</h3>
-        {summary.weakCards.length === 0 && (
-          <p className="weak-empty">Không có thẻ yếu. Bạn đã xử lý rất tốt.</p>
-        )}
-
-        {summary.weakCards.length > 0 && (
-          <ul>
-            {summary.weakCards.map((card) => {
-              const shortBack = card.back.split("\n")[0];
-              return (
-                <li key={card.id}>
-                  <span>{card.front}</span>
-                  <small>{shortBack}</small>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <section className="flashcard-results-actions">
-        <button className="primary-gradient" onClick={onRetry}>
-          ÔN LẠI TỪ ĐẦU
-        </button>
-        <button className="secondary" onClick={onBackToLesson}>
-          QUAY LẠI BÀI HỌC
-        </button>
-      </section>
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 pt-4">
+        <Button
+          className="flex-1 h-16 text-lg font-bold primary-gradient police-shadow rounded-xl transition-all hover:scale-[1.02]"
+          onClick={onRetry}
+        >
+          <RotateCcw className="mr-2 h-6 w-6" /> ÔN LẠI TỪ ĐẦU
+        </Button>
+        <Button
+          variant="outline"
+          className="flex-1 h-16 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5 rounded-xl transition-all"
+          onClick={onBackToLesson}
+        >
+          <BookOpen className="mr-2 h-6 w-6" /> QUAY LẠI BÀI HỌC
+        </Button>
+      </div>
     </div>
   );
 };

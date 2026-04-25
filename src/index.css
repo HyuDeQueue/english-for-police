@@ -1,199 +1,127 @@
-:root {
-  /* Color Palette - The Command Briefing */
-  --primary: #002046;
-  --primary-container: #1b365d;
-  --on-primary: #ffffff;
-  --secondary: #006399;
-  --secondary-container: #67bafd;
-  --on-secondary-container: #004972;
-  --tertiary: #002142;
-  --surface: #f8f9fb;
-  --surface-container-low: #f2f4f6;
-  --surface-container-lowest: #ffffff;
-  --surface-container-highest: #e0e3e5;
-  --on-surface: #191c1e;
-  --outline-variant: rgba(196, 198, 207, 0.2);
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
 
-  /* Typography */
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Color Palette - Police Professional Theme */
+  --background: oklch(0.98 0 0);
+  --foreground: oklch(0.145 0 0);
+
+  --primary: #0e2b4a;
+  --primary-foreground: #ffffff;
+
+  --secondary: #d4af37; /* Gold/Brass */
+  --secondary-foreground: #0e2b4a;
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: oklch(0.145 0 0);
+
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: #ffffff;
+
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --ring: #0e2b4a;
+
+  --radius: 0.5rem;
+
+  /* Fonts */
   --font-authority: "Manrope", system-ui, sans-serif;
   --font-intelligence: "Inter", system-ui, sans-serif;
-
-  font-family: var(--font-intelligence);
-  line-height: 1.5;
-  font-weight: 400;
-
-  color: var(--on-surface);
-  background-color: var(--surface);
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-  overflow-x: hidden;
+.dark {
+  --background: oklch(0.14 0 0);
+  --foreground: oklch(0.98 0 0);
+
+  --primary: #1a4b7c;
+  --primary-foreground: #ffffff;
+
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0.25 0 0);
+  --input: oklch(0.25 0 0);
 }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #c7c7c7 #f3f3f3;
-}
-
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-*::-webkit-scrollbar-track {
-  background: #f3f3f3;
-}
-
-*::-webkit-scrollbar-thumb {
-  background: #c7c7c7;
-  border-radius: 999px;
-  border: 2px solid #f3f3f3;
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background: #b8b8b8;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-#root {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-h1,
-h2,
-h3,
-h4 {
-  font-family: var(--font-authority);
-  color: var(--primary);
-  margin: 0;
-}
-
-/* Layering System */
-.glass {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--outline-variant);
-}
-
-.card {
-  background: var(--surface-container-lowest);
-  border-radius: 0.375rem;
-  padding: 1.5rem;
-  transition: transform 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.card:hover {
-  background: var(--surface-container-low);
-}
-
-/* Utility Classes */
-.primary-gradient {
-  background: linear-gradient(
-    135deg,
-    var(--primary) 0%,
-    var(--primary-container) 100%
-  );
-  color: white;
-}
-
-.asymmetry-label {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  font-size: 3rem;
-  font-family: var(--font-authority);
-  color: var(--on-surface);
-  opacity: 0.1;
-  pointer-events: none;
-}
-
-button {
-  border-radius: 0.375rem;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: var(--primary);
-  color: white;
-  cursor: pointer;
-  transition: all 0.25s;
-}
-
-button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-button.secondary {
-  background-color: var(--secondary-container);
-  color: var(--on-secondary-container);
-}
-
-.progress-bar-container {
-  width: 100%;
-  height: 8px;
-  background-color: var(--surface-container-highest);
-  border-radius: 9999px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--secondary),
-    var(--secondary-container)
-  );
-  transition: width 0.3s ease;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem 2rem;
-}
-
-.lesson-page {
-  max-width: none;
-  width: 100%;
-  margin: 0;
-  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
-  min-height: calc(100vh - 60px);
-}
-
-.grid {
-  display: grid;
-  gap: 1.5rem;
-}
-
-.cols-1 {
-  grid-template-columns: 1fr;
-}
-.cols-2 {
-  grid-template-columns: repeat(2, 1fr);
-}
-.cols-3 {
-  grid-template-columns: repeat(3, minmax(320px, 1fr));
-}
-
-@media (max-width: 768px) {
-  .cols-2,
-  .cols-3 {
-    grid-template-columns: 1fr;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-intelligence);
+  --font-heading: var(--font-authority);
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@utility primary-gradient {
+  background: linear-gradient(135deg, #0e2b4a 0%, #1a4b7c 100%);
+  color: white;
+}
+
+@utility glass {
+  @apply bg-white/80 backdrop-blur-md border border-white/20;
+}
+
+@utility police-shadow {
+  box-shadow: 0 4px 20px -2px rgba(14, 43, 74, 0.15);
+}
+
+@utility animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar for Webkit */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/30;
 }

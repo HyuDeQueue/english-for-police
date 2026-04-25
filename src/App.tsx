@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { initialLessons } from "./data/lessons";
-import type { Unit, UserProgress, FlaggedItem } from "./types";
+import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
 import "./App.css";
 
 import { MainLayout } from "./components/layout/MainLayout";
@@ -57,8 +57,16 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [currentView, setCurrentView] = useState<ViewType>("home");
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
+  // Initialize states directly from hash to avoid useEffect sync warnings
+  const initialHash = parseHash();
+
+  const [currentView, setCurrentView] = useState<ViewType>(initialHash.view);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(() => {
+    if (initialHash.unitId) {
+      return lessons.find((l) => l.id === initialHash.unitId) || null;
+    }
+    return null;
+  });
   const [flashcardRound, setFlashcardRound] = useState(1);
   const [flashcardSummary, setFlashcardSummary] =
     useState<FlashcardSessionSummary | null>(null);
@@ -77,10 +85,48 @@ function App() {
   }, [lessons]);
 
   useEffect(() => {
-    syncFromHash();
     window.addEventListener("popstate", syncFromHash);
     return () => window.removeEventListener("popstate", syncFromHash);
   }, [syncFromHash]);
+
+  const [dailyTasks, setDailyTasks] = useState<DailyTask>(() => {
+    const getTodayKey = () => new Date().toISOString().split("T")[0];
+    const saved = localStorage.getItem("police_english_daily");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as DailyTask;
+        if (parsed.date === getTodayKey()) return parsed;
+      } catch (e) {
+        console.error("Failed to parse daily tasks", e);
+      }
+    }
+    return {
+      date: getTodayKey(),
+      tasks: [
+        {
+          id: "vocab",
+          label: "Ôn 5 từ vựng ngẫu nhiên",
+          completed: false,
+          current: 0,
+          target: 5,
+        },
+        {
+          id: "test",
+          label: "Hoàn thành 1 bài test nhanh",
+          completed: false,
+          current: 0,
+          target: 1,
+        },
+        {
+          id: "speak",
+          label: "Luyện nói 3 câu mẫu",
+          completed: false,
+          current: 0,
+          target: 3,
+        },
+      ],
+    };
+  });
 
   // Persist
   useEffect(() => {
@@ -90,8 +136,34 @@ function App() {
     localStorage.setItem("police_english_lessons", JSON.stringify(lessons));
   }, [lessons]);
   useEffect(() => {
-    localStorage.setItem("police_english_flagged", JSON.stringify(flaggedItems));
+    localStorage.setItem(
+      "police_english_flagged",
+      JSON.stringify(flaggedItems),
+    );
   }, [flaggedItems]);
+  useEffect(() => {
+    localStorage.setItem("police_english_daily", JSON.stringify(dailyTasks));
+  }, [dailyTasks]);
+
+  const updateDailyTask = useCallback(
+    (taskId: string, increment: number = 1) => {
+      setDailyTasks((prev) => {
+        const newTasks = prev.tasks.map((t) => {
+          if (t.id === taskId) {
+            const newCurrent = Math.min(t.target, t.current + increment);
+            return {
+              ...t,
+              current: newCurrent,
+              completed: newCurrent >= t.target,
+            };
+          }
+          return t;
+        });
+        return { ...prev, tasks: newTasks };
+      });
+    },
+    [],
+  );
 
   // Navigation helpers that update hash
   const navigate = (hash: string) => {
@@ -116,14 +188,23 @@ function App() {
   const toggleFlag = (item: FlaggedItem) => {
     setFlaggedItems((prev) => {
       const exists = prev.find(
-        (f) => f.unitId === item.unitId && f.type === item.type && f.key === item.key
+        (f) =>
+          f.unitId === item.unitId &&
+          f.type === item.type &&
+          f.key === item.key,
       );
       if (exists) return prev.filter((f) => f !== exists);
       return [...prev, item];
     });
   };
-  const isFlagged = (unitId: number, type: "vocabulary" | "phrase", key: string) =>
-    flaggedItems.some((f) => f.unitId === unitId && f.type === type && f.key === key);
+  const isFlagged = (
+    unitId: number,
+    type: "vocabulary" | "phrase",
+    key: string,
+  ) =>
+    flaggedItems.some(
+      (f) => f.unitId === unitId && f.type === type && f.key === key,
+    );
 
   const showHeaderActions = currentView === "lesson" && selectedUnit;
 
@@ -136,7 +217,9 @@ function App() {
         showHeaderActions ? () => navigateToPractice(selectedUnit!) : undefined
       }
       onStartFlashcards={
-        showHeaderActions ? () => navigateToFlashcards(selectedUnit!) : undefined
+        showHeaderActions
+          ? () => navigateToFlashcards(selectedUnit!)
+          : undefined
       }
       onToggleSearch={() => setSearchOpen((p) => !p)}
     >
@@ -145,6 +228,7 @@ function App() {
           lessons={lessons}
           progress={progress}
           flaggedItems={flaggedItems}
+          dailyTasks={dailyTasks}
           onSelectUnit={navigateToLesson}
           onStartQuickTest={navigateToQuickTest}
         />
@@ -158,6 +242,7 @@ function App() {
           onStartFlashcards={navigateToFlashcards}
           isFlagged={isFlagged}
           toggleFlag={toggleFlag}
+          onPhraseAction={() => updateDailyTask("speak", 1)}
         />
       )}
 
@@ -169,7 +254,7 @@ function App() {
             const newProgress = {
               ...progress,
               completedUnits: Array.from(
-                new Set([...progress.completedUnits, selectedUnit.id])
+                new Set([...progress.completedUnits, selectedUnit.id]),
               ),
             };
             setProgress(newProgress);
@@ -186,6 +271,7 @@ function App() {
           onComplete={(summary) => {
             setFlashcardSummary(summary);
             setCurrentView("flashcardResults");
+            updateDailyTask("vocab", summary.knownCount);
           }}
         />
       )}
@@ -200,8 +286,8 @@ function App() {
               localStorage.removeItem(
                 getFlashcardStatusStorageKey(
                   selectedUnit.id,
-                  flashcardSummary.deckMode
-                )
+                  flashcardSummary.deckMode,
+                ),
               );
               setFlashcardRound((prev) => prev + 1);
               setCurrentView("flashcards");
@@ -214,6 +300,7 @@ function App() {
           lessons={lessons}
           completedUnitIds={progress.completedUnits}
           onBack={navigateToHome}
+          onComplete={() => updateDailyTask("test", 1)}
         />
       )}
 

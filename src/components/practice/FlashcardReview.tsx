@@ -1,239 +1,177 @@
-import React, { useEffect, useMemo, useState } from "react";
-import type { Unit } from "../../types";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import type { Unit, FlashcardStatus } from "../../types";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
-  type FlashcardDeckMode,
-  getFlashcardHistoryStorageKey,
-  getFlashcardStatusStorageKey,
-} from "./flashcardStorage";
-
-interface FlashcardReviewProps {
-  unit: Unit;
-  onBack: () => void;
-  onComplete: (summary: FlashcardSessionSummary) => void;
-}
-
-type ReviewStatus = "unseen" | "known" | "review";
-
-interface FlashcardItem {
-  id: string;
-  front: string;
-  back: string;
-  hint?: string;
-  category: "Vocabulary" | "Phrase";
-}
-
-interface FlashcardAttemptRecord {
-  timestamp: string;
-  knownCount: number;
-  reviewCount: number;
-  reviewedCount: number;
-  totalCards: number;
-}
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  ArrowLeft,
+} from "lucide-react";
 
 export interface FlashcardSessionSummary {
   unitId: number;
   unitTitle: string;
-  deckMode: FlashcardDeckMode;
-  deckTitle: string;
   totalCards: number;
   reviewedCount: number;
   knownCount: number;
   reviewCount: number;
   completionPercent: number;
-  weakCards: FlashcardItem[];
+  weakCards: { id: string; front: string; back: string }[];
   currentKnownRate: number;
-  previousKnownRate: number | null;
+  previousKnownRate: number;
+  deckMode: "vocabulary" | "sentencePatterns";
 }
 
-const loadStatusByCard = (unitId: number, deckMode: FlashcardDeckMode) => {
-  try {
-    const saved = localStorage.getItem(
-      getFlashcardStatusStorageKey(unitId, deckMode),
-    );
-    return saved ? (JSON.parse(saved) as Record<string, ReviewStatus>) : {};
-  } catch {
-    return {};
-  }
-};
-
-const loadAttemptHistory = (unitId: number, deckMode: FlashcardDeckMode) => {
-  try {
-    const saved = localStorage.getItem(
-      getFlashcardHistoryStorageKey(unitId, deckMode),
-    );
-    return saved ? (JSON.parse(saved) as FlashcardAttemptRecord[]) : [];
-  } catch {
-    return [];
-  }
-};
+export interface FlashcardReviewProps {
+  unit: Unit;
+  onBack: () => void;
+  onComplete: (summary: FlashcardSessionSummary) => void;
+}
 
 export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   unit,
   onBack,
   onComplete,
 }) => {
-  const initialDeckMode: FlashcardDeckMode =
-    unit.id === 1 ? "sentencePatterns" : "vocabulary";
-  const [deckMode, setDeckMode] = useState<FlashcardDeckMode>(initialDeckMode);
-
-  const cards = useMemo<FlashcardItem[]>(() => {
-    const vocabularyCards = unit.vocabulary.slice(0, 10).map((word, index) => ({
-      id: `vocab-${index}`,
-      front: word.word,
-      back: `${word.meaning}\n\nVí dụ: ${word.example}`,
-      hint: `${word.phonetic} • ${word.type}`,
-      category: "Vocabulary" as const,
-    }));
-
-    const phraseCards = unit.phrases.slice(0, 10).map((phrase, index) => ({
-      id: `phrase-${index}`,
-      front: phrase.text,
-      back: `${phrase.translation}\n\nNgữ cảnh: ${phrase.context}`,
-      category: "Phrase" as const,
-    }));
-
-    return deckMode === "vocabulary" ? vocabularyCards : phraseCards;
-  }, [unit, deckMode]);
-
+  const [deckMode, setDeckMode] = useState<"vocabulary" | "sentencePatterns">(
+    "vocabulary",
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [transitionDirection, setTransitionDirection] = useState<
-    "next" | "prev"
-  >("next");
-  const [statusByCard, setStatusByCard] = useState<
-    Record<string, ReviewStatus>
-  >(() => loadStatusByCard(unit.id, initialDeckMode));
+
+  const cards = useMemo(
+    () =>
+      deckMode === "vocabulary"
+        ? unit.vocabulary.map((v) => ({
+            id: `v-${v.word}`,
+            front: v.word,
+            back: `${v.meaning}\n\n[${v.phonetic}]\n${v.example}`,
+            category: "Vocabulary",
+            hint: v.type,
+          }))
+        : unit.phrases.map((p) => ({
+            id: `p-${p.text}`,
+            front: p.text,
+            back: `${p.translation}\n\n${p.context}`,
+            category: "Phrase",
+            hint: "", // Ensure hint exists
+          })),
+    [deckMode, unit.vocabulary, unit.phrases],
+  );
+
+  const [cardStatuses, setCardStatuses] = useState<{
+    [key: string]: FlashcardStatus;
+  }>(() => {
+    const key = `police_fc_status_${unit.id}`;
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  useEffect(() => {
+    const key = `police_fc_status_${unit.id}`;
+    localStorage.setItem(key, JSON.stringify(cardStatuses));
+  }, [cardStatuses, unit.id]);
 
   const currentCard = cards[currentIndex];
+  const currentStatus = cardStatuses[currentCard?.id] || "unseen";
 
-  const reviewedCount = useMemo(
-    () => Object.values(statusByCard).filter((s) => s !== "unseen").length,
-    [statusByCard],
-  );
-  const knownCount = useMemo(
-    () => Object.values(statusByCard).filter((s) => s === "known").length,
-    [statusByCard],
-  );
-  const reviewCount = useMemo(
-    () => Object.values(statusByCard).filter((s) => s === "review").length,
-    [statusByCard],
-  );
-
-  useEffect(() => {
-    localStorage.setItem(
-      getFlashcardStatusStorageKey(unit.id, deckMode),
-      JSON.stringify(statusByCard),
-    );
-  }, [statusByCard, unit.id, deckMode]);
-
-  useEffect(() => {
-    if (!currentCard) {
-      return;
+  const nextCard = useCallback(() => {
+    if (currentIndex < cards.length - 1) {
+      setIsFlipped(false);
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1);
+      }, 50);
     }
+  }, [currentIndex, cards.length]);
 
-    const handleKeydown = (event: KeyboardEvent) => {
-      if (event.key === " ") {
-        event.preventDefault();
+  const previousCard = useCallback(() => {
+    if (currentIndex > 0) {
+      setIsFlipped(false);
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev - 1);
+      }, 50);
+    }
+  }, [currentIndex]);
+
+  const markCard = useCallback(
+    (status: FlashcardStatus) => {
+      const cardId = cards[currentIndex]?.id;
+      if (!cardId) return;
+      setCardStatuses((prev) => ({ ...prev, [cardId]: status }));
+      if (currentIndex < cards.length - 1) {
+        setTimeout(nextCard, 200);
+      }
+    },
+    [currentIndex, cards, nextCard],
+  );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
         setIsFlipped((prev) => !prev);
-      }
-
-      if (event.key === "ArrowRight") {
-        setTransitionDirection("next");
-        setCurrentIndex((prev) => Math.min(prev + 1, cards.length - 1));
-        setIsFlipped(false);
-      }
-
-      if (event.key === "ArrowLeft") {
-        setTransitionDirection("prev");
-        setCurrentIndex((prev) => Math.max(prev - 1, 0));
-        setIsFlipped(false);
-      }
-
-      if (event.key.toLowerCase() === "k") {
-        setStatusByCard((prev) => ({ ...prev, [currentCard.id]: "known" }));
-      }
-
-      if (event.key.toLowerCase() === "r") {
-        setStatusByCard((prev) => ({ ...prev, [currentCard.id]: "review" }));
+      } else if (e.code === "ArrowRight") {
+        nextCard();
+      } else if (e.code === "ArrowLeft") {
+        previousCard();
+      } else if (e.code === "KeyK") {
+        markCard("known");
+      } else if (e.code === "KeyR") {
+        markCard("review");
       }
     };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nextCard, previousCard, markCard]);
 
-    window.addEventListener("keydown", handleKeydown);
-    return () => window.removeEventListener("keydown", handleKeydown);
-  }, [cards.length, currentCard]);
-
-  const markCard = (status: Exclude<ReviewStatus, "unseen">) => {
-    if (!currentCard) {
-      return;
-    }
-    setStatusByCard((prev) => ({ ...prev, [currentCard.id]: status }));
-  };
-
-  const changeDeckMode = (nextMode: FlashcardDeckMode) => {
-    if (nextMode === deckMode) {
-      return;
-    }
-    setDeckMode(nextMode);
+  const changeDeckMode = (mode: "vocabulary" | "sentencePatterns") => {
+    setDeckMode(mode);
     setCurrentIndex(0);
     setIsFlipped(false);
-    setTransitionDirection("next");
-    setStatusByCard(loadStatusByCard(unit.id, nextMode));
   };
 
-  const nextCard = () => {
-    setTransitionDirection("next");
-    setCurrentIndex((prev) => Math.min(prev + 1, cards.length - 1));
-    setIsFlipped(false);
-  };
-
-  const previousCard = () => {
-    setTransitionDirection("prev");
-    setCurrentIndex((prev) => Math.max(prev - 1, 0));
-    setIsFlipped(false);
-  };
-
-  const completionPercent =
-    cards.length > 0 ? Math.round((reviewedCount / cards.length) * 100) : 0;
-  const currentStatus = currentCard
-    ? (statusByCard[currentCard.id] ?? "unseen")
-    : "unseen";
+  const reviewedCount = Object.keys(cardStatuses).filter((id) =>
+    cards.some((c) => c.id === id),
+  ).length;
+  const knownCount = Object.values(cardStatuses).filter(
+    (s) => s === "known",
+  ).length;
+  const reviewCount = Object.values(cardStatuses).filter(
+    (s) => s === "review",
+  ).length;
+  const completionPercent = (reviewedCount / cards.length) * 100;
 
   const finishSession = () => {
+    const weakCards = cards
+      .filter((c) => cardStatuses[c.id] === "review")
+      .map((c) => ({ id: c.id, front: c.front, back: c.back }));
+
     const totalCards = cards.length;
-    const currentKnownRate =
-      totalCards > 0 ? Math.round((knownCount / totalCards) * 100) : 0;
-    const weakCards = cards.filter(
-      (card) => statusByCard[card.id] === "review",
-    );
+    const currentKnownRate = (knownCount / totalCards) * 100;
 
-    const history = loadAttemptHistory(unit.id, deckMode);
-    const previous = history.length > 0 ? history[history.length - 1] : null;
-    const previousKnownRate =
-      previous && previous.totalCards > 0
-        ? Math.round((previous.knownCount / previous.totalCards) * 100)
-        : null;
-
-    const currentAttempt: FlashcardAttemptRecord = {
-      timestamp: new Date().toISOString(),
-      knownCount,
-      reviewCount,
-      reviewedCount,
-      totalCards,
-    };
+    const sessionKey = `police_fc_history_${unit.id}`;
+    const previousHistory = localStorage.getItem(sessionKey);
+    const previousKnownRate = previousHistory
+      ? JSON.parse(previousHistory).knownRate
+      : 0;
 
     localStorage.setItem(
-      getFlashcardHistoryStorageKey(unit.id, deckMode),
-      JSON.stringify([...history, currentAttempt].slice(-15)),
+      sessionKey,
+      JSON.stringify({
+        date: new Date().toISOString(),
+        knownRate: currentKnownRate,
+      }),
     );
 
     onComplete({
       unitId: unit.id,
       unitTitle: unit.title,
-      deckMode,
-      deckTitle:
-        deckMode === "vocabulary"
-          ? "PHẦN 1 - TỪ VỰNG"
-          : "PHẦN 2 - MẪU CÂU (2.1)",
       totalCards,
       reviewedCount,
       knownCount,
@@ -242,205 +180,267 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       weakCards,
       currentKnownRate,
       previousKnownRate,
+      deckMode,
     });
   };
 
   if (!currentCard) {
     return (
-      <div className="flashcards-view animate-fade-in">
-        <button className="back-btn" onClick={onBack}>
-          ← QUAY LẠI PHẦN HỌC
-        </button>
-        <section className="card flashcards-footer">
-          <h3>Không có flashcard cho bài này</h3>
-          <p>Hãy thêm từ vựng hoặc mẫu câu để bắt đầu phiên ôn tập.</p>
-        </section>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <HelpCircle className="h-16 w-16 text-muted-foreground opacity-20 mb-4" />
+        <h3 className="text-xl font-bold">Không có flashcard cho bài này</h3>
+        <p className="text-muted-foreground mt-2">
+          Hãy thêm dữ liệu để bắt đầu ôn tập.
+        </p>
+        <Button variant="outline" onClick={onBack} className="mt-6">
+          Quay lại
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="flashcards-view animate-fade-in">
-      <button className="back-btn" onClick={onBack}>
-        ← QUAY LẠI PHẦN HỌC
-      </button>
+    <div className="max-w-3xl mx-auto space-y-8 py-4">
+      <Button variant="ghost" size="sm" onClick={onBack} className="group">
+        <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+        QUAY LẠI PHẦN HỌC
+      </Button>
 
-      <section className="card flashcards-header">
-        <div>
-          <span className="type-tag">CHỦ ĐỀ {unit.id}</span>
-          <h2>ÔN TẬP NHANH KIỂU QUIZLET</h2>
-          <p>{unit.title}</p>
-          <div className="flashcard-deck-tabs">
-            <button
-              className={`deck-tab ${deckMode === "vocabulary" ? "active" : ""}`}
-              onClick={() => changeDeckMode("vocabulary")}
-            >
-              PHẦN 1 - TỪ VỰNG
-            </button>
-            <button
-              className={`deck-tab ${deckMode === "sentencePatterns" ? "active" : ""}`}
-              onClick={() => changeDeckMode("sentencePatterns")}
-            >
-              PHẦN 2 - MẪU CÂU
-            </button>
-          </div>
+      {/* Header & Stats */}
+      <Card className="police-shadow border-none overflow-hidden">
+        <div className="primary-gradient p-6">
+          <Badge variant="outline" className="text-white border-white/20 mb-2">
+            CHỦ ĐỀ {unit.id}
+          </Badge>
+          <h2 className="text-2xl font-heading font-bold text-white uppercase tracking-tight">
+            ÔN TẬP NHANH QUIZLET
+          </h2>
+          <p className="text-white/70 text-sm mt-1">{unit.title}</p>
         </div>
-        <div className="flashcards-stats">
-          <div>
-            <label>ĐÃ XEM</label>
-            <strong>
-              {reviewedCount}/{cards.length}
-            </strong>
-          </div>
-          <div>
-            <label>THUỘC BÀI</label>
-            <strong>{knownCount}</strong>
-          </div>
-          <div>
-            <label>CẦN ÔN LẠI</label>
-            <strong>{reviewCount}</strong>
-          </div>
-        </div>
-      </section>
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-6 justify-between items-center">
+            <div className="flex bg-muted p-1 rounded-xl w-full sm:w-auto">
+              <Button
+                variant={deckMode === "vocabulary" ? "default" : "ghost"}
+                size="sm"
+                className="flex-1 sm:flex-none rounded-lg text-xs font-bold"
+                onClick={() => changeDeckMode("vocabulary")}
+              >
+                PHẦN 1 - TỪ VỰNG
+              </Button>
+              <Button
+                variant={deckMode === "sentencePatterns" ? "default" : "ghost"}
+                size="sm"
+                className="flex-1 sm:flex-none rounded-lg text-xs font-bold"
+                onClick={() => changeDeckMode("sentencePatterns")}
+              >
+                PHẦN 2 - MẪU CÂU
+              </Button>
+            </div>
 
-      <div className="progress-bar-container flashcards-progress">
-        <div
-          className="progress-bar-fill"
-          style={{ width: `${completionPercent}%` }}
-        />
-      </div>
+            <div className="flex gap-8 text-center shrink-0">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  ĐÃ XEM
+                </p>
+                <p className="text-lg font-black text-primary">
+                  {reviewedCount}/{cards.length}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-green-600">
+                  THUỘC BÀI
+                </p>
+                <p className="text-lg font-black text-green-600">
+                  {knownCount}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-secondary">
+                  CẦN ÔN
+                </p>
+                <p className="text-lg font-black text-secondary">
+                  {reviewCount}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 space-y-1.5">
+            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <span>Tiến độ phiên học</span>
+              <span>{Math.round(completionPercent)}%</span>
+            </div>
+            <Progress
+              value={completionPercent}
+              className="h-1.5 bg-muted [&>div]:primary-gradient"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-      <section className="flashcard-stage">
+      {/* Flashcard Stage */}
+      <div className="relative flex items-center justify-center gap-4 py-10 min-h-[400px]">
         {/* Left Arrow */}
-        <button
-          className="flashcard-nav"
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden sm:flex h-12 w-12 rounded-full police-shadow shrink-0 hover:bg-primary hover:text-white disabled:opacity-30"
           onClick={previousCard}
           disabled={currentIndex === 0}
-          title="Thẻ trước (←)"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+
+        {/* Card Shell */}
+        <div className="flex-1 max-w-[640px] perspective-[1400px]">
+          <div
+            key={currentCard?.id}
+            className="relative w-full aspect-16/10 cursor-pointer transition-transform duration-700 transform-3d"
+            style={{
+              transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+            }}
+            onClick={() => setIsFlipped((prev) => !prev)}
           >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
+            {/* Front Face */}
+            <Card className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8 backface-hidden police-shadow border-2 border-primary/10 group-hover:border-primary/20 transition-colors bg-card">
+              <div className="absolute top-4 right-4 text-xs font-bold text-muted-foreground opacity-30">
+                {currentIndex + 1} / {cards.length}
+              </div>
+              <Badge
+                variant="secondary"
+                className="mb-4 bg-primary/10 text-primary border-none"
+              >
+                {currentCard?.category === "Vocabulary" ? "TỪ VỰNG" : "MẪU CÂU"}
+              </Badge>
+              <h3 className="text-3xl sm:text-4xl font-heading font-black text-center text-primary leading-tight">
+                {currentCard?.front}
+              </h3>
+              {currentCard?.hint && (
+                <p className="mt-4 text-muted-foreground font-medium italic">
+                  ({currentCard.hint})
+                </p>
+              )}
+              <div className="mt-8 text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                Chạm để xem đáp án
+              </div>
+            </Card>
 
-        <div
-          key={currentCard.id}
-          className={`flashcard-shell ${isFlipped ? "flipped" : ""}`}
-          data-direction={transitionDirection}
-          onClick={() => setIsFlipped((prev) => !prev)}
-        >
-          {/* Card index indicator */}
-          <div className="flashcard-index">
-            {currentIndex + 1} / {cards.length}
-          </div>
-
-          <div className="flashcard-face flashcard-front">
-            <span
-              className={`flashcard-badge ${currentCard.category === "Vocabulary" ? "badge-vocab" : "badge-phrase"}`}
+            {/* Back Face */}
+            <Card
+              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8 backface-hidden police-shadow border-2 border-secondary/20 bg-secondary/5"
+              style={{
+                transform: "rotateY(180deg)",
+              }}
             >
-              {currentCard.category === "Vocabulary" ? "TỪ VỰNG" : "MẪU CÂU"}
-            </span>
-            <h3>{currentCard.front}</h3>
-            {currentCard.hint && (
-              <p className="flashcard-hint">{currentCard.hint}</p>
-            )}
-          </div>
-
-          <div className="flashcard-face flashcard-back">
-            <span className="flashcard-badge badge-back">MẶT SAU</span>
-            <h3>Nghĩa &amp; ngữ cảnh</h3>
-            {currentCard.back
-              .split("\n")
-              .filter(Boolean)
-              .map((line, index) => (
-                <p key={index}>{line}</p>
-              ))}
+              <Badge
+                variant="outline"
+                className="mb-4 border-secondary text-secondary font-bold"
+              >
+                MẶT SAU
+              </Badge>
+              <div className="space-y-4 text-center overflow-y-auto max-h-full scrollbar-none">
+                {currentCard?.back
+                  .split("\n")
+                  .filter(Boolean)
+                  .map((line, idx) => (
+                    <p
+                      key={idx}
+                      className={`${idx === 0 ? "text-xl sm:text-2xl font-bold text-primary" : "text-sm sm:text-base text-muted-foreground leading-relaxed"}`}
+                    >
+                      {line}
+                    </p>
+                  ))}
+              </div>
+              <div className="mt-8 text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
+                Chạm để quay lại mặt trước
+              </div>
+            </Card>
           </div>
         </div>
 
         {/* Right Arrow */}
-        <button
-          className="flashcard-nav"
+        <Button
+          variant="outline"
+          size="icon"
+          className="hidden sm:flex h-12 w-12 rounded-full police-shadow shrink-0 hover:bg-primary hover:text-white disabled:opacity-30"
           onClick={nextCard}
           disabled={currentIndex === cards.length - 1}
-          title="Thẻ tiếp theo (→)"
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-      </section>
+          <ChevronRight className="h-6 w-6" />
+        </Button>
+      </div>
 
-      <section className="flashcards-actions">
-        {/* Flip button */}
-        <button
-          className="fc-action-btn fc-flip"
+      {/* Action Buttons */}
+      <div className="flex flex-wrap justify-center gap-4">
+        <Button
+          variant="outline"
+          className="h-12 w-40 font-bold border-2"
           onClick={() => setIsFlipped((prev) => !prev)}
-          title="Lật thẻ (Space)"
         >
+          <RotateCcw className="mr-2 h-4 w-4" />
           {isFlipped ? "Ẩn đáp án" : "Lật thẻ"}
-        </button>
+        </Button>
 
-        {/* Mark Known */}
-        <button
-          className={`fc-action-btn fc-known ${currentStatus === "known" ? "active" : ""}`}
+        <Button
+          variant="secondary"
+          className={`h-12 px-8 font-bold text-green-700 bg-green-50 hover:bg-green-100 border-2 border-green-200 transition-all ${currentStatus === "known" ? "ring-2 ring-green-500 bg-green-100" : ""}`}
           onClick={() => markCard("known")}
-          title="Đánh dấu đã thuộc (K)"
         >
-          Thuộc bài (K)
-        </button>
+          <CheckCircle2 className="mr-2 h-4 w-4" />
+          Đã thuộc (K)
+        </Button>
 
-        {/* Mark Review */}
-        <button
-          className={`fc-action-btn fc-review ${currentStatus === "review" ? "active" : ""}`}
+        <Button
+          variant="secondary"
+          className={`h-12 px-8 font-bold text-secondary-foreground bg-secondary/10 hover:bg-secondary/20 border-2 border-secondary/20 transition-all ${currentStatus === "review" ? "ring-2 ring-secondary bg-secondary/20" : ""}`}
           onClick={() => markCard("review")}
-          title="Đánh dấu cần ôn lại (R)"
         >
-          Cần ôn lại (R)
-        </button>
+          <AlertCircle className="mr-2 h-4 w-4" />
+          Cần ôn (R)
+        </Button>
 
-        {/* Finish */}
-        <button
-          className="fc-action-btn fc-finish"
+        <Button
+          variant="default"
+          className="h-12 px-8 font-bold primary-gradient border-none disabled:opacity-50"
           disabled={reviewedCount < cards.length}
           onClick={finishSession}
-          title={
-            reviewedCount < cards.length
-              ? `Còn ${cards.length - reviewedCount} thẻ chưa xem`
-              : "Hoàn tất phiên ôn"
-          }
         >
-          Hoàn tất phiên ôn
-        </button>
-      </section>
+          Hoàn tất
+        </Button>
+      </div>
 
-      <section className="card flashcards-footer">
-        <p>
-          Phím tắt: <kbd>Space</kbd> lật thẻ &nbsp;·&nbsp;
-          <kbd>←</kbd>
-          <kbd>→</kbd> chuyển thẻ &nbsp;·&nbsp;
-          <kbd>K</kbd> đánh dấu thuộc &nbsp;·&nbsp;
-          <kbd>R</kbd> đánh dấu cần ôn
-        </p>
-      </section>
+      {/* Key Hints */}
+      <div className="text-center">
+        <div className="inline-flex items-center gap-4 px-4 py-2 bg-muted/50 rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+          <span>
+            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
+              Space
+            </kbd>{" "}
+            Lật
+          </span>
+          <span>
+            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
+              ←
+            </kbd>
+            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
+              →
+            </kbd>{" "}
+            Chuyển
+          </span>
+          <span>
+            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
+              K
+            </kbd>{" "}
+            Thuộc
+          </span>
+          <span>
+            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
+              R
+            </kbd>{" "}
+            Ôn
+          </span>
+        </div>
+      </div>
     </div>
   );
 };
