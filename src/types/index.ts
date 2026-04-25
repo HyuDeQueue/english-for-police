@@ -62,8 +62,9 @@ export interface UserProgress {
 
 export interface FlaggedItem {
   unitId: number;
-  type: "vocabulary" | "phrase";
+  type: "vocabulary" | "phrase" | "collocation";
   key: string;
+  data?: unknown;
 }
 
 export interface DailyTask {

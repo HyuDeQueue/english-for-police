@@ -14,8 +14,9 @@ import {
   type FlashcardSessionSummary,
 } from "./components/practice/FlashcardReview";
 import { FlashcardSessionResults } from "./components/practice/FlashcardSessionResults";
-import { getFlashcardStatusStorageKey } from "./components/practice/flashcardStorage";
 import { QuickTest } from "./components/practice/QuickTest";
+import { NotebookSidebar } from "./components/layout/NotebookSidebar";
+import { getFlashcardStatusStorageKey } from "./components/practice/flashcardStorage";
 
 type ViewType =
   | "home"
@@ -71,6 +72,7 @@ function App() {
   const [flashcardSummary, setFlashcardSummary] =
     useState<FlashcardSessionSummary | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notebookOpen, setNotebookOpen] = useState(false);
 
   // Sync from hash on mount & popstate
   const syncFromHash = useCallback(() => {
@@ -82,6 +84,9 @@ function App() {
     } else if (view === "home") {
       setSelectedUnit(null);
     }
+    // Close sidebars on navigation
+    setSearchOpen(false);
+    setNotebookOpen(false);
   }, [lessons]);
 
   useEffect(() => {
@@ -184,44 +189,19 @@ function App() {
   };
   const navigateToQuickTest = () => navigate("/quicktest");
 
-  // Flagging
-  const toggleFlag = (item: FlaggedItem) => {
-    setFlaggedItems((prev) => {
-      const exists = prev.find(
-        (f) =>
-          f.unitId === item.unitId &&
-          f.type === item.type &&
-          f.key === item.key,
-      );
-      if (exists) return prev.filter((f) => f !== exists);
-      return [...prev, item];
-    });
-  };
-  const isFlagged = (
-    unitId: number,
-    type: "vocabulary" | "phrase",
-    key: string,
-  ) =>
-    flaggedItems.some(
-      (f) => f.unitId === unitId && f.type === type && f.key === key,
-    );
-
-  const showHeaderActions = currentView === "lesson" && selectedUnit;
+  // Toggle Sidebar Handlers
+  const toggleSearch = () => setSearchOpen((prev) => !prev);
+  const toggleNotebook = () => setNotebookOpen((prev) => !prev);
 
   return (
     <MainLayout
       selectedUnitId={selectedUnit?.id}
       onLogoClick={navigateToHome}
-      showPracticeButtons={!!showHeaderActions}
-      onStartPractice={
-        showHeaderActions ? () => navigateToPractice(selectedUnit!) : undefined
-      }
-      onStartFlashcards={
-        showHeaderActions
-          ? () => navigateToFlashcards(selectedUnit!)
-          : undefined
-      }
-      onToggleSearch={() => setSearchOpen((p) => !p)}
+      showPracticeButtons={currentView === "lesson"}
+      onStartPractice={() => selectedUnit && navigateToPractice(selectedUnit)}
+      onStartFlashcards={() => selectedUnit && navigateToFlashcards(selectedUnit)}
+      onToggleSearch={toggleSearch}
+      onToggleNotebook={toggleNotebook}
     >
       {currentView === "home" && (
         <HomeView
@@ -240,9 +220,30 @@ function App() {
           onBack={navigateToHome}
           onStartPractice={navigateToPractice}
           onStartFlashcards={navigateToFlashcards}
-          isFlagged={isFlagged}
-          toggleFlag={toggleFlag}
+          flaggedItems={flaggedItems}
           onPhraseAction={() => updateDailyTask("speak", 1)}
+          toggleFlag={(item) => {
+            const exists = flaggedItems.find(
+              (f) =>
+                f.unitId === item.unitId &&
+                f.type === item.type &&
+                f.key === item.key,
+            );
+            if (exists) {
+              setFlaggedItems(
+                flaggedItems.filter(
+                  (f) =>
+                    !(
+                      f.unitId === item.unitId &&
+                      f.type === item.type &&
+                      f.key === item.key
+                    ),
+                ),
+              );
+            } else {
+              setFlaggedItems([...flaggedItems, item]);
+            }
+          }}
         />
       )}
 
@@ -316,6 +317,26 @@ function App() {
         lessons={lessons}
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
+        onNavigateToUnit={navigateToLesson}
+      />
+
+      <NotebookSidebar
+        lessons={lessons}
+        flaggedItems={flaggedItems}
+        isOpen={notebookOpen}
+        onClose={() => setNotebookOpen(false)}
+        onRemoveItem={(item) => {
+          setFlaggedItems(
+            flaggedItems.filter(
+              (f) =>
+                !(
+                  f.unitId === item.unitId &&
+                  f.type === item.type &&
+                  f.key === item.key
+                ),
+            ),
+          );
+        }}
         onNavigateToUnit={navigateToLesson}
       />
     </MainLayout>

@@ -16,9 +16,9 @@ import {
   BookOpen,
   Video,
   List,
-  Bookmark,
   Zap,
   Play,
+  BookMarked,
 } from "lucide-react";
 
 interface LessonViewProps {
@@ -26,11 +26,7 @@ interface LessonViewProps {
   onBack: () => void;
   onStartPractice: (unit: Unit) => void;
   onStartFlashcards: (unit: Unit) => void;
-  isFlagged: (
-    unitId: number,
-    type: "vocabulary" | "phrase",
-    key: string,
-  ) => boolean;
+  flaggedItems: FlaggedItem[];
   toggleFlag: (item: FlaggedItem) => void;
   onPhraseAction?: () => void;
 }
@@ -40,10 +36,18 @@ export const LessonView: React.FC<LessonViewProps> = ({
   onBack,
   onStartPractice,
   onStartFlashcards,
-  isFlagged,
+  flaggedItems,
   toggleFlag,
   onPhraseAction,
 }) => {
+  const isFlagged = (
+    unitId: number,
+    type: "vocabulary" | "phrase" | "collocation",
+    key: string,
+  ) =>
+    flaggedItems.some(
+      (f) => f.unitId === unitId && f.type === type && f.key === key,
+    );
   const playAudio = (
     text: string,
     buttonEl?: HTMLButtonElement,
@@ -111,10 +115,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const flaggedVocab = unit.vocabulary.filter((v) =>
-    isFlagged(unit.id, "vocabulary", v.word),
-  );
-
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Sticky TOC Sidebar */}
@@ -143,7 +143,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
                 : []),
               { id: "vocabulary", label: "01 Từ vựng", icon: Zap },
               { id: "phrases", label: "02 Cấu trúc", icon: List },
-              { id: "memory", label: "03 Ghi nhớ", icon: Bookmark },
+              { id: "memory", label: "03 Ghi nhớ", icon: BookMarked },
             ].map((item) => (
               <button
                 key={item.id}
@@ -163,33 +163,39 @@ export const LessonView: React.FC<LessonViewProps> = ({
           </div>
         </div>
 
-        {/* Flagged Items Sidebar */}
+        {/* Flagged Items Sidebar (Mini Notebook) */}
         <div className="bg-card rounded-xl border police-shadow overflow-hidden">
           <div className="p-4 border-b bg-muted/50">
             <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
-              <Star className="h-4 w-4 text-secondary fill-current" />
-              ĐANG ĐÁNH DẤU
+              <BookMarked className="h-4 w-4 text-secondary" />
+              SỔ TAY BÀI HỌC
             </h4>
           </div>
           <div className="p-4">
-            {flaggedVocab.length > 0 ? (
-              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
-                {flaggedVocab.map((v, i) => (
+            {flaggedItems.filter(f => f.unitId === unit.id).length > 0 ? (
+              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                {flaggedItems
+                  .filter(f => f.unitId === unit.id)
+                  .map((f, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2 group cursor-default py-1"
-                    title={v.meaning}
+                    className="flex items-start gap-2 group cursor-default py-1 border-b border-dashed last:border-0 pb-2"
                   >
-                    <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0" />
-                    <span className="text-xs font-medium truncate group-hover:text-primary transition-colors">
-                      {v.word}
-                    </span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0 mt-1.5" />
+                    <div className="space-y-0.5 min-w-0">
+                       <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
+                          {f.type === "vocabulary" ? "Từ vựng" : f.type === "phrase" ? "Mẫu câu" : "Công thức"}
+                       </p>
+                       <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
+                          {f.key}
+                       </p>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic">
-                Chưa có từ nào được đánh dấu ôn tập.
+                Chưa có mục nào được lưu vào sổ tay.
               </p>
             )}
           </div>
@@ -473,16 +479,36 @@ export const LessonView: React.FC<LessonViewProps> = ({
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {unit.memoryBoost.collocations.map((c, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 p-3 bg-white rounded-lg border border-secondary/10 hover:border-secondary transition-colors"
-                  >
-                    <span className="font-bold text-primary">{c.verb}</span>
-                    <span className="text-muted-foreground">+</span>
-                    <span className="font-medium">{c.noun}</span>
-                  </div>
-                ))}
+                {unit.memoryBoost.collocations.map((c, i) => {
+                  const key = `${c.verb} ${c.noun}`;
+                  const flagged = isFlagged(unit.id, "collocation", key);
+                  return (
+                    <div
+                      key={i}
+                      className={`flex items-center justify-between p-3 bg-white rounded-lg border transition-all ${flagged ? "border-secondary bg-secondary/5" : "border-secondary/10 hover:border-secondary"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-primary">{c.verb}</span>
+                        <span className="text-muted-foreground">+</span>
+                        <span className="font-medium">{c.noun}</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-7 w-7 rounded-full ${flagged ? "text-secondary" : "text-muted-foreground hover:text-secondary"}`}
+                        onClick={() =>
+                          toggleFlag({
+                            unitId: unit.id,
+                            type: "collocation",
+                            key: key,
+                          })
+                        }
+                      >
+                        <BookMarked className={`h-4 w-4 ${flagged ? "fill-current" : ""}`} />
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

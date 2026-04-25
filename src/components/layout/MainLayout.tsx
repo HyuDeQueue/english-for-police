@@ -1,6 +1,5 @@
-import React from "react";
+import { Search, BookMarked } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
 
 interface MainLayoutProps {
   selectedUnitId?: number;
@@ -9,6 +8,7 @@ interface MainLayoutProps {
   onStartPractice?: () => void;
   onStartFlashcards?: () => void;
   onToggleSearch?: () => void;
+  onToggleNotebook?: () => void;
   children: React.ReactNode;
 }
 
@@ -19,6 +19,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onStartPractice,
   onStartFlashcards,
   onToggleSearch,
+  onToggleNotebook,
   children,
 }) => {
   return (
@@ -67,6 +68,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               title="Tìm kiếm từ vựng"
             >
               <Search className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/10 rounded-full"
+              onClick={onToggleNotebook}
+              title="Mở Sổ tay cá nhân"
+            >
+              <BookMarked className="h-5 w-5" />
             </Button>
           </div>
         </div>
