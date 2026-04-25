@@ -31,6 +31,34 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  overflow-x: hidden;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c7c7c7 #f3f3f3;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f3f3f3;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c7c7c7;
+  border-radius: 999px;
+  border: 2px solid #f3f3f3;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #b8b8b8;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -140,6 +168,14 @@ button.secondary {
   padding: 1rem 2rem;
 }
 
+.lesson-page {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+  min-height: calc(100vh - 60px);
+}
+
 .grid {
   display: grid;
   gap: 1.5rem;
@@ -152,7 +188,7 @@ button.secondary {
   grid-template-columns: repeat(2, 1fr);
 }
 .cols-3 {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
 }
 
 @media (max-width: 768px) {

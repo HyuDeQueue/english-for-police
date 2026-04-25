@@ -80,7 +80,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     const vocabularyCards = unit.vocabulary.slice(0, 10).map((word, index) => ({
       id: `vocab-${index}`,
       front: word.word,
-      back: `${word.meaning}\n\nEx: ${word.example}`,
+      back: `${word.meaning}\n\nVí dụ: ${word.example}`,
       hint: `${word.phonetic} • ${word.type}`,
       category: "Vocabulary" as const,
     }));
@@ -88,7 +88,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     const phraseCards = unit.phrases.slice(0, 10).map((phrase, index) => ({
       id: `phrase-${index}`,
       front: phrase.text,
-      back: `${phrase.translation}\n\nContext: ${phrase.context}`,
+      back: `${phrase.translation}\n\nNgữ cảnh: ${phrase.context}`,
       category: "Phrase" as const,
     }));
 
@@ -232,8 +232,8 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       deckMode,
       deckTitle:
         deckMode === "vocabulary"
-          ? "PART 1 - VOCABULARY"
-          : "PART 2 - SENTENCE PATTERNS (2.1)",
+          ? "PHẦN 1 - TỪ VỰNG"
+          : "PHẦN 2 - MẪU CÂU (2.1)",
       totalCards,
       reviewedCount,
       knownCount,
@@ -267,7 +267,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
       <section className="card flashcards-header">
         <div>
-          <span className="type-tag">TOPIC {unit.id}</span>
+          <span className="type-tag">CHỦ ĐỀ {unit.id}</span>
           <h2>ÔN TẬP NHANH KIỂU QUIZLET</h2>
           <p>{unit.title}</p>
           <div className="flashcard-deck-tabs">
@@ -275,19 +275,19 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
               className={`deck-tab ${deckMode === "vocabulary" ? "active" : ""}`}
               onClick={() => changeDeckMode("vocabulary")}
             >
-              PART 1 - VOCABULARY
+              PHẦN 1 - TỪ VỰNG
             </button>
             <button
               className={`deck-tab ${deckMode === "sentencePatterns" ? "active" : ""}`}
               onClick={() => changeDeckMode("sentencePatterns")}
             >
-              PART 2 - SENTENCE PATTERNS (2.1)
+              PHẦN 2 - MẪU CÂU
             </button>
           </div>
         </div>
         <div className="flashcards-stats">
           <div>
-            <label>ĐÃ REVIEW</label>
+            <label>ĐÃ XEM</label>
             <strong>
               {reviewedCount}/{cards.length}
             </strong>
@@ -311,12 +311,25 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
       </div>
 
       <section className="flashcard-stage">
+        {/* Left Arrow */}
         <button
           className="flashcard-nav"
           onClick={previousCard}
           disabled={currentIndex === 0}
+          title="Thẻ trước (←)"
         >
-          ←
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
 
         <div
@@ -325,64 +338,107 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
           data-direction={transitionDirection}
           onClick={() => setIsFlipped((prev) => !prev)}
         >
+          {/* Card index indicator */}
+          <div className="flashcard-index">
+            {currentIndex + 1} / {cards.length}
+          </div>
+
           <div className="flashcard-face flashcard-front">
-            <span className="flashcard-badge">{currentCard.category}</span>
+            <span
+              className={`flashcard-badge ${currentCard.category === "Vocabulary" ? "badge-vocab" : "badge-phrase"}`}
+            >
+              {currentCard.category === "Vocabulary" ? "TỪ VỰNG" : "MẪU CÂU"}
+            </span>
             <h3>{currentCard.front}</h3>
-            {currentCard.hint && <p>{currentCard.hint}</p>}
-            <small>Nhấn vào thẻ hoặc phím Space để lật</small>
+            {currentCard.hint && (
+              <p className="flashcard-hint">{currentCard.hint}</p>
+            )}
           </div>
 
           <div className="flashcard-face flashcard-back">
-            <span className="flashcard-badge">MẶT SAU</span>
-            <h3>Nghĩa và ngữ cảnh</h3>
-            {currentCard.back.split("\n").map((line, index) => (
-              <p key={index}>{line}</p>
-            ))}
+            <span className="flashcard-badge badge-back">MẶT SAU</span>
+            <h3>Nghĩa &amp; ngữ cảnh</h3>
+            {currentCard.back
+              .split("\n")
+              .filter(Boolean)
+              .map((line, index) => (
+                <p key={index}>{line}</p>
+              ))}
           </div>
         </div>
 
+        {/* Right Arrow */}
         <button
           className="flashcard-nav"
           onClick={nextCard}
           disabled={currentIndex === cards.length - 1}
+          title="Thẻ tiếp theo (→)"
         >
-          →
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </section>
 
       <section className="flashcards-actions">
+        {/* Flip button */}
         <button
-          className="secondary"
+          className="fc-action-btn fc-flip"
           onClick={() => setIsFlipped((prev) => !prev)}
+          title="Lật thẻ (Space)"
         >
-          {isFlipped ? "ẨN ĐÁP ÁN" : "REVEAL / LẬT THẺ"}
+          {isFlipped ? "Ẩn đáp án" : "Lật thẻ"}
         </button>
+
+        {/* Mark Known */}
         <button
-          className={`mark-btn known ${currentStatus === "known" ? "active" : ""}`}
+          className={`fc-action-btn fc-known ${currentStatus === "known" ? "active" : ""}`}
           onClick={() => markCard("known")}
+          title="Đánh dấu đã thuộc (K)"
         >
-          MARK KNOWN (K)
+          Thuộc bài (K)
         </button>
+
+        {/* Mark Review */}
         <button
-          className={`mark-btn review ${currentStatus === "review" ? "active" : ""}`}
+          className={`fc-action-btn fc-review ${currentStatus === "review" ? "active" : ""}`}
           onClick={() => markCard("review")}
+          title="Đánh dấu cần ôn lại (R)"
         >
-          MARK REVIEW (R)
+          Cần ôn lại (R)
         </button>
+
+        {/* Finish */}
         <button
-          className="primary-gradient finish-session-btn"
+          className="fc-action-btn fc-finish"
           disabled={reviewedCount < cards.length}
           onClick={finishSession}
+          title={
+            reviewedCount < cards.length
+              ? `Còn ${cards.length - reviewedCount} thẻ chưa xem`
+              : "Hoàn tất phiên ôn"
+          }
         >
-          HOÀN TẤT PHIÊN ÔN
+          Hoàn tất phiên ôn
         </button>
       </section>
 
       <section className="card flashcards-footer">
         <p>
-          Điều hướng nhanh: <strong>Space</strong> lật thẻ, <strong>←/→</strong>{" "}
-          chuyển thẻ, <strong>K</strong> đánh dấu thuộc, <strong>R</strong> đánh
-          dấu cần ôn.
+          Phím tắt: <kbd>Space</kbd> lật thẻ &nbsp;·&nbsp;
+          <kbd>←</kbd>
+          <kbd>→</kbd> chuyển thẻ &nbsp;·&nbsp;
+          <kbd>K</kbd> đánh dấu thuộc &nbsp;·&nbsp;
+          <kbd>R</kbd> đánh dấu cần ôn
         </p>
       </section>
     </div>

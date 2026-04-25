@@ -1,4 +1,6 @@
 @import "./styles/app/layout.css";
 @import "./styles/app/flashcards.css";
 @import "./styles/app/practice.css";
+@import "./styles/app/lesson-layout.css";
 @import "./styles/app/responsive.css";
+@import "./styles/app/home-layout.css";

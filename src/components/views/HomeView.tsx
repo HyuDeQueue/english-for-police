@@ -39,12 +39,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
   useEffect(() => {
     localStorage.setItem("police_english_daily", JSON.stringify(dailyTasks));
   }, [dailyTasks]);
+  const [tasksExpanded, setTasksExpanded] = useState(true);
 
   const toggleDailyTask = (taskId: string) => {
     setDailyTasks((prev) => ({
       ...prev,
       tasks: prev.tasks.map((t) =>
-        t.id === taskId ? { ...t, completed: !t.completed } : t
+        t.id === taskId ? { ...t, completed: !t.completed } : t,
       ),
     }));
   };
@@ -72,19 +73,56 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Daily Tasks */}
       <div className="card daily-tasks-card">
-        <h3>📋 Nhiệm vụ hôm nay</h3>
-        <div className="daily-tasks-list">
-          {dailyTasks.tasks.map((task) => (
-            <label key={task.id} className={`daily-task-item ${task.completed ? "done" : ""}`}>
-              <input
-                type="checkbox"
-                checked={task.completed}
-                onChange={() => toggleDailyTask(task.id)}
-              />
-              <span>{task.label}</span>
-            </label>
-          ))}
+        <h3> Nhiệm vụ hôm nay</h3>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1rem",
+          }}
+        >
+          <span style={{ fontSize: "0.9rem", opacity: 0.7 }}>
+            {completedCount}/{dailyTasks.tasks.length} hoàn thành
+          </span>
+          <button
+            onClick={() => setTasksExpanded(!tasksExpanded)}
+            style={{
+              background: "var(--surface-container-highest)",
+              border: "1px solid var(--outline-variant)",
+              color: "var(--primary)",
+              padding: "0.35rem 0.75rem",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+            }}
+          >
+            {tasksExpanded ? "▲ Ẩn" : "▼ Hiển thị"}
+          </button>
         </div>
+        {tasksExpanded && (
+          <div className="daily-tasks-list">
+            {dailyTasks.tasks.map((task) => (
+              <label
+                key={task.id}
+                className={`daily-task-item ${task.completed ? "done" : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={task.completed}
+                  disabled
+                  onChange={() => toggleDailyTask(task.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleDailyTask(task.id);
+                  }}
+                />
+                <span>{task.label}</span>
+              </label>
+            ))}
+          </div>
+        )}
         <div className="daily-progress">
           <div className="progress-bar-container">
             <div
@@ -100,18 +138,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Flagged Items */}
       {flaggedItems.length > 0 && (
         <div className="card flagged-summary-card">
-          <h3>🚩 Từ cần ôn lại ({flaggedItems.length})</h3>
-          <div className="flagged-chips">
-            {flaggedItems.slice(0, 8).map((item, i) => (
-              <span key={i} className="flagged-chip">
-                {item.key}
-              </span>
-            ))}
-            {flaggedItems.length > 8 && (
-              <span className="flagged-chip more">
-                +{flaggedItems.length - 8}
-              </span>
-            )}
+          <h3>Từ cần ôn lại ({flaggedItems.length})</h3>
+          <div className="flagged-chips-scroll">
+            <div className="flagged-chips">
+              {flaggedItems.map((item, i) => (
+                <span key={i} className="flagged-chip">
+                  {item.key}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -119,7 +154,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Quick Test Button */}
       {progress.completedUnits.length > 0 && (
         <button className="quick-test-btn secondary" onClick={onStartQuickTest}>
-          ⚡ Bài test nhanh — Ôn lại từ đã học
+          Bài test nhanh — Ôn lại từ đã học
         </button>
       )}
 
@@ -142,7 +177,9 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <div
                 className="progress-bar-fill"
                 style={{
-                  width: progress.completedUnits.includes(unit.id) ? "100%" : "0%",
+                  width: progress.completedUnits.includes(unit.id)
+                    ? "100%"
+                    : "0%",
                 }}
               />
             </div>

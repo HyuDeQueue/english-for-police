@@ -37,13 +37,13 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                   className="header-action-btn"
                   onClick={onStartFlashcards}
                 >
-                  📖 Ôn tập
+                  Ôn tập
                 </button>
                 <button
                   className="header-action-btn primary-gradient"
                   onClick={onStartPractice}
                 >
-                  ✍️ Kiểm tra
+                  Kiểm tra
                 </button>
               </>
             )}
@@ -58,7 +58,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </header>
 
-      <main className="container">{children}</main>
+      <main className={selectedUnitId ? "container lesson-page" : "container"}>
+        {children}
+      </main>
     </div>
   );
 };
