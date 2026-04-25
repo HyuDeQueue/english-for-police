@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import type { Unit, FlashcardStatus } from "../../types";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
-  ArrowLeft,
-} from "lucide-react";
+import { ArrowLeft, Volume2, X, Check, Undo2, Keyboard } from "lucide-react";
 
 export interface FlashcardSessionSummary {
   unitId: number;
@@ -51,16 +40,21 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
         ? unit.vocabulary.map((v) => ({
             id: `v-${v.word}`,
             front: v.word,
-            back: `${v.meaning}\n\n[${v.phonetic}]\n${v.example}`,
+            back: v.meaning,
+            phonetic: v.phonetic,
+            example: v.example,
             category: "Vocabulary",
             hint: v.type,
+            type: "vocabulary" as const,
           }))
         : unit.phrases.map((p) => ({
             id: `p-${p.text}`,
             front: p.text,
-            back: `${p.translation}\n\n${p.context}`,
+            back: p.translation,
+            context: p.context,
             category: "Phrase",
-            hint: "", // Ensure hint exists
+            hint: "Phrase",
+            type: "phrase" as const,
           })),
     [deckMode, unit.vocabulary, unit.phrases],
   );
@@ -73,16 +67,18 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     return saved ? JSON.parse(saved) : {};
   });
 
+  const [sessionHistory, setSessionHistory] = useState<number[]>([]);
+
   useEffect(() => {
     const key = `police_fc_status_${unit.id}`;
     localStorage.setItem(key, JSON.stringify(cardStatuses));
   }, [cardStatuses, unit.id]);
 
   const currentCard = cards[currentIndex];
-  const currentStatus = cardStatuses[currentCard?.id] || "unseen";
 
   const nextCard = useCallback(() => {
     if (currentIndex < cards.length - 1) {
+      setSessionHistory((prev) => [...prev, currentIndex]);
       setIsFlipped(false);
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
@@ -90,357 +86,341 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     }
   }, [currentIndex, cards.length]);
 
-  const previousCard = useCallback(() => {
-    if (currentIndex > 0) {
+  const undoLast = () => {
+    if (sessionHistory.length > 0) {
+      const lastIndex = sessionHistory[sessionHistory.length - 1];
+      setSessionHistory((prev) => prev.slice(0, -1));
       setIsFlipped(false);
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev - 1);
-      }, 50);
+      setCurrentIndex(lastIndex);
     }
-  }, [currentIndex]);
+  };
 
   const markCard = useCallback(
     (status: FlashcardStatus) => {
-      const cardId = cards[currentIndex]?.id;
-      if (!cardId) return;
-      setCardStatuses((prev) => ({ ...prev, [cardId]: status }));
-      if (currentIndex < cards.length - 1) {
-        setTimeout(nextCard, 200);
+      setCardStatuses((prev) => ({
+        ...prev,
+        [currentCard.id]: status,
+      }));
+      if (currentIndex === cards.length - 1) {
+        // Complete session
+        const knownCount =
+          Object.values(cardStatuses).filter((s) => s === "known").length +
+          (status === "known" ? 1 : 0);
+        const reviewCount =
+          Object.values(cardStatuses).filter((s) => s === "review").length +
+          (status === "review" ? 1 : 0);
+
+        const summary: FlashcardSessionSummary = {
+          unitId: unit.id,
+          unitTitle: unit.title,
+          totalCards: cards.length,
+          reviewedCount: cards.length,
+          knownCount,
+          reviewCount,
+          completionPercent: Math.round((knownCount / cards.length) * 100),
+          weakCards: cards
+            .filter(
+              (c) =>
+                cardStatuses[c.id] === "review" ||
+                (c.id === currentCard.id && status === "review"),
+            )
+            .map((c) => ({ id: c.id, front: c.front, back: c.back })),
+          currentKnownRate: Math.round((knownCount / cards.length) * 100),
+          previousKnownRate: 0, // Would need more tracking
+          deckMode,
+        };
+        onComplete(summary);
+      } else {
+        nextCard();
       }
     },
-    [currentIndex, cards, nextCard],
+    [
+      currentCard,
+      currentIndex,
+      cards,
+      cardStatuses,
+      unit,
+      onComplete,
+      nextCard,
+      deckMode,
+    ],
   );
 
+  const playAudio = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         e.preventDefault();
         setIsFlipped((prev) => !prev);
       } else if (e.code === "ArrowRight") {
-        nextCard();
-      } else if (e.code === "ArrowLeft") {
-        previousCard();
-      } else if (e.code === "KeyK") {
         markCard("known");
-      } else if (e.code === "KeyR") {
+      } else if (e.code === "ArrowLeft") {
         markCard("review");
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextCard, previousCard, markCard]);
+  }, [markCard]);
 
-  const changeDeckMode = (mode: "vocabulary" | "sentencePatterns") => {
-    setDeckMode(mode);
-    setCurrentIndex(0);
-    setIsFlipped(false);
-  };
-
-  const reviewedCount = Object.keys(cardStatuses).filter((id) =>
-    cards.some((c) => c.id === id),
-  ).length;
-  const knownCount = Object.values(cardStatuses).filter(
-    (s) => s === "known",
-  ).length;
-  const reviewCount = Object.values(cardStatuses).filter(
-    (s) => s === "review",
-  ).length;
-  const completionPercent = (reviewedCount / cards.length) * 100;
-
-  const finishSession = () => {
-    const weakCards = cards
-      .filter((c) => cardStatuses[c.id] === "review")
-      .map((c) => ({ id: c.id, front: c.front, back: c.back }));
-
-    const totalCards = cards.length;
-    const currentKnownRate = (knownCount / totalCards) * 100;
-
-    const sessionKey = `police_fc_history_${unit.id}`;
-    const previousHistory = localStorage.getItem(sessionKey);
-    const previousKnownRate = previousHistory
-      ? JSON.parse(previousHistory).knownRate
-      : 0;
-
-    localStorage.setItem(
-      sessionKey,
-      JSON.stringify({
-        date: new Date().toISOString(),
-        knownRate: currentKnownRate,
-      }),
+  const stats = useMemo(() => {
+    const currentCardIds = new Set(cards.map((c) => c.id));
+    const relevantStatuses = Object.entries(cardStatuses).filter(([id]) =>
+      currentCardIds.has(id),
     );
 
-    onComplete({
-      unitId: unit.id,
-      unitTitle: unit.title,
-      totalCards,
-      reviewedCount,
-      knownCount,
-      reviewCount,
-      completionPercent,
-      weakCards,
-      currentKnownRate,
-      previousKnownRate,
-      deckMode,
-    });
-  };
+    return {
+      learning:
+        cards.length -
+        relevantStatuses.filter((item) => item[1] === "known").length,
+      known: relevantStatuses.filter((item) => item[1] === "known").length,
+    };
+  }, [cards, cardStatuses]);
 
-  if (!currentCard) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <HelpCircle className="h-16 w-16 text-muted-foreground opacity-20 mb-4" />
-        <h3 className="text-xl font-bold">Không có flashcard cho bài này</h3>
-        <p className="text-muted-foreground mt-2">
-          Hãy thêm dữ liệu để bắt đầu ôn tập.
-        </p>
-        <Button variant="outline" onClick={onBack} className="mt-6">
-          Quay lại
-        </Button>
-      </div>
-    );
-  }
+  if (!currentCard) return null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 py-4">
-      <Button variant="ghost" size="sm" onClick={onBack} className="group">
-        <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-        QUAY LẠI PHẦN HỌC
-      </Button>
-
-      {/* Header & Stats */}
-      <Card className="police-shadow border-none overflow-hidden">
-        <div className="primary-gradient p-6">
-          <Badge variant="outline" className="text-white border-white/20 mb-2">
-            CHỦ ĐỀ {unit.id}
-          </Badge>
-          <h2 className="text-2xl font-heading font-bold text-white uppercase tracking-tight">
-            ÔN TẬP NHANH QUIZLET
-          </h2>
-          <p className="text-white/70 text-sm mt-1">{unit.title}</p>
-        </div>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-6 justify-between items-center">
-            <div className="flex bg-muted p-1 rounded-xl w-full sm:w-auto">
-              <Button
-                variant={deckMode === "vocabulary" ? "default" : "ghost"}
-                size="sm"
-                className="flex-1 sm:flex-none rounded-lg text-xs font-bold"
-                onClick={() => changeDeckMode("vocabulary")}
-              >
-                PHẦN 1 - TỪ VỰNG
-              </Button>
-              <Button
-                variant={deckMode === "sentencePatterns" ? "default" : "ghost"}
-                size="sm"
-                className="flex-1 sm:flex-none rounded-lg text-xs font-bold"
-                onClick={() => changeDeckMode("sentencePatterns")}
-              >
-                PHẦN 2 - MẪU CÂU
-              </Button>
-            </div>
-
-            <div className="flex gap-8 text-center shrink-0">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  ĐÃ XEM
-                </p>
-                <p className="text-lg font-black text-primary">
-                  {reviewedCount}/{cards.length}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-green-600">
-                  THUỘC BÀI
-                </p>
-                <p className="text-lg font-black text-green-600">
-                  {knownCount}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-secondary">
-                  CẦN ÔN
-                </p>
-                <p className="text-lg font-black text-secondary">
-                  {reviewCount}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="mt-6 space-y-1.5">
-            <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              <span>Tiến độ phiên học</span>
-              <span>{Math.round(completionPercent)}%</span>
-            </div>
-            <Progress
-              value={completionPercent}
-              className="h-1.5 bg-muted [&>div]:primary-gradient"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Flashcard Stage */}
-      <div className="relative flex items-center justify-center gap-4 py-10 min-h-[400px]">
-        {/* Left Arrow */}
+    <div className="flex flex-col items-center overflow-x-hidden py-3">
+      {/* Header */}
+      <div className="w-full max-w-3xl flex items-center justify-between mb-6">
         <Button
-          variant="outline"
-          size="icon"
-          className="hidden sm:flex h-12 w-12 rounded-full police-shadow shrink-0 hover:bg-primary hover:text-white disabled:opacity-30"
-          onClick={previousCard}
-          disabled={currentIndex === 0}
+          variant="ghost"
+          className="text-muted-foreground hover:text-primary"
+          onClick={onBack}
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Quay lại bài học
         </Button>
-
-        {/* Card Shell */}
-        <div className="flex-1 max-w-[640px] perspective-[1400px]">
-          <div
-            key={currentCard?.id}
-            className="relative w-full aspect-16/10 cursor-pointer transition-transform duration-700 transform-3d"
-            style={{
-              transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+        <div className="flex bg-muted p-1 rounded-lg">
+          <Button
+            variant={deckMode === "vocabulary" ? "secondary" : "ghost"}
+            size="sm"
+            className={`text-xs font-bold ${deckMode === "vocabulary" ? "bg-white shadow-sm" : ""}`}
+            onClick={() => {
+              setDeckMode("vocabulary");
+              setCurrentIndex(0);
+              setIsFlipped(false);
             }}
-            onClick={() => setIsFlipped((prev) => !prev)}
           >
-            {/* Front Face */}
-            <Card className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8 backface-hidden police-shadow border-2 border-primary/10 group-hover:border-primary/20 transition-colors bg-card">
-              <div className="absolute top-4 right-4 text-xs font-bold text-muted-foreground opacity-30">
-                {currentIndex + 1} / {cards.length}
-              </div>
-              <Badge
-                variant="secondary"
-                className="mb-4 bg-primary/10 text-primary border-none"
+            Từ vựng
+          </Button>
+          <Button
+            variant={deckMode === "sentencePatterns" ? "secondary" : "ghost"}
+            size="sm"
+            className={`text-xs font-bold ${deckMode === "sentencePatterns" ? "bg-white shadow-sm" : ""}`}
+            onClick={() => {
+              setDeckMode("sentencePatterns");
+              setCurrentIndex(0);
+              setIsFlipped(false);
+            }}
+          >
+            Mẫu câu
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Row */}
+      <div className="w-full max-w-3xl flex justify-between mb-4 px-2">
+        <div className="flex items-center gap-3">
+          <div className="h-7 w-7 rounded-full border-2 border-orange-500 flex items-center justify-center text-orange-500 font-bold text-xs">
+            {stats.learning}
+          </div>
+          <span className="text-orange-500 font-bold text-xs uppercase tracking-wider">
+            Đang học
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-emerald-600 font-bold text-xs uppercase tracking-wider">
+            Đã thuộc
+          </span>
+          <div className="h-7 w-7 rounded-full border-2 border-emerald-400 flex items-center justify-center text-emerald-600 font-bold text-xs">
+            {stats.known}
+          </div>
+        </div>
+      </div>
+
+      {/* Flashcard Container */}
+      <div
+        className="w-full max-w-3xl aspect-16/10 relative group cursor-pointer perspective-1000"
+        onClick={() => setIsFlipped(!isFlipped)}
+      >
+        <div
+          className={`relative w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? "rotate-y-180" : ""}`}
+        >
+          {/* Front Side */}
+          <div className="absolute inset-0 backface-hidden bg-[#2e3856] rounded-2xl police-shadow flex flex-col p-6 overflow-hidden border border-white/5">
+            <div className="flex justify-between items-start">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white/40 hover:text-white hover:bg-white/10 h-8 w-8 invisible"
               >
-                {currentCard?.category === "Vocabulary" ? "TỪ VỰNG" : "MẪU CÂU"}
-              </Badge>
-              <h3 className="text-3xl sm:text-4xl font-heading font-black text-center text-primary leading-tight">
-                {currentCard?.front}
-              </h3>
-              {currentCard?.hint && (
-                <p className="mt-4 text-muted-foreground font-medium italic">
-                  ({currentCard.hint})
+                <div className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white/40 hover:text-white hover:bg-white/10 h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playAudio(currentCard.front);
+                }}
+              >
+                <Volume2 className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-8">
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white mb-3">
+                {currentCard.front}
+              </h2>
+              {"phonetic" in currentCard && currentCard.phonetic && (
+                <p className="text-white/40 text-lg font-mono">
+                  {currentCard.phonetic}
                 </p>
               )}
-              <div className="mt-8 text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                Chạm để xem đáp án
-              </div>
-            </Card>
+            </div>
 
-            {/* Back Face */}
-            <Card
-              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8 backface-hidden police-shadow border-2 border-secondary/20 bg-secondary/5"
-              style={{
-                transform: "rotateY(180deg)",
-              }}
-            >
-              <Badge
-                variant="outline"
-                className="mb-4 border-secondary text-secondary font-bold"
+            {/* Shortcut Banner */}
+            <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/5 border-t border-white/5 flex items-center justify-center gap-3 text-xs font-medium">
+              <Keyboard className="h-4 w-4 text-white/40" />
+              <span className="text-white/40 font-bold uppercase tracking-wider text-[10px]">
+                Phím tắt
+              </span>
+              <span className="text-white/60">Bấm</span>
+              <span className="px-2 py-0.5 bg-white/10 rounded border border-white/20 text-[10px] font-mono text-white">
+                Space
+              </span>
+              <span className="text-white/60">hoặc chạm vào thẻ để lật</span>
+            </div>
+          </div>
+
+          {/* Back Side */}
+          <div className="absolute inset-0 backface-hidden rotate-y-180 bg-[#2e3856] rounded-2xl police-shadow flex flex-col p-6 overflow-hidden border border-white/5">
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white/40 hover:text-white hover:bg-white/10 h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playAudio(currentCard.back);
+                }}
               >
-                MẶT SAU
-              </Badge>
-              <div className="space-y-4 text-center overflow-y-auto max-h-full scrollbar-none">
-                {currentCard?.back
-                  .split("\n")
-                  .filter(Boolean)
-                  .map((line, idx) => (
-                    <p
-                      key={idx}
-                      className={`${idx === 0 ? "text-xl sm:text-2xl font-bold text-primary" : "text-sm sm:text-base text-muted-foreground leading-relaxed"}`}
-                    >
-                      {line}
-                    </p>
-                  ))}
+                <Volume2 className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-8 overflow-y-auto custom-scrollbar">
+              <h3 className="text-2xl md:text-4xl font-bold text-emerald-400 mb-4">
+                {currentCard.back}
+              </h3>
+              {"example" in currentCard && currentCard.example && (
+                <p className="text-white/60 text-base italic max-w-xl">
+                  "{currentCard.example}"
+                </p>
+              )}
+              {"context" in currentCard && currentCard.context && (
+                <p className="text-white/60 text-base italic max-w-xl">
+                  "{currentCard.context}"
+                </p>
+              )}
+            </div>
+
+            {/* Shortcut Banner Back */}
+            <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/5 border-t border-white/5 flex items-center justify-center gap-3 text-xs font-medium">
+              <Keyboard className="h-4 w-4 text-white/40" />
+              <span className="text-white/40 font-bold uppercase tracking-wider text-[10px]">
+                Phím tắt
+              </span>
+              <span className="text-white/60">Bấm</span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20 text-[10px] font-mono text-white">
+                  ←
+                </span>
+                <span className="text-white/40 italic">để học lại hoặc</span>
+                <span className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20 text-[10px] font-mono text-white">
+                  →
+                </span>
+                <span className="text-white/40 italic">nếu đã thuộc</span>
               </div>
-              <div className="mt-8 text-[10px] font-bold text-muted-foreground/40 uppercase tracking-widest">
-                Chạm để quay lại mặt trước
-              </div>
-            </Card>
+            </div>
           </div>
         </div>
-
-        {/* Right Arrow */}
-        <Button
-          variant="outline"
-          size="icon"
-          className="hidden sm:flex h-12 w-12 rounded-full police-shadow shrink-0 hover:bg-primary hover:text-white disabled:opacity-30"
-          onClick={nextCard}
-          disabled={currentIndex === cards.length - 1}
-        >
-          <ChevronRight className="h-6 w-6" />
-        </Button>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap justify-center gap-4">
-        <Button
-          variant="outline"
-          className="h-12 w-40 font-bold border-2"
-          onClick={() => setIsFlipped((prev) => !prev)}
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          {isFlipped ? "Ẩn đáp án" : "Lật thẻ"}
-        </Button>
+      {/* Bottom Controls */}
+      <div className="w-full max-w-3xl mt-6 flex items-center justify-center gap-12 relative">
+        <div className="flex items-center gap-6">
+          <Button
+            size="icon"
+            className="h-14 w-14 rounded-full bg-orange-500/10 hover:bg-orange-500/20 border-2 border-orange-500/20 text-orange-500 hover:scale-110 transition-transform"
+            onClick={(e) => {
+              e.stopPropagation();
+              markCard("review");
+            }}
+          >
+            <X className="h-7 w-7" />
+          </Button>
+          <Button
+            size="icon"
+            className="h-14 w-14 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border-2 border-emerald-500/20 text-emerald-500 hover:scale-110 transition-transform"
+            onClick={(e) => {
+              e.stopPropagation();
+              markCard("known");
+            }}
+          >
+            <Check className="h-7 w-7" />
+          </Button>
+        </div>
 
-        <Button
-          variant="secondary"
-          className={`h-12 px-8 font-bold text-green-700 bg-green-50 hover:bg-green-100 border-2 border-green-200 transition-all ${currentStatus === "known" ? "ring-2 ring-green-500 bg-green-100" : ""}`}
-          onClick={() => markCard("known")}
-        >
-          <CheckCircle2 className="mr-2 h-4 w-4" />
-          Đã thuộc (K)
-        </Button>
-
-        <Button
-          variant="secondary"
-          className={`h-12 px-8 font-bold text-secondary-foreground bg-secondary/10 hover:bg-secondary/20 border-2 border-secondary/20 transition-all ${currentStatus === "review" ? "ring-2 ring-secondary bg-secondary/20" : ""}`}
-          onClick={() => markCard("review")}
-        >
-          <AlertCircle className="mr-2 h-4 w-4" />
-          Cần ôn (R)
-        </Button>
-
-        <Button
-          variant="default"
-          className="h-12 px-8 font-bold primary-gradient border-none disabled:opacity-50"
-          disabled={reviewedCount < cards.length}
-          onClick={finishSession}
-        >
-          Hoàn tất
-        </Button>
-      </div>
-
-      {/* Key Hints */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-4 px-4 py-2 bg-muted/50 rounded-full text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-          <span>
-            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
-              Space
-            </kbd>{" "}
-            Lật
-          </span>
-          <span>
-            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
-              ←
-            </kbd>
-            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
-              →
-            </kbd>{" "}
-            Chuyển
-          </span>
-          <span>
-            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
-              K
-            </kbd>{" "}
-            Thuộc
-          </span>
-          <span>
-            <kbd className="bg-white px-1.5 py-0.5 rounded border shadow-sm mr-1">
-              R
-            </kbd>{" "}
-            Ôn
-          </span>
+        <div className="absolute right-2 flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-primary h-9 w-9"
+            onClick={(e) => {
+              e.stopPropagation();
+              undoLast();
+            }}
+            disabled={sessionHistory.length === 0}
+          >
+            <Undo2 className="h-5 w-5" />
+          </Button>
         </div>
       </div>
+
+      {/* Progress Bar (Subtle) */}
+      <div className="w-full max-w-3xl mt-8 px-2">
+        <div className="flex justify-between text-[10px] uppercase tracking-widest text-muted-foreground mb-2 font-bold">
+          <span>Tiến độ</span>
+          <span>
+            {currentIndex + 1} / {cards.length}
+          </span>
+        </div>
+        <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-full bg-primary transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / cards.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .perspective-1000 { perspective: 1000px; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+      `,
+        }}
+      />
     </div>
   );
 };

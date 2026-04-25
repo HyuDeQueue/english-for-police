@@ -1,10 +1,10 @@
 import React from "react";
 import type { FlashcardSessionSummary } from "./FlashcardReview";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, XCircle, RotateCcw, BookOpen } from "lucide-react";
+import { RotateCcw, BookOpen } from "lucide-react";
 
 interface FlashcardSessionResultsProps {
   summary: FlashcardSessionSummary;
@@ -21,12 +21,12 @@ export const FlashcardSessionResults: React.FC<
       : summary.currentKnownRate - summary.previousKnownRate;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-8 py-2 animate-fade-in">
       {/* Hero Section */}
       <Card className="police-shadow border-none overflow-hidden text-center">
-        <div className="primary-gradient p-10 text-white">
+        <div className="primary-gradient p-4 text-white">
           <Badge className="bg-white/20 text-white border-none mb-4 px-3 py-1 font-bold">
-            MISSION COMPLETE
+            HOÀN THÀNH NHIỆM VỤ
           </Badge>
           <h2 className="text-3xl font-heading font-black uppercase tracking-widest mb-2">
             Kết quả ôn tập Flashcard
@@ -98,47 +98,6 @@ export const FlashcardSessionResults: React.FC<
           </CardContent>
         </Card>
       </div>
-
-      {/* Weak Cards List */}
-      <Card className="police-shadow border-none">
-        <CardHeader className="border-b bg-muted/20">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <RotateCcw className="h-5 w-5 text-secondary" />
-            Các thẻ cần chú ý
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          {summary.weakCards.length === 0 ? (
-            <div className="text-center py-10">
-              <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4 opacity-20" />
-              <p className="text-muted-foreground font-medium italic">
-                Tuyệt vời! Bạn không có thẻ nào cần ôn lại.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {summary.weakCards.map((card) => (
-                <div
-                  key={card.id}
-                  className="flex items-start gap-3 p-4 rounded-xl border-2 border-secondary/10 hover:border-secondary/30 transition-all bg-secondary/5 group"
-                >
-                  <div className="h-8 w-8 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-                    <XCircle className="h-4 w-4 text-secondary" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="font-bold text-primary group-hover:text-secondary transition-colors">
-                      {card.front}
-                    </p>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {card.back.split("\n")[0]}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 pt-4">
