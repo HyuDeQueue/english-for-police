@@ -247,12 +247,20 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     return false;
   };
 
-  const answeredCountInSection = sectionQuestions.filter((q) =>
-    isQuestionAnswered(q),
-  ).length;
-  const isSectionComplete =
-    sectionQuestions.length > 0 &&
-    answeredCountInSection === sectionQuestions.length;
+  const sectionProgress = sections.map((section) => {
+    const sectionQs = questions.filter((q) =>
+      section.questionIds.includes(q.id),
+    );
+    const answered = sectionQs.filter((q) => isQuestionAnswered(q)).length;
+    return {
+      answered,
+      total: sectionQs.length,
+      isComplete: sectionQs.length > 0 && answered === sectionQs.length,
+    };
+  });
+
+  const canSubmitAll =
+    sectionProgress.length > 0 && sectionProgress.every((s) => s.isComplete);
 
   const handleSubmit = () => {
     let correctCount = 0;
@@ -493,40 +501,58 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               </div>
 
               <div className="pt-4 border-t space-y-3">
-                {currentSectionIndex < sections.length - 1 ? (
-                  <Button
-                    size="lg"
-                    className={`w-full h-14 font-bold transition-all ${
-                      isSectionComplete
-                        ? "primary-gradient police-shadow scale-100"
-                        : "bg-muted text-muted-foreground scale-95 opacity-50"
-                    }`}
-                    disabled={!isSectionComplete}
-                    onClick={() => {
-                      setCurrentSectionIndex((prev) => prev + 1);
-                      setCurrentIndexInSection(0);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                  >
-                    TIẾP THEO <ChevronRight className="ml-2 h-5 w-5" />
-                  </Button>
-                ) : (
-                  <Button
-                    size="lg"
-                    className={`w-full h-16 text-lg font-black rounded-xl primary-gradient police-shadow transition-all ${
-                      isSectionComplete
-                        ? "scale-100 opacity-100"
-                        : "opacity-50 scale-95"
-                    }`}
-                    disabled={!isSectionComplete}
-                    onClick={handleSubmit}
-                  >
-                    <Send className="mr-3 h-6 w-6" />
-                    HOÀN THÀNH
-                  </Button>
-                )}
                 <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
-                  Hoàn thành {sectionQuestions.length} câu để chuyển phần
+                  Chọn section để làm theo thứ tự bạn muốn
+                </p>
+
+                <div className="space-y-2">
+                  {sections.map((section, idx) => {
+                    const progress = sectionProgress[idx];
+                    return (
+                      <Button
+                        key={section.title}
+                        type="button"
+                        variant={
+                          idx === currentSectionIndex ? "default" : "outline"
+                        }
+                        className="w-full h-11 justify-between text-xs font-bold"
+                        onClick={() => {
+                          setCurrentSectionIndex(idx);
+                          setCurrentIndexInSection(0);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        <span className="truncate">
+                          {idx + 1}. {section.title}
+                        </span>
+                        <Badge
+                          variant={
+                            progress?.isComplete ? "secondary" : "outline"
+                          }
+                          className="ml-2 shrink-0"
+                        >
+                          {progress?.answered ?? 0}/{progress?.total ?? 0}
+                        </Badge>
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  size="lg"
+                  className={`w-full h-14 text-base font-black rounded-xl transition-all ${
+                    canSubmitAll
+                      ? "primary-gradient police-shadow scale-100"
+                      : "bg-muted text-muted-foreground opacity-60"
+                  }`}
+                  disabled={!canSubmitAll}
+                  onClick={handleSubmit}
+                >
+                  <Send className="mr-2 h-5 w-5" />
+                  NỘP BÀI
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
+                  Hoàn thành tất cả section để nộp bài
                 </p>
               </div>
             </CardContent>
