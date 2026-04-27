@@ -18,7 +18,7 @@ interface SectionAccordionItemProps {
   questionsPerPage: number;
   isQuestionAnswered: (q: Question) => boolean;
   onToggle: (idx: number) => void;
-  onSelectSection: (idx: number) => void;
+  onSelectSection: (idx: number, page?: number, qIdx?: number) => void;
   onSelectQuestion: (qIdx: number) => void;
   onPageChange: (dir: "prev" | "next") => void;
 }
@@ -63,7 +63,10 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
         className={`w-full h-12 justify-between text-xs font-bold transition-all rounded-xl ${
           isActive ? "text-white shadow-md" : "text-slate-800"
         }`}
-        onClick={() => onToggle(idx)}
+        onClick={() => {
+          onToggle(idx);
+          if (!isActive) onSelectSection(idx);
+        }}
       >
         <div className="flex items-center gap-2 truncate">
           <span className="shrink-0">{idx + 1}.</span>
@@ -111,9 +114,10 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
                     }`}
                     onClick={() => {
                       if (!isActive) {
-                        onSelectSection(idx);
+                        onSelectSection(idx, activePage, qIdx);
+                      } else {
+                        onSelectQuestion(qIdx);
                       }
-                      onSelectQuestion(qIdx);
                     }}
                   >
                     {globalIdx + 1}
@@ -133,7 +137,11 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
                 disabled={activePage === 0}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onPageChange("prev");
+                  if (!isActive) {
+                    onSelectSection(idx, Math.max(0, activePage - 1), 0);
+                  } else {
+                    onPageChange("prev");
+                  }
                 }}
               >
                 <ChevronLeft className="mr-1 h-3 w-3" />
@@ -154,7 +162,11 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
                 }
                 onClick={(e) => {
                   e.stopPropagation();
-                  onPageChange("next");
+                  if (!isActive) {
+                    onSelectSection(idx, activePage + 1, 0);
+                  } else {
+                    onPageChange("next");
+                  }
                 }}
               >
                 Sau

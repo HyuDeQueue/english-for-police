@@ -212,11 +212,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 questionsPerPage={QUESTIONS_PER_PAGE}
                 isQuestionAnswered={isQuestionAnswered}
                 onToggle={(i) => setExpandedSectionIndex(expandedSectionIndex === i ? null : i)}
-                onSelectSection={(i) => {
+                onSelectSection={(i, page = 0, qIdx = 0) => {
                   setCurrentSectionIndex(i);
                   setExpandedSectionIndex(i);
-                  setCurrentPageIndex(0);
-                  setCurrentIndexInSection(0);
+                  setCurrentPageIndex(page);
+                  setCurrentIndexInSection(qIdx);
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
                 onSelectQuestion={(qIdx) => setCurrentIndexInSection(qIdx)}
