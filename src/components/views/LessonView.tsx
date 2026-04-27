@@ -114,7 +114,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Sticky TOC Sidebar */}
-      <aside className="w-full lg:w-64 lg:sticky lg:top-24 space-y-6">
+      <aside className="w-full lg:w-64 sticky top-24 self-start space-y-6">
         <div className="bg-card rounded-xl border police-shadow overflow-hidden">
           <div className="p-4 border-b bg-muted/50 flex items-center justify-between">
             <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
@@ -175,7 +175,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
           </div>
           <div className="p-4">
             {flaggedItems.filter((f) => f.unitId === unit.id).length > 0 ? (
-              <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-3 max-h-240px overflow-y-auto pr-2 custom-scrollbar">
                 {flaggedItems
                   .filter((f) => f.unitId === unit.id)
                   .map((f, i) => (
@@ -521,7 +521,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
             </CardContent>
           </Card>
         </section>
-
       </div>
     </div>
   );
