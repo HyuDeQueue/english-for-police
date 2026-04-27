@@ -32,8 +32,6 @@ interface HomeViewProps {
   flaggedItems: FlaggedItem[];
   dailyTasks: DailyTask;
   onSelectUnit: (unit: Unit) => void;
-  onStartQuickTest: () => void;
-  onStartGeneralKnowledgeTest: () => void;
   onNavigate: (path: string) => void;
 }
 
@@ -43,18 +41,26 @@ export const HomeView: React.FC<HomeViewProps> = ({
   flaggedItems,
   dailyTasks,
   onSelectUnit,
-  onStartQuickTest,
-  onStartGeneralKnowledgeTest,
   onNavigate,
 }) => {
-  const allUnitsCompleted =
-    lessons.length > 0 && progress.completedUnits.length === lessons.length;
-
   const completedCount = dailyTasks.tasks.filter((t) => t.completed).length;
   const overallProgress =
     lessons.length > 0
       ? Math.round((progress.completedUnits.length / lessons.length) * 100)
       : 0;
+
+  const displayedTasks = [...dailyTasks.tasks].sort((a, b) => {
+    const hash = (value: string) => {
+      let result = 0;
+      const input = `${dailyTasks.date}-${value}`;
+      for (let index = 0; index < input.length; index++) {
+        result = (result * 31 + input.charCodeAt(index)) % 1000003;
+      }
+      return result;
+    };
+
+    return hash(a.id) - hash(b.id);
+  });
 
   const handleNavigate = (path: string | undefined) => {
     if (path) {
@@ -115,7 +121,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               collapsible
               className="w-full space-y-2 mb-6"
             >
-              {dailyTasks.tasks.map((task) => (
+              {displayedTasks.map((task) => (
                 <AccordionItem
                   key={task.id}
                   value={task.id}
@@ -224,35 +230,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </CardContent>
         </Card>
       </div>
-
-      {/* Quick Test Button */}
-      {progress.completedUnits.length > 0 && (
-        <div
-          className={`grid grid-cols-1 gap-3 ${
-            allUnitsCompleted ? "md:grid-cols-2" : ""
-          }`}
-        >
-          <Button
-            className="w-full h-14 text-lg font-bold bg-primary text-white hover:bg-primary/90 police-shadow group"
-            onClick={onStartQuickTest}
-          >
-            <Zap className="mr-2 h-5 w-5 fill-current text-secondary group-hover:scale-125 transition-transform" />
-            Bài test nhanh
-            <ArrowUpRight className="ml-2 h-5 w-5 opacity-50" />
-          </Button>
-          {allUnitsCompleted && (
-            <Button
-              variant="outline"
-              className="w-full h-14 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5"
-              onClick={onStartGeneralKnowledgeTest}
-            >
-              <BookOpen className="mr-2 h-5 w-5" />
-              Test tổng hợp kiến thức
-              <ArrowUpRight className="ml-2 h-5 w-5 opacity-50" />
-            </Button>
-          )}
-        </div>
-      )}
 
       {/* Lesson List */}
       <div className="space-y-4">

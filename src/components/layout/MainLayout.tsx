@@ -1,26 +1,16 @@
-import { Search, BookMarked, Shield } from "lucide-react";
+import { Menu, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MainLayoutProps {
   selectedUnitId?: number;
   onLogoClick: () => void;
-  showPracticeButtons?: boolean;
-  onStartPractice?: () => void;
-  onStartFlashcards?: () => void;
-  onStartGeneralKnowledgeTest?: () => void;
-  onToggleSearch?: () => void;
-  onToggleNotebook?: () => void;
+  onOpenSidebar?: () => void;
   children: React.ReactNode;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
   onLogoClick,
-  showPracticeButtons,
-  onStartPractice,
-  onStartFlashcards,
-  onStartGeneralKnowledgeTest,
-  onToggleSearch,
-  onToggleNotebook,
+  onOpenSidebar,
   children,
 }) => {
   return (
@@ -40,52 +30,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {showPracticeButtons && (
-              <div className="hidden sm:flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/10 hover:text-white"
-                  onClick={onStartFlashcards}
-                >
-                  Ôn tập
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/10 hover:text-white"
-                  onClick={onStartGeneralKnowledgeTest}
-                >
-                  Tổng hợp
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="font-bold bg-secondary text-secondary-foreground hover:bg-secondary/90"
-                  onClick={onStartPractice}
-                >
-                  Kiểm tra
-                </Button>
-              </div>
-            )}
-
             <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/10 rounded-full"
-              onClick={onToggleSearch}
-              title="Tìm kiếm từ vựng"
+              variant="secondary"
+              size="sm"
+              className="font-bold bg-white text-primary hover:bg-white/90"
+              onClick={onOpenSidebar}
+              title="Mở bảng công cụ"
             >
-              <Search className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white hover:bg-white/10 rounded-full"
-              onClick={onToggleNotebook}
-              title="Mở Sổ tay cá nhân"
-            >
-              <BookMarked className="h-5 w-5" />
+              <Menu className="h-4 w-4 mr-1" />
+              Công cụ
             </Button>
           </div>
         </div>

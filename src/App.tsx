@@ -1,53 +1,188 @@
-import { useState, useEffect, useCallback } from "react";
-import { initialLessons } from "./data/lessons";
-import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
-import "./App.css";
-
-import { MainLayout } from "./components/layout/MainLayout";
-import { HomeView } from "./components/views/HomeView";
-import { LessonView } from "./components/views/LessonView";
-import { AdminView } from "./components/views/AdminView";
-import { TrainingGround } from "./components/practice/TrainingGround";
-import { SearchSidebar } from "./components/layout/SearchSidebar";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FlashcardReview,
-  type FlashcardSessionSummary,
-} from "./components/practice/FlashcardReview";
-import { FlashcardSessionResults } from "./components/practice/FlashcardSessionResults";
-import { QuickTest } from "./components/practice/QuickTest";
-import { GeneralKnowledgeTest } from "./components/practice/GeneralKnowledgeTest";
-import { NotebookSidebar } from "./components/layout/NotebookSidebar";
-import { getFlashcardStatusStorageKey } from "./components/practice/flashcardStorage";
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
+import { initialLessons } from "@/data/lessons";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { WorkspaceSidebar } from "@/components/layout/WorkspaceSidebar";
+import { HomeView } from "@/components/views/HomeView";
+import { LessonView } from "@/components/views/LessonView";
+import { AdminView } from "@/components/views/AdminView";
+import { TrainingGround } from "@/components/practice/TrainingGround";
+import { FlashcardReview } from "@/components/practice/FlashcardReview";
+import type { FlashcardSessionSummary } from "@/components/practice/FlashcardReview";
+import { FlashcardSessionResults } from "@/components/practice/FlashcardSessionResults";
+import { QuickTest } from "@/components/practice/QuickTest";
+import { GeneralKnowledgeTest } from "@/components/practice/GeneralKnowledgeTest";
+import { getFlashcardStatusStorageKey } from "@/components/practice/flashcardStorage";
 
-type ViewType =
-  | "home"
-  | "lesson"
-  | "practice"
-  | "flashcards"
-  | "flashcardResults"
-  | "quicktest"
-  | "generaltest"
-  | "admin";
+const LessonViewPage = ({
+  lessons,
+  flaggedItems,
+  updateDailyTask,
+  setFlaggedItems,
+  onBack,
+  onStartGeneralKnowledgeTest,
+}: {
+  lessons: Unit[];
+  flaggedItems: FlaggedItem[];
+  updateDailyTask: (id: string, inc: number) => void;
+  setFlaggedItems: (items: FlaggedItem[]) => void;
+  onBack: () => void;
+  onStartGeneralKnowledgeTest?: () => void;
+}) => {
+  const { unitId } = useParams();
+  const unit = lessons.find((l) => l.id === Number(unitId));
+  if (!unit) return null;
 
-function parseHash(): { view: ViewType; unitId?: number } {
-  const hash = window.location.hash.replace("#", "");
-  if (!hash || hash === "/") return { view: "home" };
-  const parts = hash.split("/").filter(Boolean);
-  if (parts[0] === "lesson" && parts[1])
-    return { view: "lesson", unitId: Number(parts[1]) };
-  if (parts[0] === "practice" && parts[1])
-    return { view: "practice", unitId: Number(parts[1]) };
-  if (parts[0] === "flashcards" && parts[1])
-    return { view: "flashcards", unitId: Number(parts[1]) };
-  if (parts[0] === "quicktest") return { view: "quicktest" };
-  if (parts[0] === "generaltest" && parts[1])
-    return { view: "generaltest", unitId: Number(parts[1]) };
-  if (parts[0] === "generaltest") return { view: "generaltest" };
-  if (parts[0] === "admin") return { view: "admin" };
-  return { view: "home" };
-}
+  return (
+    <LessonView
+      unit={unit}
+      onBack={onBack}
+      flaggedItems={flaggedItems}
+      onPhraseAction={() => updateDailyTask("speak", 1)}
+      onStartGeneralKnowledgeTest={onStartGeneralKnowledgeTest}
+      toggleFlag={(item) => {
+        const exists = flaggedItems.find(
+          (f) =>
+            f.unitId === item.unitId &&
+            f.type === item.type &&
+            f.key === item.key,
+        );
+        if (exists) {
+          setFlaggedItems(
+            flaggedItems.filter(
+              (f) =>
+                !(
+                  f.unitId === item.unitId &&
+                  f.type === item.type &&
+                  f.key === item.key
+                ),
+            ),
+          );
+        } else {
+          setFlaggedItems([...flaggedItems, item]);
+        }
+      }}
+    />
+  );
+};
 
-function App() {
+const TrainingGroundPage = ({
+  lessons,
+  progress,
+  setProgress,
+  onBack,
+  onComplete,
+}: {
+  lessons: Unit[];
+  progress: UserProgress;
+  setProgress: (p: UserProgress) => void;
+  onBack: (u: Unit) => void;
+  onComplete: () => void;
+}) => {
+  const { unitId } = useParams();
+  const unit = lessons.find((l) => l.id === Number(unitId));
+  if (!unit) return null;
+
+  return (
+    <TrainingGround
+      unit={unit}
+      onBack={() => onBack(unit)}
+      onComplete={() => {
+        const newProgress = {
+          ...progress,
+          completedUnits: Array.from(
+            new Set([...progress.completedUnits, unit.id]),
+          ),
+        };
+        setProgress(newProgress);
+        onComplete();
+      }}
+    />
+  );
+};
+
+const FlashcardReviewPage = ({
+  lessons,
+  flashcardRound,
+  onBack,
+  onComplete,
+}: {
+  lessons: Unit[];
+  flashcardRound: number;
+  onBack: (u: Unit) => void;
+  onComplete: (s: FlashcardSessionSummary) => void;
+}) => {
+  const { unitId } = useParams();
+  const unit = lessons.find((l) => l.id === Number(unitId));
+  if (!unit) return null;
+
+  return (
+    <FlashcardReview
+      key={`${unit.id}-${flashcardRound}`}
+      unit={unit}
+      onBack={() => onBack(unit)}
+      onComplete={onComplete}
+    />
+  );
+};
+
+const FlashcardResultsPage = ({
+  lessons,
+  flashcardSummary,
+  onBack,
+  onRetry,
+}: {
+  lessons: Unit[];
+  flashcardSummary: FlashcardSessionSummary | null;
+  onBack: (u: Unit) => void;
+  onRetry: (u: Unit) => void;
+}) => {
+  const { unitId } = useParams();
+  const unit = lessons.find((l) => l.id === Number(unitId));
+  if (!unit || !flashcardSummary) return null;
+
+  return (
+    <FlashcardSessionResults
+      summary={flashcardSummary}
+      onBackToLesson={() => onBack(unit)}
+      onRetry={() => onRetry(unit)}
+    />
+  );
+};
+
+const GeneralTestPage = ({
+  lessons,
+  onBack,
+  onComplete,
+}: {
+  lessons: Unit[];
+  onBack: (u?: Unit) => void;
+  onComplete: () => void;
+}) => {
+  const { unitId } = useParams();
+  const unit = lessons.find((l) => l.id === Number(unitId));
+  return (
+    <GeneralKnowledgeTest
+      lessons={unit ? [unit] : lessons}
+      mode={unit ? "unit" : "all"}
+      onBack={() => onBack(unit)}
+      onComplete={onComplete}
+    />
+  );
+};
+
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [lessons, setLessons] = useState<Unit[]>(() => {
     const savedLessons = localStorage.getItem("police_english_lessons");
     return savedLessons ? JSON.parse(savedLessons) : initialLessons;
@@ -63,42 +198,12 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Initialize states directly from hash to avoid useEffect sync warnings
-  const initialHash = parseHash();
-
-  const [currentView, setCurrentView] = useState<ViewType>(initialHash.view);
-  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(() => {
-    if (initialHash.unitId) {
-      return lessons.find((l) => l.id === initialHash.unitId) || null;
-    }
-    return null;
-  });
   const [flashcardRound, setFlashcardRound] = useState(1);
   const [flashcardSummary, setFlashcardSummary] =
     useState<FlashcardSessionSummary | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [notebookOpen, setNotebookOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
-  // Sync from hash on mount & popstate
-  const syncFromHash = useCallback(() => {
-    const { view, unitId } = parseHash();
-    setCurrentView(view);
-    if (unitId) {
-      const unit = lessons.find((l) => l.id === unitId);
-      if (unit) setSelectedUnit(unit);
-    } else if (view === "home" || view === "generaltest") {
-      setSelectedUnit(null);
-    }
-    // Close sidebars on navigation
-    setSearchOpen(false);
-    setNotebookOpen(false);
-  }, [lessons]);
-
-  useEffect(() => {
-    window.addEventListener("popstate", syncFromHash);
-    return () => window.removeEventListener("popstate", syncFromHash);
-  }, [syncFromHash]);
-
+  // Daily Tasks state
   const [dailyTasks, setDailyTasks] = useState<DailyTask>(() => {
     const getTodayKey = () => new Date().toISOString().split("T")[0];
     const saved = localStorage.getItem("police_english_daily");
@@ -109,7 +214,7 @@ function App() {
         label: "Ôn 5 từ vựng ngẫu nhiên",
         description:
           "Vào phần Flashcard của bất kỳ bài nào và đánh dấu 'Đã thuộc' ít nhất 5 từ.",
-        navigatePath: "flashcards/1",
+        navigatePath: "/flashcards/1",
         completed: false,
         current: 0,
         target: 5,
@@ -118,7 +223,7 @@ function App() {
         id: "test",
         label: "Hoàn thành 1 bài test nhanh",
         description: "Làm 1 bài kiểm tra tổng hợp để củng cố kiến thức đã học.",
-        navigatePath: "quicktest",
+        navigatePath: "/quicktest",
         completed: false,
         current: 0,
         target: 1,
@@ -128,7 +233,7 @@ function App() {
         label: "Luyện nói 3 câu mẫu",
         description:
           "Bấm vào biểu tượng loa để nghe và luyện phát âm ít nhất 3 mẫu câu.",
-        navigatePath: "lesson/1",
+        navigatePath: "/lesson/1",
         completed: false,
         current: 0,
         target: 3,
@@ -196,186 +301,198 @@ function App() {
     [],
   );
 
-  // Navigation helpers that update hash
-  const navigate = (hash: string) => {
-    window.location.hash = hash;
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const navigateToHome = () => navigate("/");
+
+  const navigateToHome = () => {
+    scrollToTop();
+    navigate("/");
+  };
   const navigateToLesson = (unit: Unit) => {
-    setSelectedUnit(unit);
+    scrollToTop();
     navigate(`/lesson/${unit.id}`);
   };
   const navigateToPractice = (unit: Unit) => {
-    setSelectedUnit(unit);
+    scrollToTop();
     navigate(`/practice/${unit.id}`);
   };
   const navigateToFlashcards = (unit: Unit) => {
-    setSelectedUnit(unit);
+    scrollToTop();
     navigate(`/flashcards/${unit.id}`);
   };
-  const navigateToQuickTest = () => navigate("/quicktest");
+  const navigateToQuickTest = () => {
+    scrollToTop();
+    navigate("/quicktest");
+  };
   const navigateToGeneralTest = (unit?: Unit) => {
     if (unit) {
-      setSelectedUnit(unit);
+      scrollToTop();
       navigate(`/generaltest/${unit.id}`);
       return;
     }
-    setSelectedUnit(null);
+    scrollToTop();
     navigate("/generaltest");
   };
+  const openTools = () => setToolsOpen(true);
+  const closeTools = () => setToolsOpen(false);
 
-  // Toggle Sidebar Handlers
-  const toggleSearch = () => setSearchOpen((prev) => !prev);
-  const toggleNotebook = () => setNotebookOpen((prev) => !prev);
+  const activeUnitId = useMemo(() => {
+    const path = location.pathname;
+    const match = path.match(
+      /\/(lesson|practice|flashcards|generaltest)\/(\d+)/,
+    );
+    return match ? Number(match[2]) : undefined;
+  }, [location.pathname]);
+
+  const activeUnit = useMemo(() => {
+    return activeUnitId
+      ? lessons.find((l) => l.id === activeUnitId) || null
+      : null;
+  }, [activeUnitId, lessons]);
 
   return (
     <MainLayout
-      selectedUnitId={selectedUnit?.id}
+      selectedUnitId={activeUnitId}
       onLogoClick={navigateToHome}
-      showPracticeButtons={currentView === "lesson"}
-      onStartPractice={() => selectedUnit && navigateToPractice(selectedUnit)}
-      onStartFlashcards={() =>
-        selectedUnit && navigateToFlashcards(selectedUnit)
-      }
-      onStartGeneralKnowledgeTest={() =>
-        selectedUnit && navigateToGeneralTest(selectedUnit)
-      }
-      onToggleSearch={toggleSearch}
-      onToggleNotebook={toggleNotebook}
+      onOpenSidebar={openTools}
     >
-      {currentView === "home" && (
-        <HomeView
-          lessons={lessons}
-          progress={progress}
-          flaggedItems={flaggedItems}
-          dailyTasks={dailyTasks}
-          onSelectUnit={navigateToLesson}
-          onStartQuickTest={navigateToQuickTest}
-          onStartGeneralKnowledgeTest={navigateToGeneralTest}
-          onNavigate={(path) => (window.location.hash = path)}
-        />
-      )}
-
-      {currentView === "lesson" && selectedUnit && (
-        <LessonView
-          unit={selectedUnit}
-          onBack={navigateToHome}
-          flaggedItems={flaggedItems}
-          onPhraseAction={() => updateDailyTask("speak", 1)}
-          toggleFlag={(item) => {
-            const exists = flaggedItems.find(
-              (f) =>
-                f.unitId === item.unitId &&
-                f.type === item.type &&
-                f.key === item.key,
-            );
-            if (exists) {
-              setFlaggedItems(
-                flaggedItems.filter(
-                  (f) =>
-                    !(
-                      f.unitId === item.unitId &&
-                      f.type === item.type &&
-                      f.key === item.key
-                    ),
-                ),
-              );
-            } else {
-              setFlaggedItems([...flaggedItems, item]);
-            }
-          }}
-        />
-      )}
-
-      {currentView === "practice" && selectedUnit && (
-        <TrainingGround
-          unit={selectedUnit}
-          onBack={() => navigateToLesson(selectedUnit)}
-          onComplete={() => {
-            const newProgress = {
-              ...progress,
-              completedUnits: Array.from(
-                new Set([...progress.completedUnits, selectedUnit.id]),
-              ),
-            };
-            setProgress(newProgress);
-            navigateToHome();
-          }}
-        />
-      )}
-
-      {currentView === "flashcards" && selectedUnit && (
-        <FlashcardReview
-          key={`${selectedUnit.id}-${flashcardRound}`}
-          unit={selectedUnit}
-          onBack={() => navigateToLesson(selectedUnit)}
-          onComplete={(summary) => {
-            setFlashcardSummary(summary);
-            setCurrentView("flashcardResults");
-            updateDailyTask("vocab", summary.knownCount);
-          }}
-        />
-      )}
-
-      {currentView === "flashcardResults" &&
-        selectedUnit &&
-        flashcardSummary && (
-          <FlashcardSessionResults
-            summary={flashcardSummary}
-            onBackToLesson={() => navigateToLesson(selectedUnit)}
-            onRetry={() => {
-              localStorage.removeItem(
-                getFlashcardStatusStorageKey(
-                  selectedUnit.id,
-                  flashcardSummary.deckMode,
-                ),
-              );
-              setFlashcardRound((prev) => prev + 1);
-              setCurrentView("flashcards");
-            }}
-          />
-        )}
-
-      {currentView === "quicktest" && (
-        <QuickTest
-          lessons={lessons}
-          completedUnitIds={progress.completedUnits}
-          onBack={navigateToHome}
-          onComplete={() => updateDailyTask("test", 1)}
-        />
-      )}
-
-      {currentView === "generaltest" && (
-        <GeneralKnowledgeTest
-          lessons={selectedUnit ? [selectedUnit] : lessons}
-          mode={selectedUnit ? "unit" : "all"}
-          onBack={() =>
-            selectedUnit ? navigateToLesson(selectedUnit) : navigateToHome()
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <HomeView
+              lessons={lessons}
+              progress={progress}
+              flaggedItems={flaggedItems}
+              dailyTasks={dailyTasks}
+              onSelectUnit={navigateToLesson}
+              onNavigate={(path) =>
+                navigate(path.startsWith("#") ? path.slice(1) : path)
+              }
+            />
           }
-          onComplete={() => updateDailyTask("test", 1)}
         />
-      )}
-
-      {currentView === "admin" && (
-        <AdminView
-          lessons={lessons}
-          onBack={navigateToHome}
-          onSave={(newLessons) => setLessons(newLessons)}
+        <Route
+          path="/lesson/:unitId"
+          element={
+            <LessonViewPage
+              lessons={lessons}
+              flaggedItems={flaggedItems}
+              setFlaggedItems={setFlaggedItems}
+              updateDailyTask={updateDailyTask}
+              onStartGeneralKnowledgeTest={() =>
+                activeUnit && navigateToGeneralTest(activeUnit)
+              }
+              onBack={navigateToHome}
+            />
+          }
         />
-      )}
+        <Route
+          path="/practice/:unitId"
+          element={
+            <TrainingGroundPage
+              lessons={lessons}
+              progress={progress}
+              setProgress={setProgress}
+              onBack={navigateToLesson}
+              onComplete={navigateToHome}
+            />
+          }
+        />
+        <Route
+          path="/flashcards/:unitId"
+          element={
+            <FlashcardReviewPage
+              lessons={lessons}
+              flashcardRound={flashcardRound}
+              onBack={navigateToLesson}
+              onComplete={(summary) => {
+                setFlashcardSummary(summary);
+                const { unitId } = parseHashForFlashcardWorkaround(
+                  location.pathname,
+                );
+                navigate(`/flashcards/${unitId}/results`);
+                updateDailyTask("vocab", summary.knownCount);
+              }}
+            />
+          }
+        />
+        <Route
+          path="/flashcards/:unitId/results"
+          element={
+            <FlashcardResultsPage
+              lessons={lessons}
+              flashcardSummary={flashcardSummary}
+              onBack={navigateToLesson}
+              onRetry={(unit) => {
+                localStorage.removeItem(
+                  getFlashcardStatusStorageKey(
+                    unit.id,
+                    flashcardSummary!.deckMode,
+                  ),
+                );
+                setFlashcardRound((prev) => prev + 1);
+                navigate(`/flashcards/${unit.id}`);
+              }}
+            />
+          }
+        />
+        <Route
+          path="/quicktest"
+          element={
+            <QuickTest
+              lessons={lessons}
+              completedUnitIds={progress.completedUnits}
+              onBack={navigateToHome}
+              onComplete={() => updateDailyTask("test", 1)}
+            />
+          }
+        />
+        <Route
+          path="/generaltest"
+          element={
+            <GeneralTestPage
+              lessons={lessons}
+              onBack={navigateToHome}
+              onComplete={() => updateDailyTask("test", 1)}
+            />
+          }
+        />
+        <Route
+          path="/generaltest/:unitId"
+          element={
+            <GeneralTestPage
+              lessons={lessons}
+              onBack={(u) => (u ? navigateToLesson(u) : navigateToHome())}
+              onComplete={() => updateDailyTask("test", 1)}
+            />
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminView
+              lessons={lessons}
+              onBack={navigateToHome}
+              onSave={(newLessons) => setLessons(newLessons)}
+            />
+          }
+        />
+      </Routes>
 
-      <SearchSidebar
-        lessons={lessons}
-        isOpen={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        onNavigateToUnit={navigateToLesson}
-      />
-
-      <NotebookSidebar
+      <WorkspaceSidebar
         lessons={lessons}
         flaggedItems={flaggedItems}
-        isOpen={notebookOpen}
-        onClose={() => setNotebookOpen(false)}
+        isOpen={toolsOpen}
+        onClose={closeTools}
+        activeUnit={activeUnit}
+        onStartPractice={() => activeUnit && navigateToPractice(activeUnit)}
+        onStartFlashcards={() => activeUnit && navigateToFlashcards(activeUnit)}
+        onStartGeneralKnowledgeTest={() =>
+          activeUnit && navigateToGeneralTest(activeUnit)
+        }
+        onStartQuickTest={navigateToQuickTest}
         onRemoveItem={(item) => {
           setFlaggedItems(
             flaggedItems.filter(
@@ -391,6 +508,20 @@ function App() {
         onNavigateToUnit={navigateToLesson}
       />
     </MainLayout>
+  );
+}
+
+// Helper for extracting ID in callback where useParams isn't available
+function parseHashForFlashcardWorkaround(path: string) {
+  const parts = path.split("/");
+  return { unitId: parts[2] };
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 }
 

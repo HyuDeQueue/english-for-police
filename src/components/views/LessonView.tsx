@@ -13,12 +13,10 @@ import {
   ChevronLeft,
   Volume2,
   Star,
-  BookOpen,
-  Video,
   List,
   Zap,
-  Play,
   BookMarked,
+  Brain,
 } from "lucide-react";
 
 interface LessonViewProps {
@@ -27,6 +25,7 @@ interface LessonViewProps {
   flaggedItems: FlaggedItem[];
   toggleFlag: (item: FlaggedItem) => void;
   onPhraseAction?: () => void;
+  onStartGeneralKnowledgeTest?: () => void;
 }
 
 export const LessonView: React.FC<LessonViewProps> = ({
@@ -35,6 +34,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
   flaggedItems,
   toggleFlag,
   onPhraseAction,
+  onStartGeneralKnowledgeTest,
 }) => {
   const isFlagged = (
     unitId: number,
@@ -71,14 +71,18 @@ export const LessonView: React.FC<LessonViewProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
-  const [activeSection, setActiveSection] = useState<string>("summary");
+  const [activeSection, setActiveSection] = useState<string>("vocabulary");
   const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({});
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const scrollToSection = (id: string) => {
-    setActiveSection(id);
     const element = sectionRefs.current[id];
     if (element) {
-      const headerOffset = 80;
+      setActiveSection(id);
+      const headerOffset = 120;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition =
         elementPosition + window.pageYOffset - headerOffset;
@@ -90,7 +94,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
     }
   };
 
-  // Intersection Observer to update active TOC item on scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -138,11 +141,18 @@ export const LessonView: React.FC<LessonViewProps> = ({
               QUAY LẠI
             </Button>
 
+            {onStartGeneralKnowledgeTest && (
+              <Button
+                variant="default"
+                className="w-full justify-start text-xs font-black bg-primary text-white hover:bg-primary/90 police-shadow"
+                onClick={onStartGeneralKnowledgeTest}
+              >
+                <Brain className="mr-2 h-4 w-4" />
+                BÀI TỔNG HỢP
+              </Button>
+            )}
+
             {[
-              { id: "summary", label: "Tóm tắt bài học", icon: BookOpen },
-              ...(unit.videoUrl
-                ? [{ id: "video", label: "Video thực tế", icon: Video }]
-                : []),
               { id: "vocabulary", label: "01 Từ vựng", icon: Zap },
               { id: "phrases", label: "02 Cấu trúc", icon: List },
               { id: "memory", label: "03 Ghi nhớ", icon: BookMarked },
@@ -210,54 +220,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
 
       {/* Main Content Area */}
       <div className="flex-1 space-y-12 pb-24">
-        {/* 1. Summary & Video */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-          <section
-            data-section="summary"
-            ref={(el) => {
-              sectionRefs.current["summary"] = el;
-            }}
-            className="scroll-mt-24"
-          >
-            <Card className="border-none primary-gradient police-shadow">
-              <CardHeader>
-                <CardTitle className="text-xl text-white font-heading">
-                  Tóm tắt bài học
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-white/90 leading-relaxed">
-                {unit.memoryBoost.summary}
-              </CardContent>
-            </Card>
-          </section>
-
-          {unit.videoUrl && (
-            <section
-              data-section="video"
-              ref={(el) => {
-                sectionRefs.current["video"] = el;
-              }}
-              className="scroll-mt-24"
-            >
-              <Card className="overflow-hidden border-none police-shadow">
-                <div className="aspect-video relative group">
-                  <iframe
-                    src={unit.videoUrl}
-                    title="Video thực tế"
-                    allowFullScreen
-                    className="w-full h-full border-none"
-                  />
-                  <div className="absolute inset-0 bg-primary/20 pointer-events-none group-hover:opacity-0 transition-opacity flex items-center justify-center">
-                    <div className="h-12 w-12 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-                      <Play className="h-6 w-6 text-white fill-current" />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </section>
-          )}
-        </div>
-
         {/* 2. Vocabulary */}
         <section
           data-section="vocabulary"
@@ -350,7 +312,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
           ref={(el) => {
             sectionRefs.current["phrases"] = el;
           }}
-          className="scroll-mt-24"
+          className="scroll-mt-100px"
         >
           <div className="flex items-center gap-4 mb-6">
             <Badge
@@ -463,7 +425,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
           ref={(el) => {
             sectionRefs.current["memory"] = el;
           }}
-          className="scroll-mt-24"
+          className="scroll-mt-100px"
         >
           <div className="flex items-center gap-4 mb-6">
             <Badge

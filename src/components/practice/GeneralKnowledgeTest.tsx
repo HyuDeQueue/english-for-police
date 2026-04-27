@@ -49,7 +49,7 @@ function generateGeneralQuestions(lessons: Unit[]): Question[] {
       pool.push({
         id: `gk-vocab-${unit.id}-${idx}`,
         type: "MCQ",
-        prompt: `[UNIT ${unit.id}] "${vocab.word}" nghĩa là gì?`,
+        prompt: `"${vocab.word}" nghĩa là gì?`,
         options: shuffleArray([vocab.meaning, ...wrongOptions]),
         answer: vocab.meaning,
       });
@@ -66,7 +66,7 @@ function generateGeneralQuestions(lessons: Unit[]): Question[] {
       pool.push({
         id: `gk-phrase-mcq-${unit.id}-${idx}`,
         type: "MCQ",
-        prompt: `[UNIT ${unit.id}] Chọn nghĩa đúng cho câu: "${phrase.text}"`,
+        prompt: `Chọn nghĩa đúng cho câu: "${phrase.text}"`,
         options: shuffleArray([phrase.translation, ...wrongOptions]),
         answer: phrase.translation,
       });
@@ -76,7 +76,7 @@ function generateGeneralQuestions(lessons: Unit[]): Question[] {
       pool.push({
         id: `gk-phrase-dictation-${unit.id}-${idx}`,
         type: "Dictation",
-        prompt: `[UNIT ${unit.id}] Dịch sang tiếng Anh: "${phrase.translation}"`,
+        prompt: `Dịch sang tiếng Anh: "${phrase.translation}"`,
         vnPrompt: phrase.translation,
         answer: phrase.text,
       });
@@ -98,7 +98,7 @@ function generateGeneralQuestions(lessons: Unit[]): Question[] {
         pool.push({
           id: `gk-match-${unit.id}-${i}`,
           type: "Matching",
-          prompt: `[UNIT ${unit.id}] Ghép từ và nghĩa tương ứng`,
+          prompt: `Ghép từ và nghĩa tương ứng`,
           pairs: matchingItems.map((item) => ({
             left: item.word,
             right: item.meaning,
@@ -118,6 +118,107 @@ interface Section {
   questionIds: string[];
 }
 
+type TestMode = "type" | "chapter" | "bank";
+const QUESTIONS_PER_PAGE = 20;
+
+function extractUnitId(questionId: string): number | null {
+  const match = questionId.match(/-(\d+)-/);
+  return match ? Number(match[1]) : null;
+}
+
+function buildSections(questions: Question[], mode: TestMode): Section[] {
+  if (mode === "chapter") {
+    const grouped = new Map<number, Question[]>();
+
+    questions.forEach((question) => {
+      const unitId = extractUnitId(question.id);
+      if (!unitId) return;
+      const existing = grouped.get(unitId) || [];
+      existing.push(question);
+      grouped.set(unitId, existing);
+    });
+
+    return Array.from(grouped.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([unitId, items]) => ({
+        title: `Luyện tập chương ${unitId}`,
+        description:
+          "Làm toàn bộ câu hỏi của một chương theo nhiều dạng đã tổng hợp.",
+        questionIds: items.map((item) => item.id),
+      }));
+  }
+
+  if (mode === "bank") {
+    const shuffled = shuffleArray(questions);
+    const chunkSize = 10;
+    const sections: Section[] = [];
+
+    for (let index = 0; index < shuffled.length; index += chunkSize) {
+      const batch = shuffled.slice(index, index + chunkSize);
+      sections.push({
+        title: `Ngân hàng câu hỏi ${sections.length + 1}`,
+        description:
+          "Trộn câu hỏi ngẫu nhiên từ nhiều chương và nhiều dạng khác nhau.",
+        questionIds: batch.map((item) => item.id),
+      });
+    }
+
+    return sections;
+  }
+
+  const sections: Section[] = [];
+
+  const vocabIds = questions
+    .filter((q) => q.id.includes("vocab"))
+    .map((q) => q.id);
+  if (vocabIds.length > 0) {
+    sections.push({
+      title: "Trắc nghiệm từ vựng",
+      description:
+        "Kiểm tra khả năng nhận diện và ghi nhớ từ vựng cảnh sát chuyên ngành.",
+      questionIds: vocabIds,
+    });
+  }
+
+  const patternIds = questions
+    .filter((q) => q.id.includes("phrase-mcq") || q.type === "Scenario")
+    .map((q) => q.id);
+  if (patternIds.length > 0) {
+    sections.push({
+      title: "Mẫu câu & tình huống",
+      description:
+        "Ứng dụng các mẫu câu vào các tình huống thực tế của chiến sĩ cảnh sát.",
+      questionIds: patternIds,
+    });
+  }
+
+  const matchingIds = questions
+    .filter((q) => q.type === "Matching")
+    .map((q) => q.id);
+  if (matchingIds.length > 0) {
+    sections.push({
+      title: "Ghép từ - nghĩa",
+      description:
+        "Kết nối chính xác giữa thuật ngữ và ý nghĩa tiếng Việt tương ứng.",
+      questionIds: matchingIds,
+    });
+  }
+
+  const writingIds = questions
+    .filter((q) => q.type === "Dictation" || q.type === "Arrangement")
+    .map((q) => q.id);
+  if (writingIds.length > 0) {
+    sections.push({
+      title: "Điền từ & sắp xếp câu",
+      description:
+        "Thực hành viết lại và sắp xếp các câu tiếng Anh hoàn chỉnh.",
+      questionIds: writingIds,
+    });
+  }
+
+  return sections;
+}
+
 type SectionResult = {
   score: number;
   correctCount: number;
@@ -127,74 +228,34 @@ type SectionResult = {
 
 export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   lessons,
+  mode = "all",
   onBack,
   onComplete,
 }) => {
   const [questions] = useState<Question[]>(() =>
     generateGeneralQuestions(lessons),
   );
+  const initialMode: TestMode = mode === "unit" ? "chapter" : "type";
+  const [testMode, setTestMode] = useState<TestMode>(initialMode);
 
   const sections = useMemo<Section[]>(() => {
-    const s: Section[] = [];
-
-    const vocabIds = questions
-      .filter((q) => q.id.includes("vocab"))
-      .map((q) => q.id);
-    if (vocabIds.length > 0) {
-      s.push({
-        title: "Bài luyện tập 1",
-        description:
-          "Kiểm tra khả năng nhận diện và ghi nhớ từ vựng cảnh sát chuyên ngành.",
-        questionIds: vocabIds,
-      });
-    }
-
-    const patternIds = questions
-      .filter((q) => q.id.includes("phrase-mcq") || q.type === "Scenario")
-      .map((q) => q.id);
-    if (patternIds.length > 0) {
-      s.push({
-        title: "Bài luyện tập 2",
-        description:
-          "Ứng dụng các mẫu câu vào các tình huống thực tế của chiến sĩ cảnh sát.",
-        questionIds: patternIds,
-      });
-    }
-
-    const matchingIds = questions
-      .filter((q) => q.type === "Matching")
-      .map((q) => q.id);
-    if (matchingIds.length > 0) {
-      s.push({
-        title: "Bài luyện tập 3",
-        description:
-          "Kết nối chính xác giữa thuật ngữ và ý nghĩa tiếng Việt tương ứng.",
-        questionIds: matchingIds,
-      });
-    }
-
-    const writingIds = questions
-      .filter((q) => q.type === "Dictation" || q.type === "Arrangement")
-      .map((q) => q.id);
-    if (writingIds.length > 0) {
-      s.push({
-        title: "Bài luyện tập 4",
-        description:
-          "Thực hành viết lại và sắp xếp các câu tiếng Anh hoàn chỉnh.",
-        questionIds: writingIds,
-      });
-    }
-
-    return s;
-  }, [questions]);
+    return buildSections(questions, testMode);
+  }, [questions, testMode]);
 
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const currentSection = sections[currentSectionIndex];
 
   const sectionQuestions = useMemo(() => {
     if (!currentSection) return [];
     return questions.filter((q) => currentSection.questionIds.includes(q.id));
   }, [currentSection, questions]);
+
+  const pagedSectionQuestions = useMemo(() => {
+    if (testMode !== "chapter") return sectionQuestions;
+    const start = currentPageIndex * QUESTIONS_PER_PAGE;
+    return sectionQuestions.slice(start, start + QUESTIONS_PER_PAGE);
+  }, [currentPageIndex, sectionQuestions, testMode]);
 
   const [currentIndexInSection, setCurrentIndexInSection] = useState(0);
 
@@ -226,7 +287,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     Record<number, SectionResult>
   >({});
 
-  const currentQuestion = sectionQuestions[currentIndexInSection];
+  const currentQuestion = pagedSectionQuestions[currentIndexInSection];
 
   const isQuestionAnswered = (q: Question): boolean => {
     if (!q) return false;
@@ -277,6 +338,26 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   const allSectionsSubmitted =
     sections.length > 0 &&
     sections.every((_, idx) => sectionResults[idx]?.submitted);
+
+  const resetTestState = () => {
+    setCurrentSectionIndex(0);
+    setCurrentPageIndex(0);
+    setCurrentIndexInSection(0);
+    setAnswers({});
+    setMatchingAnswers({});
+    setArrangementAnswers({});
+    setSelectedLeft({});
+    setSectionResults({});
+    setShowResults(false);
+    setScore(0);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const changeTestMode = (nextMode: TestMode) => {
+    if (nextMode === testMode) return;
+    setTestMode(nextMode);
+    resetTestState();
+  };
 
   const calculateScore = (questionList: Question[]) => {
     let correctCount = 0;
@@ -520,6 +601,36 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2 px-4">
+        <Button
+          type="button"
+          variant={testMode === "type" ? "default" : "outline"}
+          size="sm"
+          className="font-bold"
+          onClick={() => changeTestMode("type")}
+        >
+          Theo dạng
+        </Button>
+        <Button
+          type="button"
+          variant={testMode === "chapter" ? "default" : "outline"}
+          size="sm"
+          className="font-bold"
+          onClick={() => changeTestMode("chapter")}
+        >
+          Theo chương
+        </Button>
+        <Button
+          type="button"
+          variant={testMode === "bank" ? "default" : "outline"}
+          size="sm"
+          className="font-bold"
+          onClick={() => changeTestMode("bank")}
+        >
+          Trộn ngân hàng
+        </Button>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-8 items-start px-4">
         <aside className="w-full lg:w-80 space-y-6 shrink-0 lg:sticky lg:top-24">
           <Card className="police-shadow border-none overflow-hidden">
@@ -535,7 +646,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               </p>
 
               <div className="grid grid-cols-4 gap-3">
-                {sectionQuestions.map((q, idx) => (
+                {pagedSectionQuestions.map((q, idx) => (
                   <button
                     key={q.id}
                     className={`h-11 w-11 rounded-lg font-bold text-xs border-2 transition-all ${
@@ -551,6 +662,43 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                   </button>
                 ))}
               </div>
+
+              {testMode === "chapter" &&
+                sectionQuestions.length > QUESTIONS_PER_PAGE && (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border bg-muted/20 px-3 py-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs font-bold"
+                      disabled={currentPageIndex === 0}
+                      onClick={() => {
+                        setCurrentPageIndex((prev) => Math.max(0, prev - 1));
+                        setCurrentIndexInSection(0);
+                      }}
+                    >
+                      <ChevronLeft className="mr-1 h-3 w-3" />
+                      Trang trước
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs font-bold"
+                      disabled={
+                        (currentPageIndex + 1) * QUESTIONS_PER_PAGE >=
+                        sectionQuestions.length
+                      }
+                      onClick={() => {
+                        setCurrentPageIndex((prev) => prev + 1);
+                        setCurrentIndexInSection(0);
+                      }}
+                    >
+                      Trang sau
+                      <ChevronRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
 
               <div className="pt-4 border-t space-y-3">
                 <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
@@ -575,6 +723,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                         }`}
                         onClick={() => {
                           setCurrentSectionIndex(idx);
+                          setCurrentPageIndex(0);
                           setCurrentIndexInSection(0);
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
@@ -629,40 +778,44 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         </aside>
 
         <div className="flex-1 w-full space-y-6">
-          <Card className="police-shadow border-none min-h-420px flex flex-col">
-            <CardHeader className="border-b bg-muted/20 py-3. px-6">
+          <Card className="police-shadow border-none min-h-360px flex flex-col">
+            <CardHeader className="border-b bg-muted/20 py-2.5 px-4 sm:px-5">
               <div className="flex justify-between items-center">
-                <Badge className="bg-primary/10 text-primary border-none px-3 py-1 font-bold text-[10px] uppercase tracking-wider">
+                <Badge className="bg-primary/10 text-primary border-none px-2.5 py-0.5 font-bold text-[9px] uppercase tracking-wider">
                   {currentSection?.title}
                 </Badge>
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  Câu {currentIndexInSection + 1} / {sectionQuestions.length}
+                <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Câu{" "}
+                  {currentPageIndex * QUESTIONS_PER_PAGE +
+                    currentIndexInSection +
+                    1}{" "}
+                  / {sectionQuestions.length}
                 </span>
               </div>
               {sectionResults[currentSectionIndex]?.submitted && (
-                <div className="mt-3 rounded-xl border bg-secondary/5 px-4 py-3 text-sm font-bold text-secondary">
+                <div className="mt-2 rounded-xl border bg-secondary/5 px-3 py-2 text-xs font-bold text-secondary">
                   Đã nộp bài này: {sectionResults[currentSectionIndex].score}%
                 </div>
               )}
             </CardHeader>
 
-            <CardContent className="flex-1 p-8 sm:p-12 flex flex-col justify-center">
-              <div className="space-y-8 max-w-2xl mx-auto w-full">
+            <CardContent className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
+              <div className="space-y-6 max-w-xl mx-auto w-full">
                 {currentQuestion && (
                   <>
-                    <h3 className="text-2xl sm:text-3xl font-heading font-black text-primary leading-tight">
+                    <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">
                       {currentQuestion.prompt}
                     </h3>
                     {currentQuestion.vnPrompt && (
-                      <div className="p-4 bg-secondary/5 border-l-4 border-secondary rounded-r-xl italic text-secondary text-base font-medium">
+                      <div className="p-3 bg-secondary/5 border-l-4 border-secondary rounded-r-xl italic text-secondary text-sm font-medium">
                         {currentQuestion.vnPrompt}
                       </div>
                     )}
 
-                    <div className="space-y-4 py-2">
+                    <div className="space-y-3 py-1">
                       {currentQuestion.type === "MCQ" ||
                       currentQuestion.type === "Scenario" ? (
-                        <div className="grid grid-cols-1 gap-4">
+                        <div className="grid grid-cols-1 gap-3">
                           {currentQuestion.options?.map((opt, i) => (
                             <Button
                               key={i}
@@ -671,7 +824,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                                   ? "default"
                                   : "outline"
                               }
-                              className={`h-auto py-4 px-6 justify-start text-left text-base font-bold transition-all border-2 ${
+                              className={`h-auto py-3 px-4 justify-start text-left text-sm font-bold transition-all border-2 ${
                                 answers[currentQuestion.id] === opt
                                   ? "ring-2 ring-primary ring-offset-2 police-shadow bg-primary text-white"
                                   : "hover:bg-primary/5 hover:border-primary/20"
@@ -684,7 +837,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                               }
                             >
                               <span
-                                className={`h-6 w-6 rounded-full border-2 flex items-center justify-center mr-4 shrink-0 text-xs ${
+                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center mr-3 shrink-0 text-[11px] ${
                                   answers[currentQuestion.id] === opt
                                     ? "bg-white text-primary border-white"
                                     : "text-muted-foreground border-muted"
@@ -697,8 +850,8 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                           ))}
                         </div>
                       ) : currentQuestion.type === "Matching" ? (
-                        <div className="space-y-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div className="space-y-3">
                               <p className="text-[10px] font-black text-muted-foreground uppercase mb-2">
                                 Tiếng Anh
@@ -727,7 +880,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                                         [currentQuestion.id]: pair.left,
                                       }))
                                     }
-                                    className="w-full justify-start text-sm h-12 relative overflow-hidden font-bold"
+                                    className="w-full justify-start text-xs h-10 relative overflow-hidden font-bold"
                                   >
                                     {pair.left}
                                     {isMatched && (
@@ -782,7 +935,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                                         [currentQuestion.id]: null,
                                       }));
                                     }}
-                                    className="w-full justify-start text-sm h-12 font-medium"
+                                    className="w-full justify-start text-xs h-10 font-medium"
                                   >
                                     {pair.right}
                                   </Button>
@@ -790,18 +943,18 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                               })}
                             </div>
                           </div>
-                          <p className="text-xs text-muted-foreground italic text-center bg-muted/30 py-2 rounded-lg">
+                          <p className="text-[11px] text-muted-foreground italic text-center bg-muted/30 py-1.5 rounded-lg">
                             * Chọn một từ bên trái sau đó chọn nghĩa phù hợp bên
                             phải
                           </p>
                         </div>
                       ) : currentQuestion.type === "Arrangement" ? (
-                        <div className="space-y-6">
-                          <div className="p-5 rounded-2xl border-2 border-dashed bg-muted/10">
+                        <div className="space-y-4">
+                          <div className="p-4 rounded-2xl border-2 border-dashed bg-muted/10">
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">
                               Khu vực sắp xếp
                             </p>
-                            <div className="min-h-16 p-3 rounded-xl bg-white border flex flex-wrap gap-3">
+                            <div className="min-h-14 p-2.5 rounded-xl bg-white border flex flex-wrap gap-2">
                               {(arrangementAnswers[currentQuestion.id] || [])
                                 .length > 0 ? (
                                 (
@@ -811,7 +964,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                                     key={`${word}-${idx}`}
                                     type="button"
                                     variant="secondary"
-                                    className="h-10 px-4 font-bold animate-in zoom-in-50 duration-200"
+                                    className="h-9 px-3 text-xs font-bold animate-in zoom-in-50 duration-200"
                                     onClick={() => {
                                       setArrangementAnswers((prev) => {
                                         const next = [
@@ -833,7 +986,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                                   </Button>
                                 ))
                               ) : (
-                                <span className="text-sm text-muted-foreground italic self-center mx-auto">
+                                <span className="text-xs text-muted-foreground italic self-center mx-auto">
                                   Chạm vào các từ bên dưới để xây dựng câu hoàn
                                   chỉnh
                                 </span>
@@ -841,11 +994,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                             </div>
                           </div>
 
-                          <div className="p-5 rounded-2xl bg-secondary/5 border-2 border-secondary/10">
+                          <div className="p-4 rounded-2xl bg-secondary/5 border-2 border-secondary/10">
                             <p className="text-[10px] font-black uppercase tracking-widest text-secondary mb-4">
                               Các từ cho sẵn
                             </p>
-                            <div className="flex flex-wrap gap-3">
+                            <div className="flex flex-wrap gap-2">
                               {(currentQuestion.options || []).map(
                                 (word, idx) => {
                                   const selected =
@@ -866,7 +1019,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                                       type="button"
                                       variant="outline"
                                       disabled={disabled}
-                                      className={`h-10 px-4 font-bold border-2 transition-all ${disabled ? "opacity-30 scale-90" : "hover:border-primary hover:text-primary"}`}
+                                      className={`h-9 px-3 text-xs font-bold border-2 transition-all ${disabled ? "opacity-30 scale-90" : "hover:border-primary hover:text-primary"}`}
                                       onClick={() => {
                                         setArrangementAnswers((prev) => {
                                           const next = [
@@ -916,7 +1069,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
                             Nhập bản dịch tiếng Anh:
                           </label>
@@ -934,7 +1087,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                               }))
                             }
                             placeholder="Nhập câu trả lời của bạn..."
-                            className="h-16 text-lg font-bold border-2 focus-visible:ring-primary police-shadow rounded-xl px-6"
+                            className="h-12 text-base font-bold border-2 focus-visible:ring-primary police-shadow rounded-xl px-4"
                           />
                         </div>
                       )}
@@ -944,11 +1097,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               </div>
             </CardContent>
 
-            <div className="p-4 bg-muted/10 border-t flex justify-between gap-3">
+            <div className="p-3 bg-muted/10 border-t flex justify-between gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 h-10 font-bold rounded-lg"
+                className="flex-1 h-9 text-xs font-bold rounded-lg"
                 disabled={currentIndexInSection === 0}
                 onClick={() => setCurrentIndexInSection((p) => p - 1)}
               >
@@ -957,8 +1110,10 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 h-10 font-bold rounded-lg"
-                disabled={currentIndexInSection === sectionQuestions.length - 1}
+                className="flex-1 h-9 text-xs font-bold rounded-lg"
+                disabled={
+                  currentIndexInSection === pagedSectionQuestions.length - 1
+                }
                 onClick={() => setCurrentIndexInSection((p) => p + 1)}
               >
                 Câu sau <ChevronRight className="ml-1.5 h-4 w-4" />

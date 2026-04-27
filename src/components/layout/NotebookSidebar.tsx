@@ -1,5 +1,11 @@
 import React from "react";
-import type { Unit, FlaggedItem, Vocabulary, Phrase, Collocation } from "../../types";
+import type {
+  Unit,
+  FlaggedItem,
+  Vocabulary,
+  Phrase,
+  Collocation,
+} from "../../types";
 import {
   Sheet,
   SheetContent,
@@ -8,13 +14,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { 
-  BookMarked, 
-  Trash2, 
-  Volume2,
-  ExternalLink,
-  Zap
-} from "lucide-react";
+import { BookMarked, Trash2, Volume2, ExternalLink, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NotebookSidebarProps {
@@ -41,36 +41,43 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
   onRemoveItem,
   onNavigateToUnit,
 }) => {
-  const groupedItems = flaggedItems.reduce((acc, item) => {
-    const unit = lessons.find((l) => l.id === item.unitId);
-    if (!unit) return acc;
-    
-    if (!acc[item.unitId]) {
-      acc[item.unitId] = {
-        unit,
-        vocabulary: [],
-        phrases: [],
-        collocations: [],
-      };
-    }
+  const groupedItems = flaggedItems.reduce(
+    (acc, item) => {
+      const unit = lessons.find((l) => l.id === item.unitId);
+      if (!unit) return acc;
 
-    if (item.type === "vocabulary") {
-      const vocab = unit.vocabulary.find((v) => v.word === item.key);
-      if (vocab) acc[item.unitId].vocabulary.push({ ...vocab, rawItem: item });
-    } else if (item.type === "phrase") {
-      const phrase = unit.phrases.find((p) => p.text === item.key);
-      if (phrase) acc[item.unitId].phrases.push({ ...phrase, rawItem: item });
-    } else if (item.type === "collocation") {
-      const collocation = unit.memoryBoost.collocations.find(
-        (c) => `${c.verb} ${c.noun}` === item.key
-      );
-      if (collocation) acc[item.unitId].collocations.push({ ...collocation, rawItem: item });
-    }
+      if (!acc[item.unitId]) {
+        acc[item.unitId] = {
+          unit,
+          vocabulary: [],
+          phrases: [],
+          collocations: [],
+        };
+      }
 
-    return acc;
-  }, {} as Record<number, GroupedItem>);
+      if (item.type === "vocabulary") {
+        const vocab = unit.vocabulary.find((v) => v.word === item.key);
+        if (vocab)
+          acc[item.unitId].vocabulary.push({ ...vocab, rawItem: item });
+      } else if (item.type === "phrase") {
+        const phrase = unit.phrases.find((p) => p.text === item.key);
+        if (phrase) acc[item.unitId].phrases.push({ ...phrase, rawItem: item });
+      } else if (item.type === "collocation") {
+        const collocation = unit.memoryBoost.collocations.find(
+          (c) => `${c.verb} ${c.noun}` === item.key,
+        );
+        if (collocation)
+          acc[item.unitId].collocations.push({ ...collocation, rawItem: item });
+      }
 
-  const unitIds = Object.keys(groupedItems).map(Number).sort((a, b) => a - b);
+      return acc;
+    },
+    {} as Record<number, GroupedItem>,
+  );
+
+  const unitIds = Object.keys(groupedItems)
+    .map(Number)
+    .sort((a, b) => a - b);
 
   const playAudio = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
@@ -82,7 +89,7 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="w-[400px] sm:w-[540px] p-0 flex flex-col bg-background shadow-2xl border-l"
+        className="w-400px sm:w-540px p-0 flex flex-col bg-background shadow-2xl border-l"
       >
         <SheetHeader className="p-6 border-b bg-primary/5">
           <SheetTitle className="flex items-center gap-2 font-heading text-primary">
@@ -102,8 +109,9 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
               </div>
               <div className="space-y-1">
                 <p className="font-bold text-lg">Sổ tay trống</p>
-                <p className="text-sm text-muted-foreground max-w-[240px]">
-                  Bấm vào biểu tượng ngôi sao hoặc bookmark trong các bài học để lưu nội dung.
+                <p className="text-sm text-muted-foreground max-w-240px">
+                  Bấm vào biểu tượng ngôi sao hoặc bookmark trong các bài học để
+                  lưu nội dung.
                 </p>
               </div>
             </div>
@@ -115,16 +123,19 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
                   <div key={unitId} className="space-y-4">
                     <div className="flex items-center justify-between sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10 border-b border-dashed">
                       <div className="flex items-center gap-2">
-                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                            TUẦN {unitId}
-                         </Badge>
-                         <h3 className="font-bold text-sm truncate max-w-[180px]">
-                            {group.unit.title}
-                         </h3>
+                        <Badge
+                          variant="outline"
+                          className="bg-primary/10 text-primary border-primary/20"
+                        >
+                          TUẦN {unitId}
+                        </Badge>
+                        <h3 className="font-bold text-sm truncate max-w-180px">
+                          {group.unit.title}
+                        </h3>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="h-7 text-[10px] font-bold text-primary hover:bg-primary/5 px-2"
                         onClick={() => {
                           onNavigateToUnit(group.unit);
@@ -138,12 +149,17 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
                     <div className="space-y-3 pl-2">
                       {/* Vocabulary */}
                       {group.vocabulary.map((v, i) => (
-                        <div key={`v-${i}`} className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative">
+                        <div
+                          key={`v-${i}`}
+                          className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative"
+                        >
                           <div className="flex justify-between items-start mb-2">
-                            <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-[9px] h-4 uppercase">Từ vựng</Badge>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Badge className="bg-blue-50 text-blue-700 border-blue-100 text-[9px] h-4 uppercase">
+                              Từ vựng
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-6 w-6 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => onRemoveItem(v.rawItem)}
                             >
@@ -152,11 +168,20 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
                           </div>
                           <div className="flex items-center justify-between">
                             <div>
-                                <h4 className="font-bold text-primary">{v.word}</h4>
-                                <p className="text-sm font-medium text-muted-foreground">{v.meaning}</p>
+                              <h4 className="font-bold text-primary">
+                                {v.word}
+                              </h4>
+                              <p className="text-sm font-medium text-muted-foreground">
+                                {v.meaning}
+                              </p>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => playAudio(v.word)}>
-                                <Volume2 className="h-4 w-4 text-muted-foreground" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 rounded-full"
+                              onClick={() => playAudio(v.word)}
+                            >
+                              <Volume2 className="h-4 w-4 text-muted-foreground" />
                             </Button>
                           </div>
                         </div>
@@ -164,23 +189,37 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
 
                       {/* Phrases */}
                       {group.phrases.map((p, i) => (
-                        <div key={`p-${i}`} className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative border-l-4 border-l-secondary/30">
+                        <div
+                          key={`p-${i}`}
+                          className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative border-l-4 border-l-secondary/30"
+                        >
                           <div className="flex justify-between items-start mb-2">
-                            <Badge className="bg-secondary/10 text-secondary border-none text-[9px] h-4 uppercase">Mẫu câu</Badge>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Badge className="bg-secondary/10 text-secondary border-none text-[9px] h-4 uppercase">
+                              Mẫu câu
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-6 w-6 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => onRemoveItem(p.rawItem)}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                          <h4 className="font-bold text-primary leading-tight mb-1">{p.text}</h4>
-                          <p className="text-sm font-medium text-muted-foreground">{p.translation}</p>
+                          <h4 className="font-bold text-primary leading-tight mb-1">
+                            {p.text}
+                          </h4>
+                          <p className="text-sm font-medium text-muted-foreground">
+                            {p.translation}
+                          </p>
                           <div className="mt-2 flex justify-end">
-                             <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => playAudio(p.text)}>
-                                <Volume2 className="h-3 w-3 text-muted-foreground" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 rounded-full"
+                              onClick={() => playAudio(p.text)}
+                            >
+                              <Volume2 className="h-3 w-3 text-muted-foreground" />
                             </Button>
                           </div>
                         </div>
@@ -188,12 +227,17 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
 
                       {/* Collocations */}
                       {group.collocations.map((c, i) => (
-                        <div key={`c-${i}`} className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative border-l-4 border-l-primary/30">
+                        <div
+                          key={`c-${i}`}
+                          className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative border-l-4 border-l-primary/30"
+                        >
                           <div className="flex justify-between items-start mb-2">
-                            <Badge className="bg-primary/10 text-primary border-none text-[9px] h-4 uppercase">Công thức</Badge>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Badge className="bg-primary/10 text-primary border-none text-[9px] h-4 uppercase">
+                              Công thức
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-6 w-6 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={() => onRemoveItem(c.rawItem)}
                             >
