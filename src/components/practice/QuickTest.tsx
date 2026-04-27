@@ -1,21 +1,23 @@
 import React, { useMemo, useState } from "react";
 import type { Unit, Question } from "../../types";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   ChevronLeft,
   ChevronRight,
   Send,
   CheckCircle2,
-  XCircle,
   Zap,
-  Home,
 } from "lucide-react";
 
-type QuestionAnswer = string | Record<string, string>;
-type ArrangementAnswer = string[];
+import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
+import { MatchingQuestion } from "./questions/MatchingQuestion";
+import { ArrangementQuestion } from "./questions/ArrangementQuestion";
+import { InputQuestion } from "./questions/InputQuestion";
+import { PracticeSidebar } from "./layout/PracticeSidebar";
+import { PracticeHeader } from "./layout/PracticeHeader";
+import { PracticeResults } from "./results/PracticeResults";
 
 export interface QuickTestProps {
   lessons: Unit[];
@@ -41,7 +43,6 @@ function generateQuickTestQuestions(
   for (const unit of lessons) {
     if (!completedUnitIds.includes(unit.id)) continue;
 
-    // 1. Vocabulary MCQ
     for (const vocab of unit.vocabulary.slice(0, 3)) {
       const wrongOptions = unit.vocabulary
         .filter((v) => v.word !== vocab.word)
@@ -57,7 +58,6 @@ function generateQuickTestQuestions(
       });
     }
 
-    // 2. Sentence Pattern MCQ
     for (const phrase of unit.phrases.slice(0, 2)) {
       const otherPhrases = unit.phrases.filter((p) => p.text !== phrase.text);
       const wrongOptions = shuffleArray(otherPhrases)
@@ -73,7 +73,6 @@ function generateQuickTestQuestions(
       });
     }
 
-    // 3. Dictation (Viết câu)
     for (const phrase of unit.phrases.slice(0, 2)) {
       pool.push({
         id: `qt_phrase_write_${unit.id}_${phrase.text.slice(0, 20)}`,
@@ -84,7 +83,6 @@ function generateQuickTestQuestions(
       });
     }
 
-    // 4. Matching (Ghép đôi)
     const matchingItems = unit.vocabulary.slice(0, 4);
     if (matchingItems.length >= 3) {
       pool.push({
@@ -119,6 +117,19 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   const [questions] = useState<Question[]>(() =>
     generateQuickTestQuestions(lessons, completedUnitIds),
   );
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [matchingAnswers, setMatchingAnswers] = useState<
+    Record<string, Record<string, string>>
+  >({});
+  const [arrangementAnswers, setArrangementAnswers] = useState<
+    Record<string, string[]>
+  >({});
+  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const currentQ = questions[currentIndex];
+
   const matchingRightOptionsByQuestionId = useMemo(() => {
     const stableOrders: Record<string, { left: string; right: string }[]> = {};
     questions.forEach((q) => {
@@ -128,48 +139,47 @@ export const QuickTest: React.FC<QuickTestProps> = ({
     });
     return stableOrders;
   }, [questions]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
-  const [arrangementAnswers, setArrangementAnswers] = useState<
-    Record<string, ArrangementAnswer>
-  >({});
-  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
-
-  const currentQ = questions[currentIndex];
-
-  const setAnswer = (qId: string, ans: QuestionAnswer) => {
-    setAnswers((prev) => ({ ...prev, [qId]: ans }));
-  };
 
   const isQuestionAnswered = (q: Question) => {
     if (q.type === "Matching") {
       const pairCount = q.pairs?.length || 0;
-      return pairCount > 0 && Object.keys((answers[q.id] as Record<string, string>) || {}).length === pairCount;
+      return (
+        pairCount > 0 &&
+        Object.keys(matchingAnswers[q.id] || {}).length === pairCount
+      );
     }
     if (q.type === "Arrangement") {
       return (arrangementAnswers[q.id] || []).length > 0;
     }
-    return typeof answers[q.id] === "string" && (answers[q.id] as string).trim().length > 0;
+    return (
+      typeof answers[q.id] === "string" &&
+      (answers[q.id] as string).trim().length > 0
+    );
   };
 
-  const score = questions.filter((q) => {
-    if (q.type === "Matching") {
-      const userMatches = (answers[q.id] as Record<string, string>) || {};
-      return q.pairs?.every((p) => userMatches[p.left] === p.right);
-    }
-    if (q.type === "Arrangement") {
-      const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
-      const correctAns = (q.answer as string) || "";
-      return userArranged.toLowerCase() === correctAns.trim().toLowerCase();
-    }
-    const userAns = ((answers[q.id] as string) || "").trim().toLowerCase();
-    const correctAns = ((q.answer as string) || "").trim().toLowerCase();
-    const acceptable = (q.acceptableAnswers || []).map((a) =>
-      a.trim().toLowerCase(),
-    );
-    return userAns === correctAns || acceptable.includes(userAns);
-  }).length;
+  const calculateScore = () => {
+    return questions.filter((q) => {
+      if (q.type === "Matching") {
+        const userMatches = matchingAnswers[q.id] || {};
+        return q.pairs?.every((p) => userMatches[p.left] === p.right);
+      }
+      if (q.type === "Arrangement") {
+        const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
+        const correctAns = (q.answer as string) || "";
+        return userArranged.toLowerCase() === correctAns.trim().toLowerCase();
+      }
+      const userAns = String(answers[q.id] || "")
+        .trim()
+        .toLowerCase();
+      const correctAns = String(q.answer || "")
+        .trim()
+        .toLowerCase();
+      const acceptable = (q.acceptableAnswers || []).map((a) =>
+        a.trim().toLowerCase(),
+      );
+      return userAns === correctAns || acceptable.includes(userAns);
+    }).length;
+  };
 
   if (questions.length === 0) {
     return (
@@ -204,174 +214,78 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   }
 
   if (submitted) {
-    const percent = Math.round((score / questions.length) * 100);
+    const scoreValue = calculateScore();
+    const percent = Math.round((scoreValue / questions.length) * 100);
+    const combinedAnswers: Record<
+      string,
+      string | Record<string, string> | string[]
+    > = {
+      ...answers,
+      ...matchingAnswers,
+      ...arrangementAnswers,
+    };
+
     return (
-      <div className="max-w-4xl mx-auto space-y-8 py-8 animate-fade-in">
-        <Card className="police-shadow border-none overflow-hidden text-center">
-          <div className="primary-gradient p-10">
-            <h2 className="text-3xl font-heading font-black text-white uppercase tracking-widest">
-              ⚡ KẾT QUẢ TEST NHANH
-            </h2>
-            <div className="mt-6 inline-flex flex-col items-center justify-center h-32 w-32 rounded-full bg-white/10 backdrop-blur-md border-4 border-white/20">
-              <span className="text-4xl font-black text-white">{percent}%</span>
-              <span className="text-[10px] font-bold text-white/70">
-                {score}/{questions.length} CÂU
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {questions.map((q, i) => {
-            let isCorrect = false;
-            let displayUserAns = "";
-            let displayCorrectAns = "";
-
-            if (q.type === "Matching") {
-              const userMatches =
-                (answers[q.id] as Record<string, string>) || {};
-              isCorrect = !!q.pairs?.every(
-                (p) => userMatches[p.left] === p.right,
-              );
-              displayUserAns = "Bài tập ghép đôi";
-              displayCorrectAns = "Dựa trên danh sách từ vựng";
-            } else if (q.type === "Arrangement") {
-              const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
-              const correctAns = (q.answer as string) || "";
-              isCorrect =
-                userArranged.toLowerCase() === correctAns.trim().toLowerCase();
-              displayUserAns = `Bạn: ${userArranged || "(Chưa trả lời)"}`;
-              displayCorrectAns = `Đáp án: ${correctAns}`;
-            } else {
-              const userAns = (answers[q.id] as string) || "(Chưa trả lời)";
-              const correctAns = (q.answer as string) || "";
-              const normalizedUser = userAns.trim().toLowerCase();
-              const normalizedCorrect = correctAns.trim().toLowerCase();
-              const acceptable = (q.acceptableAnswers || []).map((a) =>
-                a.trim().toLowerCase(),
-              );
-              isCorrect =
-                normalizedUser === normalizedCorrect ||
-                acceptable.includes(normalizedUser);
-              displayUserAns = `Bạn: ${userAns}`;
-              displayCorrectAns = `Đáp án: ${correctAns}`;
-            }
-
-            return (
-              <Card
-                key={q.id}
-                className={`border-l-4 ${isCorrect ? "border-l-green-500" : "border-l-red-500"} police-shadow`}
-              >
-                <CardContent className="p-4 flex items-start gap-4">
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${isCorrect ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
-                  >
-                    {isCorrect ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <XCircle className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      CÂU {i + 1} ({q.type})
-                    </p>
-                    <p className="font-bold text-sm leading-snug">{q.prompt}</p>
-                    <div className="text-xs space-y-1 pt-1">
-                      <p
-                        className={
-                          isCorrect ? "text-green-600" : "text-red-600"
-                        }
-                      >
-                        {displayUserAns}
-                      </p>
-                      {!isCorrect && (
-                        <p className="text-green-600 font-medium">
-                          {displayCorrectAns}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="flex justify-center pt-8">
-          <Button
-            size="lg"
-            className="h-14 px-10 rounded-xl primary-gradient police-shadow font-bold"
-            onClick={onBack}
-          >
-            <Home className="mr-2 h-5 w-5" /> QUAY LẠI TRANG CHỦ
-          </Button>
-        </div>
-      </div>
+      <PracticeResults
+        score={percent}
+        totalQuestions={questions.length}
+        questions={questions}
+        userAnswers={combinedAnswers}
+        onBack={onBack}
+        title="⚡ KẾT QUẢ TEST NHANH"
+      />
     );
   }
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
-      <Button
-        variant="ghost"
-        onClick={onBack}
-        className="group text-primary font-bold"
-      >
-        <ChevronLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />{" "}
-        QUAY LẠI
-      </Button>
+      <PracticeHeader onBack={onBack} />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
-        {/* Sidebar - Swapped to LEFT */}
-        <aside className="w-full lg:w-80 space-y-6 shrink-0 lg:sticky lg:top-24">
-          <Card className="police-shadow border-none overflow-hidden">
-            <CardHeader className="bg-muted/50 border-b p-4">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-                DANH SÁCH CÂU HỎI
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-8">
-              <div className="grid grid-cols-4 gap-3">
-                {questions.map((q, i) => (
-                  <button
-                    key={q.id}
-                    className={`h-12 w-12 rounded-lg font-bold text-sm border-2 transition-all ${
-                      isQuestionAnswered(q)
-                        ? "bg-primary text-white border-primary"
-                        : i === currentIndex
-                          ? "border-secondary bg-secondary/10 text-primary scale-110 shadow-sm"
-                          : "border-muted text-muted-foreground hover:border-primary/30"
-                    }`}
-                    onClick={() => setCurrentIndex(i)}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-
-              <Button
-                size="lg"
-                className={`w-full h-16 text-lg font-black rounded-xl primary-gradient police-shadow transition-all ${
-                  questions.every((q) => isQuestionAnswered(q))
-                    ? "scale-100 opacity-100"
-                    : "opacity-50 scale-95"
+        <PracticeSidebar
+          title="DANH SÁCH CÂU HỎI"
+          icon={<CheckCircle2 className="h-4 w-4 text-primary" />}
+          footer={
+            <Button
+              size="lg"
+              className={`w-full h-16 text-lg font-black rounded-xl primary-gradient police-shadow transition-all ${
+                questions.every((q) => isQuestionAnswered(q))
+                  ? "scale-100 opacity-100"
+                  : "opacity-50 scale-95"
+              }`}
+              disabled={!questions.every((q) => isQuestionAnswered(q))}
+              onClick={() => {
+                setSubmitted(true);
+                if (onComplete)
+                  onComplete(
+                    Math.round((calculateScore() / questions.length) * 100),
+                  );
+              }}
+            >
+              <Send className="mr-3 h-6 w-6" />
+              NỘP BÀI
+            </Button>
+          }
+        >
+          <div className="grid grid-cols-4 gap-3">
+            {questions.map((q, i) => (
+              <button
+                key={q.id}
+                className={`h-12 w-12 rounded-lg font-bold text-sm border-2 transition-all ${
+                  isQuestionAnswered(q)
+                    ? "bg-primary text-white border-primary"
+                    : i === currentIndex
+                      ? "border-secondary bg-secondary/10 text-primary scale-110 shadow-sm"
+                      : "border-muted text-muted-foreground hover:border-primary/30"
                 }`}
-                disabled={!questions.every((q) => isQuestionAnswered(q))}
-                onClick={() => {
-                  setSubmitted(true);
-                  if (onComplete) onComplete(score);
-                }}
+                onClick={() => setCurrentIndex(i)}
               >
-                <Send className="mr-3 h-6 w-6" />
-                NỘP BÀI
-              </Button>
-            </CardContent>
-          </Card>
-        </aside>
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </PracticeSidebar>
 
-        {/* Main Card - Swapped to RIGHT */}
         <div className="flex-1 w-full space-y-6">
           <Card className="police-shadow border-none min-h-[400px] flex flex-col">
             <CardHeader className="border-b bg-muted/20 py-3">
@@ -400,195 +314,67 @@ export const QuickTest: React.FC<QuickTestProps> = ({
 
                 <div className="space-y-3 py-2">
                   {currentQ.type === "MCQ" || currentQ.type === "Scenario" ? (
-                    <div className="grid grid-cols-1 gap-3">
-                      {currentQ.options?.map((opt, i) => (
-                        <Button
-                          key={i}
-                          variant={
-                            answers[currentQ.id] === opt ? "default" : "outline"
-                          }
-                          className={`h-auto py-3.5 px-6 justify-start text-left text-sm font-bold transition-all border-2 ${
-                            answers[currentQ.id] === opt
-                              ? "ring-2 ring-primary ring-offset-1 police-shadow"
-                              : "hover:bg-primary/5 hover:border-primary/20"
-                          }`}
-                          onClick={() => setAnswer(currentQ.id, opt)}
-                        >
-                          <span
-                            className={`h-5 w-5 rounded-full border-2 flex items-center justify-center mr-3 shrink-0 text-[10px] ${
-                              answers[currentQ.id] === opt
-                                ? "bg-white text-primary border-white"
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {String.fromCharCode(65 + i)}
-                          </span>
-                          {opt}
-                        </Button>
-                      ))}
-                    </div>
+                    <MultipleChoiceQuestion
+                      question={currentQ}
+                      selectedAnswer={answers[currentQ.id]}
+                      onSelect={(ans) =>
+                        setAnswers((prev) => ({ ...prev, [currentQ.id]: ans }))
+                      }
+                    />
                   ) : currentQ.type === "Matching" ? (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          {currentQ.pairs?.map((p) => {
-                            const userMatches =
-                              (answers[currentQ.id] as Record<
-                                string,
-                                string
-                              >) || {};
-                            const isMatched = !!userMatches[p.left];
-                            const isSelected = selectedLeft === p.left;
-                            return (
-                              <Button
-                                key={p.left}
-                                variant={
-                                  isSelected
-                                    ? "default"
-                                    : isMatched
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                                disabled={isMatched}
-                                onClick={() => setSelectedLeft(p.left)}
-                                className="w-full justify-start text-xs h-10 relative overflow-hidden"
-                              >
-                                {p.left}
-                                {isMatched && (
-                                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute right-1 top-1" />
-                                )}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                        <div className="space-y-2">
-                          {(matchingRightOptionsByQuestionId[currentQ.id] || []).map((p) => {
-                            const userMatches =
-                              (answers[currentQ.id] as Record<
-                                string,
-                                string
-                              >) || {};
-                            const isMatched = Object.values(
-                              userMatches,
-                            ).includes(p.right);
-                            return (
-                              <Button
-                                key={p.right}
-                                variant={isMatched ? "secondary" : "outline"}
-                                disabled={isMatched || !selectedLeft}
-                                onClick={() => {
-                                  if (selectedLeft) {
-                                    const newMatches = {
-                                      ...userMatches,
-                                      [selectedLeft]: p.right,
-                                    };
-                                    setAnswer(currentQ.id, newMatches);
-                                    setSelectedLeft(null);
-                                  }
-                                }}
-                                className="w-full justify-start text-xs h-10"
-                              >
-                                {p.right}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground italic text-center">
-                        * Chọn một từ bên trái sau đó chọn nghĩa bên phải
-                      </p>
-                    </div>
+                    <MatchingQuestion
+                      question={currentQ}
+                      matchingAnswers={matchingAnswers[currentQ.id] || {}}
+                      selectedLeft={selectedLeft}
+                      onSelectLeft={setSelectedLeft}
+                      onMatch={(left, right) => {
+                        const current = matchingAnswers[currentQ.id] || {};
+                        setMatchingAnswers((prev) => ({
+                          ...prev,
+                          [currentQ.id]: { ...current, [left]: right },
+                        }));
+                        setSelectedLeft(null);
+                      }}
+                      shuffledRightOptions={
+                        matchingRightOptionsByQuestionId[currentQ.id] || []
+                      }
+                    />
                   ) : currentQ.type === "Arrangement" ? (
-                    <div className="space-y-4">
-                      <div className="p-3 rounded-lg border bg-muted/30">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
-                          Câu bạn đang sắp xếp
-                        </p>
-                        <div className="min-h-12 p-2 rounded border bg-white flex flex-wrap gap-2">
-                          {(arrangementAnswers[currentQ.id] || []).length > 0 ? (
-                            (arrangementAnswers[currentQ.id] || []).map((word, idx) => (
-                              <Button
-                                key={`${word}-${idx}`}
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                onClick={() =>
-                                  setArrangementAnswers((prev) => {
-                                    const next = [...(prev[currentQ.id] || [])];
-                                    next.splice(idx, 1);
-                                    setAnswer(currentQ.id, next.join(" "));
-                                    return { ...prev, [currentQ.id]: next };
-                                  })
-                                }
-                              >
-                                {word}
-                              </Button>
-                            ))
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              Chọn từ bên dưới theo đúng thứ tự.
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="p-3 rounded-lg border bg-muted/20">
-                        <div className="flex flex-wrap gap-2">
-                          {(currentQ.options || []).map((word, idx) => {
-                            const selected = arrangementAnswers[currentQ.id] || [];
-                            const usedCount = selected.filter((w) => w === word).length;
-                            const availableCount = (currentQ.options || [])
-                              .slice(0, idx + 1)
-                              .filter((w) => w === word).length;
-                            const disabled = usedCount >= availableCount;
-                            return (
-                              <Button
-                                key={`${word}-${idx}`}
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={disabled}
-                                onClick={() =>
-                                  setArrangementAnswers((prev) => {
-                                    const next = [...(prev[currentQ.id] || []), word];
-                                    setAnswer(currentQ.id, next.join(" "));
-                                    return { ...prev, [currentQ.id]: next };
-                                  })
-                                }
-                              >
-                                {word}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setArrangementAnswers((prev) => ({
-                            ...prev,
-                            [currentQ.id]: [],
-                          }));
-                          setAnswer(currentQ.id, "");
-                        }}
-                      >
-                        Xóa sắp xếp
-                      </Button>
-                    </div>
+                    <ArrangementQuestion
+                      question={currentQ}
+                      selectedWords={arrangementAnswers[currentQ.id] || []}
+                      onAddWord={(word) => {
+                        const current = arrangementAnswers[currentQ.id] || [];
+                        setArrangementAnswers((prev) => ({
+                          ...prev,
+                          [currentQ.id]: [...current, word],
+                        }));
+                      }}
+                      onRemoveWord={(idx) => {
+                        const current = [
+                          ...(arrangementAnswers[currentQ.id] || []),
+                        ];
+                        current.splice(idx, 1);
+                        setArrangementAnswers((prev) => ({
+                          ...prev,
+                          [currentQ.id]: current,
+                        }));
+                      }}
+                      onReset={() =>
+                        setArrangementAnswers((prev) => ({
+                          ...prev,
+                          [currentQ.id]: [],
+                        }))
+                      }
+                    />
                   ) : (
-                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                        Nhập câu trả lời của bạn:
-                      </label>
-                      <Input
-                        type="text"
-                        value={(answers[currentQ.id] as string) || ""}
-                        onChange={(e) => setAnswer(currentQ.id, e.target.value)}
-                        placeholder="Type the English text here..."
-                        className="h-14 text-base font-bold border-2 focus-visible:ring-primary police-shadow"
-                      />
-                    </div>
+                    <InputQuestion
+                      question={currentQ}
+                      value={answers[currentQ.id] || ""}
+                      onChange={(val) =>
+                        setAnswers((prev) => ({ ...prev, [currentQ.id]: val }))
+                      }
+                    />
                   )}
                 </div>
               </div>

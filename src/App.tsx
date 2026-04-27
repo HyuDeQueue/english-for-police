@@ -28,7 +28,6 @@ const LessonViewPage = ({
   updateDailyTask,
   setFlaggedItems,
   onBack,
-  onStartGeneralKnowledgeTest,
 }: {
   lessons: Unit[];
   flaggedItems: FlaggedItem[];
@@ -47,7 +46,6 @@ const LessonViewPage = ({
       onBack={onBack}
       flaggedItems={flaggedItems}
       onPhraseAction={() => updateDailyTask("speak", 1)}
-      onStartGeneralKnowledgeTest={onStartGeneralKnowledgeTest}
       toggleFlag={(item) => {
         const exists = flaggedItems.find(
           (f) =>

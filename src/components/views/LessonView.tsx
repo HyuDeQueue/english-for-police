@@ -16,7 +16,6 @@ import {
   List,
   Zap,
   BookMarked,
-  Brain,
 } from "lucide-react";
 
 interface LessonViewProps {
@@ -25,7 +24,6 @@ interface LessonViewProps {
   flaggedItems: FlaggedItem[];
   toggleFlag: (item: FlaggedItem) => void;
   onPhraseAction?: () => void;
-  onStartGeneralKnowledgeTest?: () => void;
 }
 
 export const LessonView: React.FC<LessonViewProps> = ({
@@ -34,7 +32,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
   flaggedItems,
   toggleFlag,
   onPhraseAction,
-  onStartGeneralKnowledgeTest,
 }) => {
   const isFlagged = (
     unitId: number,
@@ -140,17 +137,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
               <ChevronLeft className="mr-2 h-4 w-4" />
               QUAY LẠI
             </Button>
-
-            {onStartGeneralKnowledgeTest && (
-              <Button
-                variant="default"
-                className="w-full justify-start text-xs font-black bg-primary text-white hover:bg-primary/90 police-shadow"
-                onClick={onStartGeneralKnowledgeTest}
-              >
-                <Brain className="mr-2 h-4 w-4" />
-                BÀI TỔNG HỢP
-              </Button>
-            )}
 
             {[
               { id: "vocabulary", label: "01 Từ vựng", icon: Zap },

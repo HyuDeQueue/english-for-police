@@ -3,16 +3,15 @@ import type { Unit, Question } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle2,
-  XCircle,
-  Send,
-  Home,
-  Brain,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Send, ChevronDown } from "lucide-react";
+
+import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
+import { MatchingQuestion } from "./questions/MatchingQuestion";
+import { ArrangementQuestion } from "./questions/ArrangementQuestion";
+import { InputQuestion } from "./questions/InputQuestion";
+import { PracticeSidebar } from "./layout/PracticeSidebar";
+import { PracticeHeader } from "./layout/PracticeHeader";
+import { PracticeResults } from "./results/PracticeResults";
 
 type MatchingAnswer = Record<string, string>;
 type MatchingPair = NonNullable<Question["pairs"]>[number];
@@ -82,7 +81,6 @@ function generateGeneralQuestions(lessons: Unit[]): Question[] {
       });
     });
 
-    // Keep all curated lesson practice questions too.
     unit.practice.forEach((question, idx) => {
       pool.push({
         ...question,
@@ -90,7 +88,6 @@ function generateGeneralQuestions(lessons: Unit[]): Question[] {
       });
     });
 
-    // Build multiple matching sets so more vocabulary is covered.
     const matchingChunkSize = 4;
     for (let i = 0; i < unit.vocabulary.length; i += matchingChunkSize) {
       const matchingItems = unit.vocabulary.slice(i, i + matchingChunkSize);
@@ -243,6 +240,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   }, [questions, testMode]);
 
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const currentSection = sections[currentSectionIndex];
 
@@ -269,9 +267,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     return stableOrders;
   }, [questions]);
 
-  const [answers, setAnswers] = useState<
-    Record<string, string | MatchingAnswer>
-  >({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [matchingAnswers, setMatchingAnswers] = useState<
     Record<string, MatchingAnswer>
   >({});
@@ -282,7 +278,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     Record<string, string | null>
   >({});
   const [showResults, setShowResults] = useState(false);
-  const [score, setScore] = useState(0);
+  const [overallScore, setOverallScore] = useState(0);
   const [sectionResults, setSectionResults] = useState<
     Record<number, SectionResult>
   >({});
@@ -291,42 +287,28 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
 
   const isQuestionAnswered = (q: Question): boolean => {
     if (!q) return false;
-    if (q.type === "MCQ" || q.type === "Scenario") {
-      return (
-        typeof answers[q.id] === "string" &&
-        (answers[q.id] as string).trim().length > 0
-      );
-    }
-    if (
-      q.type === "Dictation" ||
-      q.type === "FillInBlank" ||
-      q.type === "Speaking"
-    ) {
-      return (
-        typeof answers[q.id] === "string" &&
-        (answers[q.id] as string).trim().length > 0
-      );
-    }
     if (q.type === "Matching") {
       const pairCount = q.pairs?.length || 0;
-      if (pairCount === 0) return false;
-      return Object.keys(matchingAnswers[q.id] || {}).length === pairCount;
+      return (
+        pairCount > 0 &&
+        Object.keys(matchingAnswers[q.id] || {}).length === pairCount
+      );
     }
     if (q.type === "Arrangement") {
       return (arrangementAnswers[q.id] || []).length > 0;
     }
-    return false;
+    return (
+      typeof answers[q.id] === "string" &&
+      (answers[q.id] as string).trim().length > 0
+    );
   };
 
-  const sectionProgress = sections.map((section) => {
+  const sectionProgress = sections.map((section, idx) => {
     const sectionQs = questions.filter((q) =>
       section.questionIds.includes(q.id),
     );
     const answered = sectionQs.filter((q) => isQuestionAnswered(q)).length;
-    const result =
-      sectionResults[
-        sections.findIndex((item) => item.title === section.title)
-      ];
+    const result = sectionResults[idx];
     return {
       answered,
       total: sectionQs.length,
@@ -335,12 +317,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     };
   });
 
-  const allSectionsSubmitted =
-    sections.length > 0 &&
-    sections.every((_, idx) => sectionResults[idx]?.submitted);
-
   const resetTestState = () => {
     setCurrentSectionIndex(0);
+    setExpandedSectionIndex(0);
     setCurrentPageIndex(0);
     setCurrentIndexInSection(0);
     setAnswers({});
@@ -349,15 +328,10 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     setSelectedLeft({});
     setSectionResults({});
     setShowResults(false);
-    setScore(0);
+    setOverallScore(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const changeTestMode = (nextMode: TestMode) => {
-    if (nextMode === testMode) return;
-    setTestMode(nextMode);
-    resetTestState();
-  };
 
   const calculateScore = (questionList: Question[]) => {
     let correctCount = 0;
@@ -381,10 +355,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         return;
       }
 
-      const userAnswer =
-        typeof answers[q.id] === "string"
-          ? (answers[q.id] as string).trim().toLowerCase()
-          : "";
+      const userAnswer = String(answers[q.id] || "")
+        .trim()
+        .toLowerCase();
       const correctAnswer = String(q.answer || "")
         .trim()
         .toLowerCase();
@@ -422,7 +395,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       (sum, result) => sum + result.correctCount,
       0,
     );
-    const overallScore =
+    const calculatedOverallScore =
       questions.length > 0
         ? Math.round((overallCorrect / questions.length) * 100)
         : 0;
@@ -431,13 +404,13 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       sections.length > 0 &&
       sections.every((_, idx) => nextResults[idx]?.submitted)
     ) {
-      setScore(overallScore);
+      setOverallScore(calculatedOverallScore);
       setShowResults(true);
     }
   };
 
   const handleBack = () => {
-    if (showResults && onComplete) onComplete(score);
+    if (showResults && onComplete) onComplete(overallScore);
     onBack();
   };
 
@@ -460,146 +433,44 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     );
   }
 
-  if (showResults && allSectionsSubmitted) {
+  if (showResults) {
+    const combinedAnswers: Record<
+      string,
+      string | MatchingAnswer | ArrangementAnswer
+    > = {
+      ...answers,
+      ...matchingAnswers,
+      ...arrangementAnswers,
+    };
+
     return (
-      <div className="max-w-5xl mx-auto space-y-6 py-8 animate-fade-in">
-        <Card className="police-shadow border-none overflow-hidden text-center">
-          <div className="primary-gradient p-8">
-            <h2 className="text-3xl font-heading font-black text-white uppercase tracking-widest">
-              KẾT QUẢ TEST TỔNG HỢP
-            </h2>
-            <div className="mt-5 inline-flex flex-col items-center justify-center h-28 w-28 rounded-full bg-white/10 border-4 border-white/20">
-              <span className="text-4xl font-black text-white">{score}%</span>
-              <span className="text-[10px] font-bold text-white/70">
-                {Math.round((score / 100) * questions.length)}/
-                {questions.length} CÂU
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {questions.map((q, i) => {
-            let isCorrect = false;
-            let userDisplay = "";
-            let answerDisplay = "";
-
-            if (q.type === "Matching") {
-              const userPairs = matchingAnswers[q.id] || {};
-              isCorrect = (q.pairs || []).every(
-                (pair) => userPairs[pair.left] === pair.right,
-              );
-              userDisplay = "Bài ghép đôi";
-              answerDisplay = (q.pairs || [])
-                .map((pair) => `${pair.left} - ${pair.right}`)
-                .join(", ");
-            } else if (q.type === "Arrangement") {
-              const userArranged = (arrangementAnswers[q.id] || [])
-                .join(" ")
-                .trim();
-              const correctAnswer = String(q.answer || "").trim();
-              isCorrect =
-                userArranged.toLowerCase() === correctAnswer.toLowerCase();
-              userDisplay = `Bạn: ${userArranged || "(Chưa trả lời)"}`;
-              answerDisplay = `Đáp án: ${correctAnswer}`;
-            } else {
-              const userAnswer =
-                typeof answers[q.id] === "string"
-                  ? (answers[q.id] as string)
-                  : "(Chưa trả lời)";
-              const correctAnswer = String(q.answer || "");
-              const normalizedUser = userAnswer.trim().toLowerCase();
-              const normalizedCorrect = correctAnswer.trim().toLowerCase();
-              const acceptable = (q.acceptableAnswers || []).map((a) =>
-                a.trim().toLowerCase(),
-              );
-              isCorrect =
-                normalizedUser === normalizedCorrect ||
-                acceptable.includes(normalizedUser);
-              userDisplay = `Bạn: ${userAnswer || "(Chưa trả lời)"}`;
-              answerDisplay = `Đáp án: ${correctAnswer}`;
-            }
-
-            return (
-              <Card
-                key={q.id}
-                className={`border-l-4 ${isCorrect ? "border-l-green-500" : "border-l-red-500"} police-shadow`}
-              >
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${isCorrect ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
-                  >
-                    {isCorrect ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <XCircle className="h-5 w-5" />
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <p className="text-[10px] font-bold uppercase text-muted-foreground">
-                      CÂU {i + 1} ({q.type})
-                    </p>
-                    <p className="text-sm font-bold leading-snug">{q.prompt}</p>
-                    <p
-                      className={
-                        isCorrect
-                          ? "text-green-600 text-xs"
-                          : "text-red-600 text-xs"
-                      }
-                    >
-                      {userDisplay}
-                    </p>
-                    {!isCorrect && (
-                      <p className="text-green-600 text-xs font-medium">
-                        {answerDisplay}
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <Button
-          size="lg"
-          className="w-full h-12 font-bold"
-          onClick={handleBack}
-        >
-          <Home className="mr-2 h-4 w-4" />
-          QUAY LẠI ({score}%)
-        </Button>
-      </div>
+      <PracticeResults
+        score={overallScore}
+        totalQuestions={questions.length}
+        questions={questions}
+        userAnswers={combinedAnswers}
+        onBack={handleBack}
+        title="KẾT QUẢ TEST TỔNG HỢP"
+      />
     );
   }
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-20">
-      <div className="flex justify-between items-center px-4">
-        <Button
-          variant="ghost"
-          onClick={handleBack}
-          className="group text-primary font-bold"
-        >
-          <ChevronLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-          QUAY LẠI
-        </Button>
-
-        <div className="flex gap-2">
-          {sections.map((_, idx) => (
-            <div
-              key={idx}
-              className={`h-2 w-12 rounded-full transition-all ${
-                idx === currentSectionIndex
-                  ? "bg-primary w-20"
-                  : idx < currentSectionIndex
-                    ? "bg-green-500"
-                    : "bg-muted"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
+      <PracticeHeader onBack={handleBack}>
+        {sections.map((_, idx) => (
+          <div
+            key={idx}
+            className={`h-2 w-12 rounded-full transition-all ${
+              idx === currentSectionIndex
+                ? "bg-primary w-20"
+                : idx < currentSectionIndex
+                  ? "bg-green-500"
+                  : "bg-muted"
+            }`}
+          />
+        ))}
+      </PracticeHeader>
 
       <div className="flex flex-wrap gap-2 px-4">
         <Button
@@ -607,7 +478,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
           variant={testMode === "type" ? "default" : "outline"}
           size="sm"
           className="font-bold"
-          onClick={() => changeTestMode("type")}
+          onClick={() => {
+            if (testMode === "type") return;
+            setTestMode("type");
+            resetTestState();
+          }}
         >
           Theo dạng
         </Button>
@@ -616,7 +491,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
           variant={testMode === "chapter" ? "default" : "outline"}
           size="sm"
           className="font-bold"
-          onClick={() => changeTestMode("chapter")}
+          onClick={() => {
+            if (testMode === "chapter") return;
+            setTestMode("chapter");
+            resetTestState();
+          }}
         >
           Theo chương
         </Button>
@@ -625,157 +504,178 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
           variant={testMode === "bank" ? "default" : "outline"}
           size="sm"
           className="font-bold"
-          onClick={() => changeTestMode("bank")}
+          onClick={() => {
+            if (testMode === "bank") return;
+            setTestMode("bank");
+            resetTestState();
+          }}
         >
           Trộn ngân hàng
         </Button>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start px-4">
-        <aside className="w-full lg:w-80 space-y-6 shrink-0 lg:sticky lg:top-24">
-          <Card className="police-shadow border-none overflow-hidden">
-            <CardHeader className="bg-muted/50 border-b p-4">
-              <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                <Brain className="h-4 w-4 text-primary" />
-                PHẦN {currentSectionIndex + 1}: {currentSection?.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-6">
-              <p className="text-xs text-muted-foreground font-medium leading-relaxed italic border-l-2 border-primary/20 pl-3">
-                "{currentSection?.description}"
+        <PracticeSidebar
+          title="DANH SÁCH CÂU HỎI"
+          description="Chọn từng phần để bắt đầu làm bài. Bạn có thể nộp bài riêng cho từng phần."
+          footer={
+            <>
+              <Button
+                size="lg"
+                className={`w-full h-14 text-base font-black rounded-xl transition-all ${
+                  sectionQuestions.length > 0
+                    ? "primary-gradient police-shadow"
+                    : "bg-muted text-muted-foreground opacity-60"
+                }`}
+                disabled={sectionQuestions.length === 0}
+                onClick={handleSubmitSection}
+              >
+                <Send className="mr-2 h-5 w-5" />
+                {sectionResults[currentSectionIndex]?.submitted
+                  ? "NỘP LẠI BÀI NÀY"
+                  : "NỘP BÀI NÀY"}
+              </Button>
+              <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
+                Mỗi bài luyện tập có nút nộp riêng
               </p>
+            </>
+          }
+        >
+          <div className="space-y-3">
+            {sections.map((section, idx) => {
+              const isActive = idx === currentSectionIndex;
+              const progress = sectionProgress[idx];
+              const result = sectionResults[idx];
 
-              <div className="grid grid-cols-4 gap-3">
-                {pagedSectionQuestions.map((q, idx) => (
-                  <button
-                    key={q.id}
-                    className={`h-11 w-11 rounded-lg font-bold text-xs border-2 transition-all ${
-                      isQuestionAnswered(q)
-                        ? "bg-primary text-white border-primary"
-                        : idx === currentIndexInSection
-                          ? "border-secondary bg-secondary/10 text-primary scale-110 shadow-sm"
-                          : "border-muted text-muted-foreground hover:border-primary/30"
+              return (
+                <div key={section.title} className="space-y-3">
+                  <Button
+                    type="button"
+                    variant={isActive ? "default" : "outline"}
+                    className={`w-full h-12 justify-between text-xs font-bold transition-all rounded-xl ${
+                      isActive ? "text-white shadow-md" : "text-slate-800"
                     }`}
-                    onClick={() => setCurrentIndexInSection(idx)}
-                  >
-                    {idx + 1}
-                  </button>
-                ))}
-              </div>
-
-              {testMode === "chapter" &&
-                sectionQuestions.length > QUESTIONS_PER_PAGE && (
-                  <div className="flex items-center justify-between gap-2 rounded-xl border bg-muted/20 px-3 py-2">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs font-bold"
-                      disabled={currentPageIndex === 0}
-                      onClick={() => {
-                        setCurrentPageIndex((prev) => Math.max(0, prev - 1));
+                    onClick={() => {
+                      if (isActive) {
+                        setExpandedSectionIndex(expandedSectionIndex === idx ? null : idx);
+                      } else {
+                        setCurrentSectionIndex(idx);
+                        setExpandedSectionIndex(idx);
+                        setCurrentPageIndex(0);
                         setCurrentIndexInSection(0);
-                      }}
-                    >
-                      <ChevronLeft className="mr-1 h-3 w-3" />
-                      Trang trước
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2 text-xs font-bold"
-                      disabled={
-                        (currentPageIndex + 1) * QUESTIONS_PER_PAGE >=
-                        sectionQuestions.length
+                        window.scrollTo({ top: 0, behavior: "smooth" });
                       }
-                      onClick={() => {
-                        setCurrentPageIndex((prev) => prev + 1);
-                        setCurrentIndexInSection(0);
-                      }}
-                    >
-                      Trang sau
-                      <ChevronRight className="ml-1 h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-
-              <div className="pt-4 border-t space-y-3">
-                <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
-                  Chọn bài luyện tập để làm từng test nhỏ
-                </p>
-
-                <div className="space-y-2">
-                  {sections.map((section, idx) => {
-                    const progress = sectionProgress[idx];
-                    const result = sectionResults[idx];
-                    return (
-                      <Button
-                        key={section.title}
-                        type="button"
-                        variant={
-                          idx === currentSectionIndex ? "default" : "outline"
-                        }
-                        className={`w-full h-11 justify-between text-xs font-bold transition-all ${
-                          idx === currentSectionIndex
-                            ? "text-white shadow-md"
-                            : "text-slate-800"
+                    }}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="shrink-0">{idx + 1}.</span>
+                      <span className="truncate">{section.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={result?.submitted ? "secondary" : "outline"}
+                        className={`shrink-0 border text-[10px] ${
+                          isActive
+                            ? "border-white/30 bg-white/15 text-white"
+                            : "border-slate-200 bg-white text-slate-700"
                         }`}
-                        onClick={() => {
-                          setCurrentSectionIndex(idx);
-                          setCurrentPageIndex(0);
-                          setCurrentIndexInSection(0);
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
                       >
-                        <span className="truncate">
-                          {idx + 1}. {section.title}
-                        </span>
-                        <Badge
-                          variant={
-                            result?.submitted
-                              ? "secondary"
-                              : progress?.isComplete
-                                ? "outline"
-                                : "outline"
-                          }
-                          className={`ml-2 shrink-0 border ${
-                            idx === currentSectionIndex
-                              ? "border-white/30 bg-white/15 text-white"
-                              : "border-slate-200 bg-white text-slate-700"
-                          }`}
-                        >
-                          {result?.submitted
-                            ? `${result.score}%`
-                            : `${progress?.answered ?? 0}/${progress?.total ?? 0}`}
-                        </Badge>
-                      </Button>
-                    );
-                  })}
-                </div>
+                        {result?.submitted
+                          ? `${result.score}%`
+                          : `${progress?.answered ?? 0}/${progress?.total ?? 0}`}
+                      </Badge>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-300 ${expandedSectionIndex === idx ? "rotate-180" : ""}`}
+                      />
+                    </div>
+                  </Button>
 
-                <Button
-                  size="lg"
-                  className={`w-full h-14 text-base font-black rounded-xl transition-all ${
-                    sectionQuestions.length > 0
-                      ? "primary-gradient police-shadow scale-100"
-                      : "bg-muted text-muted-foreground opacity-60"
-                  }`}
-                  disabled={sectionQuestions.length === 0}
-                  onClick={handleSubmitSection}
-                >
-                  <Send className="mr-2 h-5 w-5" />
-                  {sectionResults[currentSectionIndex]?.submitted
-                    ? "NỘP LẠI BÀI NÀY"
-                    : "NỘP BÀI NÀY"}
-                </Button>
-                <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
-                  Mỗi bài luyện tập có nút nộp riêng
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
+                  {expandedSectionIndex === idx && (
+                    <div className="pl-1 pr-1 py-1 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="bg-muted/30 rounded-xl p-3 border border-muted-foreground/10">
+                        <p className="text-[10px] text-muted-foreground italic mb-3 line-clamp-2">
+                          {section.description}
+                        </p>
+                        <div className="grid grid-cols-4 gap-2.5">
+                          {pagedSectionQuestions.map((q, qIdx) => {
+                            const globalIdx = (currentPageIndex * QUESTIONS_PER_PAGE) + qIdx;
+                            return (
+                              <button
+                                key={q.id}
+                                className={`h-10 w-10 rounded-lg font-bold text-[11px] border-2 transition-all ${
+                                  isQuestionAnswered(q)
+                                    ? "bg-primary text-white border-primary"
+                                    : qIdx === currentIndexInSection
+                                      ? "border-secondary bg-secondary/10 text-primary scale-110 shadow-sm"
+                                      : "border-muted text-muted-foreground hover:border-primary/30"
+                                }`}
+                                onClick={() => {
+                                  if (!isActive) {
+                                    setCurrentSectionIndex(idx);
+                                    setCurrentPageIndex(currentPageIndex);
+                                  }
+                                  setCurrentIndexInSection(qIdx);
+                                }}
+                              >
+                                {globalIdx + 1}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {sectionQuestions.length > QUESTIONS_PER_PAGE && (
+                          <div className="flex items-center justify-between gap-1 rounded-lg border bg-muted/20 px-2 py-1.5">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-1.5 text-[10px] font-bold"
+                              disabled={currentPageIndex === 0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrentPageIndex((prev) =>
+                                  Math.max(0, prev - 1),
+                                );
+                                setCurrentIndexInSection(0);
+                              }}
+                            >
+                              <ChevronLeft className="mr-1 h-3 w-3" />
+                              Trước
+                            </Button>
+                            <span className="text-[9px] font-black text-muted-foreground">
+                              {currentPageIndex + 1}/
+                              {Math.ceil(
+                                sectionQuestions.length / QUESTIONS_PER_PAGE,
+                              )}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-1.5 text-[10px] font-bold"
+                              disabled={
+                                (currentPageIndex + 1) * QUESTIONS_PER_PAGE >=
+                                sectionQuestions.length
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrentPageIndex((prev) => prev + 1);
+                                setCurrentIndexInSection(0);
+                              }}
+                            >
+                              Sau
+                              <ChevronRight className="ml-1 h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </PracticeSidebar>
 
         <div className="flex-1 w-full space-y-6">
           <Card className="police-shadow border-none min-h-360px flex flex-col">
@@ -815,281 +715,92 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                     <div className="space-y-3 py-1">
                       {currentQuestion.type === "MCQ" ||
                       currentQuestion.type === "Scenario" ? (
-                        <div className="grid grid-cols-1 gap-3">
-                          {currentQuestion.options?.map((opt, i) => (
-                            <Button
-                              key={i}
-                              variant={
-                                answers[currentQuestion.id] === opt
-                                  ? "default"
-                                  : "outline"
-                              }
-                              className={`h-auto py-3 px-4 justify-start text-left text-sm font-bold transition-all border-2 ${
-                                answers[currentQuestion.id] === opt
-                                  ? "ring-2 ring-primary ring-offset-2 police-shadow bg-primary text-white"
-                                  : "hover:bg-primary/5 hover:border-primary/20"
-                              }`}
-                              onClick={() =>
-                                setAnswers((prev) => ({
-                                  ...prev,
-                                  [currentQuestion.id]: opt,
-                                }))
-                              }
-                            >
-                              <span
-                                className={`h-5 w-5 rounded-full border-2 flex items-center justify-center mr-3 shrink-0 text-[11px] ${
-                                  answers[currentQuestion.id] === opt
-                                    ? "bg-white text-primary border-white"
-                                    : "text-muted-foreground border-muted"
-                                }`}
-                              >
-                                {String.fromCharCode(65 + i)}
-                              </span>
-                              {opt}
-                            </Button>
-                          ))}
-                        </div>
+                        <MultipleChoiceQuestion
+                          question={currentQuestion}
+                          selectedAnswer={answers[currentQuestion.id]}
+                          onSelect={(ans) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: ans,
+                            }))
+                          }
+                        />
                       ) : currentQuestion.type === "Matching" ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div className="space-y-3">
-                              <p className="text-[10px] font-black text-muted-foreground uppercase mb-2">
-                                Tiếng Anh
-                              </p>
-                              {currentQuestion.pairs?.map((pair) => {
-                                const current =
-                                  matchingAnswers[currentQuestion.id] || {};
-                                const isMatched = !!current[pair.left];
-                                const isSelected =
-                                  selectedLeft[currentQuestion.id] ===
-                                  pair.left;
-                                return (
-                                  <Button
-                                    key={pair.left}
-                                    variant={
-                                      isSelected
-                                        ? "default"
-                                        : isMatched
-                                          ? "secondary"
-                                          : "outline"
-                                    }
-                                    disabled={isMatched}
-                                    onClick={() =>
-                                      setSelectedLeft((prev) => ({
-                                        ...prev,
-                                        [currentQuestion.id]: pair.left,
-                                      }))
-                                    }
-                                    className="w-full justify-start text-xs h-10 relative overflow-hidden font-bold"
-                                  >
-                                    {pair.left}
-                                    {isMatched && (
-                                      <CheckCircle2 className="h-4 w-4 text-green-500 absolute right-2 top-1/2 -translate-y-1/2" />
-                                    )}
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                            <div className="space-y-3">
-                              <p className="text-[10px] font-black text-muted-foreground uppercase mb-2">
-                                Nghĩa Tiếng Việt
-                              </p>
-                              {(
-                                matchingRightOptionsByQuestionId[
-                                  currentQuestion.id
-                                ] || []
-                              ).map((pair) => {
-                                const current =
-                                  matchingAnswers[currentQuestion.id] || {};
-                                const isMatched = Object.values(
-                                  current,
-                                ).includes(pair.right);
-                                return (
-                                  <Button
-                                    key={pair.right}
-                                    variant={
-                                      isMatched ? "secondary" : "outline"
-                                    }
-                                    disabled={
-                                      isMatched ||
-                                      !selectedLeft[currentQuestion.id]
-                                    }
-                                    onClick={() => {
-                                      const left =
-                                        selectedLeft[currentQuestion.id];
-                                      if (!left) return;
-                                      const newMatches: MatchingAnswer = {
-                                        ...current,
-                                        [left]: pair.right,
-                                      };
-                                      setMatchingAnswers((prev) => ({
-                                        ...prev,
-                                        [currentQuestion.id]: newMatches,
-                                      }));
-                                      setAnswers((prev) => ({
-                                        ...prev,
-                                        [currentQuestion.id]: newMatches,
-                                      }));
-                                      setSelectedLeft((prev) => ({
-                                        ...prev,
-                                        [currentQuestion.id]: null,
-                                      }));
-                                    }}
-                                    className="w-full justify-start text-xs h-10 font-medium"
-                                  >
-                                    {pair.right}
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          <p className="text-[11px] text-muted-foreground italic text-center bg-muted/30 py-1.5 rounded-lg">
-                            * Chọn một từ bên trái sau đó chọn nghĩa phù hợp bên
-                            phải
-                          </p>
-                        </div>
+                        <MatchingQuestion
+                          question={currentQuestion}
+                          matchingAnswers={
+                            matchingAnswers[currentQuestion.id] || {}
+                          }
+                          selectedLeft={
+                            selectedLeft[currentQuestion.id] || null
+                          }
+                          onSelectLeft={(left) =>
+                            setSelectedLeft((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: left,
+                            }))
+                          }
+                          onMatch={(left, right) => {
+                            const current =
+                              matchingAnswers[currentQuestion.id] || {};
+                            const newMatches = { ...current, [left]: right };
+                            setMatchingAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: newMatches,
+                            }));
+                            setSelectedLeft((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: null,
+                            }));
+                          }}
+                          shuffledRightOptions={
+                            matchingRightOptionsByQuestionId[
+                              currentQuestion.id
+                            ] || []
+                          }
+                        />
                       ) : currentQuestion.type === "Arrangement" ? (
-                        <div className="space-y-4">
-                          <div className="p-4 rounded-2xl border-2 border-dashed bg-muted/10">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">
-                              Khu vực sắp xếp
-                            </p>
-                            <div className="min-h-14 p-2.5 rounded-xl bg-white border flex flex-wrap gap-2">
-                              {(arrangementAnswers[currentQuestion.id] || [])
-                                .length > 0 ? (
-                                (
-                                  arrangementAnswers[currentQuestion.id] || []
-                                ).map((word, idx) => (
-                                  <Button
-                                    key={`${word}-${idx}`}
-                                    type="button"
-                                    variant="secondary"
-                                    className="h-9 px-3 text-xs font-bold animate-in zoom-in-50 duration-200"
-                                    onClick={() => {
-                                      setArrangementAnswers((prev) => {
-                                        const next = [
-                                          ...(prev[currentQuestion.id] || []),
-                                        ];
-                                        next.splice(idx, 1);
-                                        setAnswers((old) => ({
-                                          ...old,
-                                          [currentQuestion.id]: next.join(" "),
-                                        }));
-                                        return {
-                                          ...prev,
-                                          [currentQuestion.id]: next,
-                                        };
-                                      });
-                                    }}
-                                  >
-                                    {word}
-                                  </Button>
-                                ))
-                              ) : (
-                                <span className="text-xs text-muted-foreground italic self-center mx-auto">
-                                  Chạm vào các từ bên dưới để xây dựng câu hoàn
-                                  chỉnh
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="p-4 rounded-2xl bg-secondary/5 border-2 border-secondary/10">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary mb-4">
-                              Các từ cho sẵn
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {(currentQuestion.options || []).map(
-                                (word, idx) => {
-                                  const selected =
-                                    arrangementAnswers[currentQuestion.id] ||
-                                    [];
-                                  const usedCount = selected.filter(
-                                    (w) => w === word,
-                                  ).length;
-                                  const availableCount = (
-                                    currentQuestion.options || []
-                                  )
-                                    .slice(0, idx + 1)
-                                    .filter((w) => w === word).length;
-                                  const disabled = usedCount >= availableCount;
-                                  return (
-                                    <Button
-                                      key={`${word}-${idx}`}
-                                      type="button"
-                                      variant="outline"
-                                      disabled={disabled}
-                                      className={`h-9 px-3 text-xs font-bold border-2 transition-all ${disabled ? "opacity-30 scale-90" : "hover:border-primary hover:text-primary"}`}
-                                      onClick={() => {
-                                        setArrangementAnswers((prev) => {
-                                          const next = [
-                                            ...(prev[currentQuestion.id] || []),
-                                            word,
-                                          ];
-                                          setAnswers((old) => ({
-                                            ...old,
-                                            [currentQuestion.id]:
-                                              next.join(" "),
-                                          }));
-                                          return {
-                                            ...prev,
-                                            [currentQuestion.id]: next,
-                                          };
-                                        });
-                                      }}
-                                    >
-                                      {word}
-                                    </Button>
-                                  );
-                                },
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex justify-center">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="text-muted-foreground hover:text-red-500 font-bold"
-                              onClick={() => {
-                                setArrangementAnswers((prev) => ({
-                                  ...prev,
-                                  [currentQuestion.id]: [],
-                                }));
-                                setAnswers((prev) => ({
-                                  ...prev,
-                                  [currentQuestion.id]: "",
-                                }));
-                              }}
-                            >
-                              <XCircle className="mr-2 h-4 w-4" /> Xóa toàn bộ
-                              sắp xếp
-                            </Button>
-                          </div>
-                        </div>
+                        <ArrangementQuestion
+                          question={currentQuestion}
+                          selectedWords={
+                            arrangementAnswers[currentQuestion.id] || []
+                          }
+                          onAddWord={(word) => {
+                            const current =
+                              arrangementAnswers[currentQuestion.id] || [];
+                            setArrangementAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: [...current, word],
+                            }));
+                          }}
+                          onRemoveWord={(idx) => {
+                            const current = [
+                              ...(arrangementAnswers[currentQuestion.id] || []),
+                            ];
+                            current.splice(idx, 1);
+                            setArrangementAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: current,
+                            }));
+                          }}
+                          onReset={() =>
+                            setArrangementAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: [],
+                            }))
+                          }
+                        />
                       ) : (
-                        <div className="space-y-3">
-                          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-                            Nhập bản dịch tiếng Anh:
-                          </label>
-                          <Input
-                            type="text"
-                            value={
-                              typeof answers[currentQuestion.id] === "string"
-                                ? (answers[currentQuestion.id] as string)
-                                : ""
-                            }
-                            onChange={(e) =>
-                              setAnswers((prev) => ({
-                                ...prev,
-                                [currentQuestion.id]: e.target.value,
-                              }))
-                            }
-                            placeholder="Nhập câu trả lời của bạn..."
-                            className="h-12 text-base font-bold border-2 focus-visible:ring-primary police-shadow rounded-xl px-4"
-                          />
-                        </div>
+                        <InputQuestion
+                          question={currentQuestion}
+                          value={answers[currentQuestion.id] || ""}
+                          onChange={(val) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: val,
+                            }))
+                          }
+                        />
                       )}
                     </div>
                   </>
