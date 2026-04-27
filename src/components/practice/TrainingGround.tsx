@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
 import type { Unit, Question } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -147,6 +153,15 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   const [questions] = useState<Question[]>(() =>
     generateTrainingGroundQuestions(unit),
   );
+  const matchingRightOptionsByQuestionIndex = useMemo(() => {
+    const stableOrders: Record<number, MatchingPair[]> = {};
+    questions.forEach((q, idx) => {
+      if (q.type === "Matching") {
+        stableOrders[idx] = shuffleArray([...(q.pairs || [])]);
+      }
+    });
+    return stableOrders;
+  }, [questions]);
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [textAnswers, setTextAnswers] = useState<{ [key: number]: string }>({});
   const [matchingAnswers, setMatchingAnswers] = useState<{
@@ -221,7 +236,8 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
 
   const isQuestionAnswered = (q: Question, idx: number) => {
     if (q.type === "MCQ") return answers[idx] !== undefined;
-    if (q.type === "Dictation") return (textAnswers[idx] || "").trim().length > 0;
+    if (q.type === "Dictation")
+      return (textAnswers[idx] || "").trim().length > 0;
     if (q.type === "Matching") {
       const pairCount = q.pairs?.length || 0;
       if (pairCount === 0) return false;
@@ -482,35 +498,37 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                       </div>
                       {/* Right Column */}
                       <div className="space-y-2">
-                        {shuffleArray(q.pairs || []).map((p: MatchingPair) => {
-                          const isMatched = Object.values(
-                            matchingAnswers[i] || {},
-                          ).includes(p.right);
-                          return (
-                            <Button
-                              key={p.right}
-                              variant={isMatched ? "secondary" : "outline"}
-                              disabled={
-                                showResults || isMatched || !selectedLeft
-                              }
-                              onClick={() => {
-                                if (selectedLeft) {
-                                  setMatchingAnswers((prev) => ({
-                                    ...prev,
-                                    [i]: {
-                                      ...(prev[i] || {}),
-                                      [selectedLeft]: p.right,
-                                    },
-                                  }));
-                                  setSelectedLeft(null);
+                        {(matchingRightOptionsByQuestionIndex[i] || []).map(
+                          (p: MatchingPair) => {
+                            const isMatched = Object.values(
+                              matchingAnswers[i] || {},
+                            ).includes(p.right);
+                            return (
+                              <Button
+                                key={p.right}
+                                variant={isMatched ? "secondary" : "outline"}
+                                disabled={
+                                  showResults || isMatched || !selectedLeft
                                 }
-                              }}
-                              className="w-full justify-start text-sm h-12"
-                            >
-                              {p.right}
-                            </Button>
-                          );
-                        })}
+                                onClick={() => {
+                                  if (selectedLeft) {
+                                    setMatchingAnswers((prev) => ({
+                                      ...prev,
+                                      [i]: {
+                                        ...(prev[i] || {}),
+                                        [selectedLeft]: p.right,
+                                      },
+                                    }));
+                                    setSelectedLeft(null);
+                                  }
+                                }}
+                                className="w-full justify-start text-sm h-12"
+                              >
+                                {p.right}
+                              </Button>
+                            );
+                          },
+                        )}
                       </div>
                     </div>
                     {showResults && (

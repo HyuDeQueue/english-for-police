@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { Unit, Question } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -110,6 +110,15 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   const [questions] = useState<Question[]>(() =>
     generateQuickTestQuestions(lessons, completedUnitIds),
   );
+  const matchingRightOptionsByQuestionId = useMemo(() => {
+    const stableOrders: Record<string, { left: string; right: string }[]> = {};
+    questions.forEach((q) => {
+      if (q.type === "Matching") {
+        stableOrders[q.id] = shuffleArray([...(q.pairs || [])]);
+      }
+    });
+    return stableOrders;
+  }, [questions]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
@@ -409,7 +418,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                           })}
                         </div>
                         <div className="space-y-2">
-                          {shuffleArray(currentQ.pairs || []).map((p) => {
+                          {(matchingRightOptionsByQuestionId[currentQ.id] || []).map((p) => {
                             const userMatches =
                               (answers[currentQ.id] as Record<
                                 string,

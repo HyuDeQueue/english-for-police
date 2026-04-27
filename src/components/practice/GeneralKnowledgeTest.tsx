@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import type { Unit, Question } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 type MatchingAnswer = Record<string, string>;
+type MatchingPair = NonNullable<Question["pairs"]>[number];
 
 interface GeneralKnowledgeTestProps {
   lessons: Unit[];
@@ -119,6 +120,15 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   const [questions] = useState<Question[]>(() =>
     generateGeneralQuestions(lessons),
   );
+  const matchingRightOptionsByQuestionId = useMemo(() => {
+    const stableOrders: Record<string, MatchingPair[]> = {};
+    questions.forEach((q) => {
+      if (q.type === "Matching") {
+        stableOrders[q.id] = shuffleArray([...(q.pairs || [])]);
+      }
+    });
+    return stableOrders;
+  }, [questions]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<
     Record<string, string | MatchingAnswer>
@@ -501,7 +511,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                           })}
                         </div>
                         <div className="space-y-2">
-                          {shuffleArray(currentQuestion.pairs || []).map(
+                          {(matchingRightOptionsByQuestionId[currentQuestion.id] || []).map(
                             (pair) => {
                               const current =
                                 matchingAnswers[currentQuestion.id] || {};
