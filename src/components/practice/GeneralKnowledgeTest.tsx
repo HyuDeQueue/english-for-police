@@ -178,7 +178,13 @@ function buildSections(questions: Question[], mode: TestMode): Section[] {
   }
 
   const patternIds = questions
-    .filter((q) => q.id.includes("phrase-mcq") || q.type === "Scenario")
+    .filter(
+      (q) =>
+        q.id.includes("phrase-mcq") ||
+        q.type === "Scenario" ||
+        (q.id.includes("practice") &&
+          !["Matching", "Dictation", "Arrangement"].includes(q.type)),
+    )
     .map((q) => q.id);
   if (patternIds.length > 0) {
     sections.push({
@@ -250,10 +256,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   }, [currentSection, questions]);
 
   const pagedSectionQuestions = useMemo(() => {
-    if (testMode !== "chapter") return sectionQuestions;
     const start = currentPageIndex * QUESTIONS_PER_PAGE;
     return sectionQuestions.slice(start, start + QUESTIONS_PER_PAGE);
-  }, [currentPageIndex, sectionQuestions, testMode]);
+  }, [currentPageIndex, sectionQuestions]);
 
   const [currentIndexInSection, setCurrentIndexInSection] = useState(0);
 
@@ -599,13 +604,15 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                         <div className="grid grid-cols-4 gap-2.5">
                           {pagedSectionQuestions.map((q, qIdx) => {
                             const globalIdx = (currentPageIndex * QUESTIONS_PER_PAGE) + qIdx;
+                            const isAnswered = isQuestionAnswered(q);
+                            const isCurrent = globalIdx === currentIndexInSection;
                             return (
                               <button
                                 key={q.id}
                                 className={`h-10 w-10 rounded-lg font-bold text-[11px] border-2 transition-all ${
-                                  isQuestionAnswered(q)
+                                  isAnswered
                                     ? "bg-primary text-white border-primary"
-                                    : qIdx === currentIndexInSection
+                                    : isCurrent
                                       ? "border-secondary bg-secondary/10 text-primary scale-110 shadow-sm"
                                       : "border-muted text-muted-foreground hover:border-primary/30"
                                 }`}
