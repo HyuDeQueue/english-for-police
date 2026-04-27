@@ -39,6 +39,7 @@ export interface Question {
   acceptableAnswers?: string[];
   explanation?: string;
   vnPrompt?: string;
+  pairs?: { left: string; right: string }[];
 }
 
 export interface Unit {

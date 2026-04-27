@@ -15,6 +15,7 @@ import {
 } from "./components/practice/FlashcardReview";
 import { FlashcardSessionResults } from "./components/practice/FlashcardSessionResults";
 import { QuickTest } from "./components/practice/QuickTest";
+import { GeneralKnowledgeTest } from "./components/practice/GeneralKnowledgeTest";
 import { NotebookSidebar } from "./components/layout/NotebookSidebar";
 import { getFlashcardStatusStorageKey } from "./components/practice/flashcardStorage";
 
@@ -25,6 +26,7 @@ type ViewType =
   | "flashcards"
   | "flashcardResults"
   | "quicktest"
+  | "generaltest"
   | "admin";
 
 function parseHash(): { view: ViewType; unitId?: number } {
@@ -38,6 +40,9 @@ function parseHash(): { view: ViewType; unitId?: number } {
   if (parts[0] === "flashcards" && parts[1])
     return { view: "flashcards", unitId: Number(parts[1]) };
   if (parts[0] === "quicktest") return { view: "quicktest" };
+  if (parts[0] === "generaltest" && parts[1])
+    return { view: "generaltest", unitId: Number(parts[1]) };
+  if (parts[0] === "generaltest") return { view: "generaltest" };
   if (parts[0] === "admin") return { view: "admin" };
   return { view: "home" };
 }
@@ -81,7 +86,7 @@ function App() {
     if (unitId) {
       const unit = lessons.find((l) => l.id === unitId);
       if (unit) setSelectedUnit(unit);
-    } else if (view === "home") {
+    } else if (view === "home" || view === "generaltest") {
       setSelectedUnit(null);
     }
     // Close sidebars on navigation
@@ -209,6 +214,15 @@ function App() {
     navigate(`/flashcards/${unit.id}`);
   };
   const navigateToQuickTest = () => navigate("/quicktest");
+  const navigateToGeneralTest = (unit?: Unit) => {
+    if (unit) {
+      setSelectedUnit(unit);
+      navigate(`/generaltest/${unit.id}`);
+      return;
+    }
+    setSelectedUnit(null);
+    navigate("/generaltest");
+  };
 
   // Toggle Sidebar Handlers
   const toggleSearch = () => setSearchOpen((prev) => !prev);
@@ -223,6 +237,9 @@ function App() {
       onStartFlashcards={() =>
         selectedUnit && navigateToFlashcards(selectedUnit)
       }
+      onStartGeneralKnowledgeTest={() =>
+        selectedUnit && navigateToGeneralTest(selectedUnit)
+      }
       onToggleSearch={toggleSearch}
       onToggleNotebook={toggleNotebook}
     >
@@ -234,6 +251,7 @@ function App() {
           dailyTasks={dailyTasks}
           onSelectUnit={navigateToLesson}
           onStartQuickTest={navigateToQuickTest}
+          onStartGeneralKnowledgeTest={navigateToGeneralTest}
           onNavigate={(path) => (window.location.hash = path)}
         />
       )}
@@ -242,8 +260,6 @@ function App() {
         <LessonView
           unit={selectedUnit}
           onBack={navigateToHome}
-          onStartPractice={navigateToPractice}
-          onStartFlashcards={navigateToFlashcards}
           flaggedItems={flaggedItems}
           onPhraseAction={() => updateDailyTask("speak", 1)}
           toggleFlag={(item) => {
@@ -325,6 +341,17 @@ function App() {
           lessons={lessons}
           completedUnitIds={progress.completedUnits}
           onBack={navigateToHome}
+          onComplete={() => updateDailyTask("test", 1)}
+        />
+      )}
+
+      {currentView === "generaltest" && (
+        <GeneralKnowledgeTest
+          lessons={selectedUnit ? [selectedUnit] : lessons}
+          mode={selectedUnit ? "unit" : "all"}
+          onBack={() =>
+            selectedUnit ? navigateToLesson(selectedUnit) : navigateToHome()
+          }
           onComplete={() => updateDailyTask("test", 1)}
         />
       )}

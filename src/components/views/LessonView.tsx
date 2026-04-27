@@ -24,8 +24,6 @@ import {
 interface LessonViewProps {
   unit: Unit;
   onBack: () => void;
-  onStartPractice: (unit: Unit) => void;
-  onStartFlashcards: (unit: Unit) => void;
   flaggedItems: FlaggedItem[];
   toggleFlag: (item: FlaggedItem) => void;
   onPhraseAction?: () => void;
@@ -34,8 +32,6 @@ interface LessonViewProps {
 export const LessonView: React.FC<LessonViewProps> = ({
   unit,
   onBack,
-  onStartPractice,
-  onStartFlashcards,
   flaggedItems,
   toggleFlag,
   onPhraseAction,
@@ -178,26 +174,30 @@ export const LessonView: React.FC<LessonViewProps> = ({
             </h4>
           </div>
           <div className="p-4">
-            {flaggedItems.filter(f => f.unitId === unit.id).length > 0 ? (
+            {flaggedItems.filter((f) => f.unitId === unit.id).length > 0 ? (
               <div className="space-y-3 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
                 {flaggedItems
-                  .filter(f => f.unitId === unit.id)
+                  .filter((f) => f.unitId === unit.id)
                   .map((f, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 group cursor-default py-1 border-b border-dashed last:border-0 pb-2"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0 mt-1.5" />
-                    <div className="space-y-0.5 min-w-0">
-                       <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
-                          {f.type === "vocabulary" ? "Từ vựng" : f.type === "phrase" ? "Mẫu câu" : "Công thức"}
-                       </p>
-                       <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 group cursor-default py-1 border-b border-dashed last:border-0 pb-2"
+                    >
+                      <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0 mt-1.5" />
+                      <div className="space-y-0.5 min-w-0">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
+                          {f.type === "vocabulary"
+                            ? "Từ vựng"
+                            : f.type === "phrase"
+                              ? "Mẫu câu"
+                              : "Công thức"}
+                        </p>
+                        <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
                           {f.key}
-                       </p>
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground italic">
@@ -510,7 +510,9 @@ export const LessonView: React.FC<LessonViewProps> = ({
                           })
                         }
                       >
-                        <BookMarked className={`h-4 w-4 ${flagged ? "fill-current" : ""}`} />
+                        <BookMarked
+                          className={`h-4 w-4 ${flagged ? "fill-current" : ""}`}
+                        />
                       </Button>
                     </div>
                   );
@@ -520,22 +522,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
           </Card>
         </section>
 
-        {/* Action Row */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-8">
-          <Button
-            variant="outline"
-            className="flex-1 h-14 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5 rounded-xl transition-all"
-            onClick={() => onStartFlashcards(unit)}
-          >
-            ÔN TẬP FLASHCARDS
-          </Button>
-          <Button
-            className="flex-1 h-14 text-lg font-bold primary-gradient police-shadow rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-            onClick={() => onStartPractice(unit)}
-          >
-            BẮT ĐẦU KIỂM TRA
-          </Button>
-        </div>
       </div>
     </div>
   );

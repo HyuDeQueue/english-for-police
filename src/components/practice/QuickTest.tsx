@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import type { Unit, Question } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import {
   Zap,
   Home,
 } from "lucide-react";
+
+type QuestionAnswer = string | Record<string, string>;
 
 export interface QuickTestProps {
   lessons: Unit[];
@@ -30,75 +32,132 @@ function shuffleArray<T>(arr: T[]): T[] {
   return shuffled;
 }
 
+function generateQuickTestQuestions(
+  lessons: Unit[],
+  completedUnitIds: number[],
+): Question[] {
+  const pool: Question[] = [];
+  for (const unit of lessons) {
+    if (!completedUnitIds.includes(unit.id)) continue;
+
+    // 1. Vocabulary MCQ
+    for (const vocab of unit.vocabulary.slice(0, 3)) {
+      const wrongOptions = unit.vocabulary
+        .filter((v) => v.word !== vocab.word)
+        .slice(0, 2)
+        .map((v) => v.meaning);
+
+      pool.push({
+        id: `qt_vocab_${unit.id}_${vocab.word}`,
+        type: "MCQ",
+        prompt: `"${vocab.word}" nghĩa là gì?`,
+        options: shuffleArray([vocab.meaning, ...wrongOptions]),
+        answer: vocab.meaning,
+      });
+    }
+
+    // 2. Sentence Pattern MCQ
+    for (const phrase of unit.phrases.slice(0, 2)) {
+      const otherPhrases = unit.phrases.filter((p) => p.text !== phrase.text);
+      const wrongOptions = shuffleArray(otherPhrases)
+        .slice(0, 2)
+        .map((p) => p.translation);
+
+      pool.push({
+        id: `qt_phrase_recog_${unit.id}_${phrase.text.slice(0, 20)}`,
+        type: "MCQ",
+        prompt: `Chọn nghĩa đúng cho câu: "${phrase.text}"`,
+        options: shuffleArray([phrase.translation, ...wrongOptions]),
+        answer: phrase.translation,
+      });
+    }
+
+    // 3. Dictation (Viết câu)
+    for (const phrase of unit.phrases.slice(0, 2)) {
+      pool.push({
+        id: `qt_phrase_write_${unit.id}_${phrase.text.slice(0, 20)}`,
+        type: "Dictation",
+        prompt: `Dịch sang tiếng Anh: "${phrase.translation}"`,
+        vnPrompt: phrase.translation,
+        answer: phrase.text,
+      });
+    }
+
+    // 4. Matching (Ghép đôi)
+    const matchingItems = unit.vocabulary.slice(0, 4);
+    if (matchingItems.length >= 3) {
+      pool.push({
+        id: `qt_match_${unit.id}`,
+        type: "Matching",
+        prompt: `Ghép từ và nghĩa bài UNIT ${unit.id}`,
+        pairs: matchingItems.map((v) => ({
+          left: v.word,
+          right: v.meaning,
+        })),
+        answer: matchingItems.map((v) => `${v.word}:${v.meaning}`),
+      });
+    }
+  }
+  return shuffleArray(pool).slice(0, 10);
+}
+
 export const QuickTest: React.FC<QuickTestProps> = ({
   lessons,
   completedUnitIds,
   onBack,
   onComplete,
 }) => {
-  const questions = useMemo<Question[]>(() => {
-    const pool: Question[] = [];
-    for (const unit of lessons) {
-      if (!completedUnitIds.includes(unit.id)) continue;
-
-      // Generate MCQ from vocabulary
-      for (const vocab of unit.vocabulary.slice(0, 5)) {
-        const wrongOptions = unit.vocabulary
-          .filter((v) => v.word !== vocab.word)
-          .slice(0, 3)
-          .map((v) => v.meaning);
-
-        pool.push({
-          id: `qt_vocab_${unit.id}_${vocab.word}`,
-          type: "MCQ",
-          prompt: `"${vocab.word}" nghĩa là gì?`,
-          options: shuffleArray([vocab.meaning, ...wrongOptions]),
-          answer: vocab.meaning,
-        });
-      }
-
-      for (const phrase of unit.phrases.slice(0, 3)) {
-        pool.push({
-          id: `qt_phrase_${unit.id}_${phrase.text.slice(0, 20)}`,
-          type: "Dictation",
-          prompt: phrase.translation,
-          vnPrompt: phrase.translation,
-          answer: phrase.text,
-        });
-      }
-    }
-    return shuffleArray(pool).slice(0, 8);
-  }, [lessons, completedUnitIds]);
-
+  const [questions] = useState<Question[]>(() =>
+    generateQuickTestQuestions(lessons, completedUnitIds),
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
+  const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const currentQ = questions[currentIndex];
 
-  const setAnswer = (qId: string, ans: string) => {
-    if (submitted) return;
+  const setAnswer = (qId: string, ans: QuestionAnswer) => {
     setAnswers((prev) => ({ ...prev, [qId]: ans }));
   };
 
-  const score = questions.filter(
-    (q) =>
-      (answers[q.id] || "").trim().toLowerCase() ===
-      (q.answer as string).toLowerCase(),
-  ).length;
+  const score = questions.filter((q) => {
+    if (q.type === "Matching") {
+      const userMatches = (answers[q.id] as Record<string, string>) || {};
+      return q.pairs?.every((p) => userMatches[p.left] === p.right);
+    }
+    const userAns = (answers[q.id] as string) || "";
+    const correctAns = (q.answer as string) || "";
+    return userAns.trim().toLowerCase() === correctAns.toLowerCase();
+  }).length;
 
   if (questions.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in">
-        <Button variant="ghost" onClick={onBack} className="mb-8">
-          <ChevronLeft className="mr-2 h-4 w-4" /> QUAY LẠI
-        </Button>
-        <Card className="police-shadow border-none p-10">
-          <Zap className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-          <h2 className="text-2xl font-bold">Chưa có dữ liệu</h2>
-          <p className="text-muted-foreground mt-2">
-            Hãy hoàn thành ít nhất 1 bài học để mở bài test nhanh.
+      <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in px-4">
+        <Card className="police-shadow border-none p-12 flex flex-col items-center">
+          <div className="h-20 w-20 bg-muted/10 rounded-full flex items-center justify-center mb-6">
+            <Zap className="h-10 w-10 text-muted-foreground opacity-20" />
+          </div>
+          <h2 className="text-2xl font-bold mb-3">Chưa có dữ liệu kiểm tra</h2>
+          <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+            Bạn cần hoàn thành ít nhất 1 bài học (đọc hết nội dung và nghe phát
+            âm) để hệ thống tổng hợp câu hỏi cho bài test nhanh.
           </p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+            <Button
+              variant="outline"
+              onClick={onBack}
+              className="flex-1 h-12 font-bold"
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" /> QUAY LẠI
+            </Button>
+            <Button
+              onClick={onBack}
+              className="flex-1 h-12 font-bold primary-gradient border-none police-shadow"
+            >
+              HỌC BÀI MỚI <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </Card>
       </div>
     );
@@ -124,10 +183,27 @@ export const QuickTest: React.FC<QuickTestProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {questions.map((q, i) => {
-            const userAns = answers[q.id] || "(Chưa trả lời)";
-            const isCorrect =
-              userAns.trim().toLowerCase() ===
-              (q.answer as string).toLowerCase();
+            let isCorrect = false;
+            let displayUserAns = "";
+            let displayCorrectAns = "";
+
+            if (q.type === "Matching") {
+              const userMatches =
+                (answers[q.id] as Record<string, string>) || {};
+              isCorrect = !!q.pairs?.every(
+                (p) => userMatches[p.left] === p.right,
+              );
+              displayUserAns = "Bài tập ghép đôi";
+              displayCorrectAns = "Dựa trên danh sách từ vựng";
+            } else {
+              const userAns = (answers[q.id] as string) || "(Chưa trả lời)";
+              const correctAns = (q.answer as string) || "";
+              isCorrect =
+                userAns.trim().toLowerCase() === correctAns.toLowerCase();
+              displayUserAns = `Bạn: ${userAns}`;
+              displayCorrectAns = `Đáp án: ${correctAns}`;
+            }
+
             return (
               <Card
                 key={q.id}
@@ -145,17 +221,23 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                   </div>
                   <div className="flex-1 space-y-2">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase">
-                      CÂU {i + 1}
+                      CÂU {i + 1} ({q.type})
                     </p>
                     <p className="font-bold text-sm leading-snug">{q.prompt}</p>
-                    {!isCorrect && (
-                      <div className="text-xs space-y-1 pt-1">
-                        <p className="text-red-600">Bạn: {userAns}</p>
+                    <div className="text-xs space-y-1 pt-1">
+                      <p
+                        className={
+                          isCorrect ? "text-green-600" : "text-red-600"
+                        }
+                      >
+                        {displayUserAns}
+                      </p>
+                      {!isCorrect && (
                         <p className="text-green-600 font-medium">
-                          Đáp án: {q.answer as string}
+                          {displayCorrectAns}
                         </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -234,10 +316,6 @@ export const QuickTest: React.FC<QuickTestProps> = ({
               </Button>
             </CardContent>
           </Card>
-
-          <div className="p-4 bg-secondary/5 rounded-xl border border-secondary/20 text-[10px] font-bold text-secondary text-center uppercase tracking-widest">
-            Hoàn thành tất cả các câu để nộp bài
-          </div>
         </aside>
 
         {/* Main Card - Swapped to RIGHT */}
@@ -296,6 +374,77 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                         </Button>
                       ))}
                     </div>
+                  ) : currentQ.type === "Matching" ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          {currentQ.pairs?.map((p) => {
+                            const userMatches =
+                              (answers[currentQ.id] as Record<
+                                string,
+                                string
+                              >) || {};
+                            const isMatched = !!userMatches[p.left];
+                            const isSelected = selectedLeft === p.left;
+                            return (
+                              <Button
+                                key={p.left}
+                                variant={
+                                  isSelected
+                                    ? "default"
+                                    : isMatched
+                                      ? "secondary"
+                                      : "outline"
+                                }
+                                disabled={isMatched}
+                                onClick={() => setSelectedLeft(p.left)}
+                                className="w-full justify-start text-xs h-10 relative overflow-hidden"
+                              >
+                                {p.left}
+                                {isMatched && (
+                                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute right-1 top-1" />
+                                )}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <div className="space-y-2">
+                          {shuffleArray(currentQ.pairs || []).map((p) => {
+                            const userMatches =
+                              (answers[currentQ.id] as Record<
+                                string,
+                                string
+                              >) || {};
+                            const isMatched = Object.values(
+                              userMatches,
+                            ).includes(p.right);
+                            return (
+                              <Button
+                                key={p.right}
+                                variant={isMatched ? "secondary" : "outline"}
+                                disabled={isMatched || !selectedLeft}
+                                onClick={() => {
+                                  if (selectedLeft) {
+                                    const newMatches = {
+                                      ...userMatches,
+                                      [selectedLeft]: p.right,
+                                    };
+                                    setAnswer(currentQ.id, newMatches);
+                                    setSelectedLeft(null);
+                                  }
+                                }}
+                                className="w-full justify-start text-xs h-10"
+                              >
+                                {p.right}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground italic text-center">
+                        * Chọn một từ bên trái sau đó chọn nghĩa bên phải
+                      </p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -303,7 +452,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                       </label>
                       <Input
                         type="text"
-                        value={answers[currentQ.id] || ""}
+                        value={(answers[currentQ.id] as string) || ""}
                         onChange={(e) => setAnswer(currentQ.id, e.target.value)}
                         placeholder="Type the English text here..."
                         className="h-14 text-base font-bold border-2 focus-visible:ring-primary police-shadow"

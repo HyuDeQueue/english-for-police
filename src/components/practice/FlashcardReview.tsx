@@ -302,20 +302,8 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
           {/* Back Side */}
           <div className="absolute inset-0 backface-hidden rotate-y-180 bg-[#2e3856] rounded-2xl police-shadow flex flex-col p-6 overflow-hidden border border-white/5">
-            <div className="flex justify-end">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white/40 hover:text-white hover:bg-white/10 h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  playAudio(currentCard.back);
-                }}
-              >
-                <Volume2 className="h-5 w-5" />
-              </Button>
-            </div>
-
+            <div className="h-8" />{" "}
+            {/* Placeholder to maintain layout spacing */}
             <div className="flex-1 flex flex-col items-center justify-center text-center px-8 overflow-y-auto custom-scrollbar">
               <h3 className="text-2xl md:text-4xl font-bold text-emerald-400 mb-4">
                 {currentCard.back}
@@ -331,7 +319,6 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
                 </p>
               )}
             </div>
-
             {/* Shortcut Banner Back */}
             <div className="absolute bottom-0 left-0 right-0 h-14 bg-white/5 border-t border-white/5 flex items-center justify-center gap-3 text-xs font-medium">
               <Keyboard className="h-4 w-4 text-white/40" />

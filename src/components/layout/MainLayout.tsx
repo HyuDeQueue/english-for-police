@@ -7,6 +7,7 @@ interface MainLayoutProps {
   showPracticeButtons?: boolean;
   onStartPractice?: () => void;
   onStartFlashcards?: () => void;
+  onStartGeneralKnowledgeTest?: () => void;
   onToggleSearch?: () => void;
   onToggleNotebook?: () => void;
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   showPracticeButtons,
   onStartPractice,
   onStartFlashcards,
+  onStartGeneralKnowledgeTest,
   onToggleSearch,
   onToggleNotebook,
   children,
@@ -47,6 +49,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                   onClick={onStartFlashcards}
                 >
                   Ôn tập
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/10 hover:text-white"
+                  onClick={onStartGeneralKnowledgeTest}
+                >
+                  Tổng hợp
                 </Button>
                 <Button
                   variant="secondary"

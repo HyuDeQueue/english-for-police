@@ -12,6 +12,7 @@ import {
   BookOpen,
   ChevronRight,
   Zap,
+  Check,
 } from "lucide-react";
 import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
 import {
@@ -24,7 +25,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "../ui/checkbox";
 
 interface HomeViewProps {
   lessons: Unit[];
@@ -33,6 +33,7 @@ interface HomeViewProps {
   dailyTasks: DailyTask;
   onSelectUnit: (unit: Unit) => void;
   onStartQuickTest: () => void;
+  onStartGeneralKnowledgeTest: () => void;
   onNavigate: (path: string) => void;
 }
 
@@ -43,8 +44,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
   dailyTasks,
   onSelectUnit,
   onStartQuickTest,
+  onStartGeneralKnowledgeTest,
   onNavigate,
 }) => {
+  const allUnitsCompleted =
+    lessons.length > 0 && progress.completedUnits.length === lessons.length;
+
   const completedCount = dailyTasks.tasks.filter((t) => t.completed).length;
   const overallProgress =
     lessons.length > 0
@@ -118,11 +123,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 >
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center space-x-3 text-left w-full mr-2">
-                      <Checkbox
-                        id={task.id}
-                        checked={task.completed}
-                        className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 pointer-events-none"
-                      />
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                          task.completed
+                            ? "border-green-500 bg-green-500 text-white"
+                            : "border-input bg-background"
+                        }`}
+                      >
+                        {task.completed && <Check className="h-3 w-3" />}
+                      </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-1">
                           <span
@@ -217,14 +227,27 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Quick Test Button */}
       {progress.completedUnits.length > 0 && (
-        <Button
-          className="w-full h-14 text-lg font-bold bg-primary text-white hover:bg-primary/90 police-shadow group"
-          onClick={onStartQuickTest}
-        >
-          <Zap className="mr-2 h-5 w-5 fill-current text-secondary group-hover:scale-125 transition-transform" />
-          Bài test nhanh — Ôn lại từ đã học
-          <ArrowUpRight className="ml-2 h-5 w-5 opacity-50" />
-        </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Button
+            className="w-full h-14 text-lg font-bold bg-primary text-white hover:bg-primary/90 police-shadow group"
+            onClick={onStartQuickTest}
+          >
+            <Zap className="mr-2 h-5 w-5 fill-current text-secondary group-hover:scale-125 transition-transform" />
+            Bài test nhanh
+            <ArrowUpRight className="ml-2 h-5 w-5 opacity-50" />
+          </Button>
+          {allUnitsCompleted && (
+            <Button
+              variant="outline"
+              className="w-full h-14 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5"
+              onClick={onStartGeneralKnowledgeTest}
+            >
+              <BookOpen className="mr-2 h-5 w-5" />
+              Test tổng hợp kiến thức
+              <ArrowUpRight className="ml-2 h-5 w-5 opacity-50" />
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Lesson List */}
