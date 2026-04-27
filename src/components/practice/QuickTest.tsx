@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 type QuestionAnswer = string | Record<string, string>;
+type ArrangementAnswer = string[];
 
 export interface QuickTestProps {
   lessons: Unit[];
@@ -97,6 +98,14 @@ function generateQuickTestQuestions(
         answer: matchingItems.map((v) => `${v.word}:${v.meaning}`),
       });
     }
+
+    const extraPracticeQuestions = unit.practice
+      .filter((q) =>
+        ["Scenario", "FillInBlank", "Arrangement"].includes(q.type),
+      )
+      .slice(0, 3)
+      .map((q, idx) => ({ ...q, id: `qt_extra_${unit.id}_${idx}_${q.id}` }));
+    pool.push(...extraPracticeQuestions);
   }
   return shuffleArray(pool).slice(0, 10);
 }
@@ -121,6 +130,9 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   }, [questions]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, QuestionAnswer>>({});
+  const [arrangementAnswers, setArrangementAnswers] = useState<
+    Record<string, ArrangementAnswer>
+  >({});
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -130,14 +142,33 @@ export const QuickTest: React.FC<QuickTestProps> = ({
     setAnswers((prev) => ({ ...prev, [qId]: ans }));
   };
 
+  const isQuestionAnswered = (q: Question) => {
+    if (q.type === "Matching") {
+      const pairCount = q.pairs?.length || 0;
+      return pairCount > 0 && Object.keys((answers[q.id] as Record<string, string>) || {}).length === pairCount;
+    }
+    if (q.type === "Arrangement") {
+      return (arrangementAnswers[q.id] || []).length > 0;
+    }
+    return typeof answers[q.id] === "string" && (answers[q.id] as string).trim().length > 0;
+  };
+
   const score = questions.filter((q) => {
     if (q.type === "Matching") {
       const userMatches = (answers[q.id] as Record<string, string>) || {};
       return q.pairs?.every((p) => userMatches[p.left] === p.right);
     }
-    const userAns = (answers[q.id] as string) || "";
-    const correctAns = (q.answer as string) || "";
-    return userAns.trim().toLowerCase() === correctAns.toLowerCase();
+    if (q.type === "Arrangement") {
+      const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
+      const correctAns = (q.answer as string) || "";
+      return userArranged.toLowerCase() === correctAns.trim().toLowerCase();
+    }
+    const userAns = ((answers[q.id] as string) || "").trim().toLowerCase();
+    const correctAns = ((q.answer as string) || "").trim().toLowerCase();
+    const acceptable = (q.acceptableAnswers || []).map((a) =>
+      a.trim().toLowerCase(),
+    );
+    return userAns === correctAns || acceptable.includes(userAns);
   }).length;
 
   if (questions.length === 0) {
@@ -204,11 +235,24 @@ export const QuickTest: React.FC<QuickTestProps> = ({
               );
               displayUserAns = "Bài tập ghép đôi";
               displayCorrectAns = "Dựa trên danh sách từ vựng";
+            } else if (q.type === "Arrangement") {
+              const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
+              const correctAns = (q.answer as string) || "";
+              isCorrect =
+                userArranged.toLowerCase() === correctAns.trim().toLowerCase();
+              displayUserAns = `Bạn: ${userArranged || "(Chưa trả lời)"}`;
+              displayCorrectAns = `Đáp án: ${correctAns}`;
             } else {
               const userAns = (answers[q.id] as string) || "(Chưa trả lời)";
               const correctAns = (q.answer as string) || "";
+              const normalizedUser = userAns.trim().toLowerCase();
+              const normalizedCorrect = correctAns.trim().toLowerCase();
+              const acceptable = (q.acceptableAnswers || []).map((a) =>
+                a.trim().toLowerCase(),
+              );
               isCorrect =
-                userAns.trim().toLowerCase() === correctAns.toLowerCase();
+                normalizedUser === normalizedCorrect ||
+                acceptable.includes(normalizedUser);
               displayUserAns = `Bạn: ${userAns}`;
               displayCorrectAns = `Đáp án: ${correctAns}`;
             }
@@ -294,7 +338,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                   <button
                     key={q.id}
                     className={`h-12 w-12 rounded-lg font-bold text-sm border-2 transition-all ${
-                      answers[q.id]
+                      isQuestionAnswered(q)
                         ? "bg-primary text-white border-primary"
                         : i === currentIndex
                           ? "border-secondary bg-secondary/10 text-primary scale-110 shadow-sm"
@@ -310,11 +354,11 @@ export const QuickTest: React.FC<QuickTestProps> = ({
               <Button
                 size="lg"
                 className={`w-full h-16 text-lg font-black rounded-xl primary-gradient police-shadow transition-all ${
-                  Object.keys(answers).length === questions.length
+                  questions.every((q) => isQuestionAnswered(q))
                     ? "scale-100 opacity-100"
                     : "opacity-50 scale-95"
                 }`}
-                disabled={Object.keys(answers).length < questions.length}
+                disabled={!questions.every((q) => isQuestionAnswered(q))}
                 onClick={() => {
                   setSubmitted(true);
                   if (onComplete) onComplete(score);
@@ -355,7 +399,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                 </div>
 
                 <div className="space-y-3 py-2">
-                  {currentQ.type === "MCQ" ? (
+                  {currentQ.type === "MCQ" || currentQ.type === "Scenario" ? (
                     <div className="grid grid-cols-1 gap-3">
                       {currentQ.options?.map((opt, i) => (
                         <Button
@@ -453,6 +497,84 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                       <p className="text-[10px] text-muted-foreground italic text-center">
                         * Chọn một từ bên trái sau đó chọn nghĩa bên phải
                       </p>
+                    </div>
+                  ) : currentQ.type === "Arrangement" ? (
+                    <div className="space-y-4">
+                      <div className="p-3 rounded-lg border bg-muted/30">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                          Câu bạn đang sắp xếp
+                        </p>
+                        <div className="min-h-12 p-2 rounded border bg-white flex flex-wrap gap-2">
+                          {(arrangementAnswers[currentQ.id] || []).length > 0 ? (
+                            (arrangementAnswers[currentQ.id] || []).map((word, idx) => (
+                              <Button
+                                key={`${word}-${idx}`}
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() =>
+                                  setArrangementAnswers((prev) => {
+                                    const next = [...(prev[currentQ.id] || [])];
+                                    next.splice(idx, 1);
+                                    setAnswer(currentQ.id, next.join(" "));
+                                    return { ...prev, [currentQ.id]: next };
+                                  })
+                                }
+                              >
+                                {word}
+                              </Button>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              Chọn từ bên dưới theo đúng thứ tự.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="p-3 rounded-lg border bg-muted/20">
+                        <div className="flex flex-wrap gap-2">
+                          {(currentQ.options || []).map((word, idx) => {
+                            const selected = arrangementAnswers[currentQ.id] || [];
+                            const usedCount = selected.filter((w) => w === word).length;
+                            const availableCount = (currentQ.options || [])
+                              .slice(0, idx + 1)
+                              .filter((w) => w === word).length;
+                            const disabled = usedCount >= availableCount;
+                            return (
+                              <Button
+                                key={`${word}-${idx}`}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={disabled}
+                                onClick={() =>
+                                  setArrangementAnswers((prev) => {
+                                    const next = [...(prev[currentQ.id] || []), word];
+                                    setAnswer(currentQ.id, next.join(" "));
+                                    return { ...prev, [currentQ.id]: next };
+                                  })
+                                }
+                              >
+                                {word}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setArrangementAnswers((prev) => ({
+                            ...prev,
+                            [currentQ.id]: [],
+                          }));
+                          setAnswer(currentQ.id, "");
+                        }}
+                      >
+                        Xóa sắp xếp
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-3">

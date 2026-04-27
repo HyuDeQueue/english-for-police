@@ -227,7 +227,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Quick Test Button */}
       {progress.completedUnits.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div
+          className={`grid grid-cols-1 gap-3 ${
+            allUnitsCompleted ? "md:grid-cols-2" : ""
+          }`}
+        >
           <Button
             className="w-full h-14 text-lg font-bold bg-primary text-white hover:bg-primary/90 police-shadow group"
             onClick={onStartQuickTest}

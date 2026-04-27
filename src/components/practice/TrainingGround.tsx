@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Timer, ChevronLeft, Send, CheckCircle2, Home } from "lucide-react";
 
 type MatchingPair = NonNullable<Question["pairs"]>[number];
+type ArrangementAnswer = string[];
 
 interface TrainingGroundProps {
   unit: Unit;
@@ -142,6 +143,12 @@ function generateTrainingGroundQuestions(unit: Unit): Question[] {
     });
   }
 
+  const extraPracticeQuestions = unit.practice
+    .filter((q) => ["Scenario", "FillInBlank", "Arrangement"].includes(q.type))
+    .slice(0, 5)
+    .map((q, idx) => ({ ...q, id: `tg-extra-${unit.id}-${idx}-${q.id}` }));
+  pool.push(...extraPracticeQuestions);
+
   return shuffleArray(pool).slice(0, 15);
 }
 
@@ -164,6 +171,9 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   }, [questions]);
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [textAnswers, setTextAnswers] = useState<{ [key: number]: string }>({});
+  const [arrangementAnswers, setArrangementAnswers] = useState<{
+    [key: number]: ArrangementAnswer;
+  }>({});
   const [matchingAnswers, setMatchingAnswers] = useState<{
     [key: number]: { [left: string]: string };
   }>({});
@@ -182,13 +192,20 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
 
     let correctCount = 0;
     questions.forEach((q, i) => {
-      if (q.type === "MCQ") {
+      if (q.type === "MCQ" || q.type === "Scenario") {
         const correctIdx = q.options?.indexOf(q.answer as string) ?? -1;
         if (answers[i] === correctIdx) correctCount++;
-      } else if (q.type === "Dictation") {
+      } else if (
+        q.type === "Dictation" ||
+        q.type === "FillInBlank" ||
+        q.type === "Speaking"
+      ) {
         const userAns = (textAnswers[i] || "").trim().toLowerCase();
         const correctAns = (q.answer as string).trim().toLowerCase();
-        if (userAns === correctAns) correctCount++;
+        const acceptable = (q.acceptableAnswers || []).map((a) =>
+          a.trim().toLowerCase(),
+        );
+        if (userAns === correctAns || acceptable.includes(userAns)) correctCount++;
       } else if (q.type === "Matching") {
         const userPairs = matchingAnswers[i] || {};
         const qPairs = q.pairs || [];
@@ -197,12 +214,18 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
           if (userPairs[p.left] === p.right) matches++;
         });
         if (matches === qPairs.length) correctCount++;
+      } else if (q.type === "Arrangement") {
+        const userArranged = (arrangementAnswers[i] || []).join(" ").trim();
+        const correctAns = (q.answer as string).trim();
+        if (userArranged.toLowerCase() === correctAns.toLowerCase()) {
+          correctCount++;
+        }
       }
     });
 
     const finalScore = Math.round((correctCount / questions.length) * 100);
     setCurrentScore(finalScore);
-  }, [answers, textAnswers, matchingAnswers, questions]);
+  }, [answers, textAnswers, arrangementAnswers, matchingAnswers, questions]);
 
   const handleBackToHome = () => {
     if (!hasReportedCompletion && currentScore !== null) {
@@ -235,14 +258,19 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   };
 
   const isQuestionAnswered = (q: Question, idx: number) => {
-    if (q.type === "MCQ") return answers[idx] !== undefined;
-    if (q.type === "Dictation")
+    if (q.type === "MCQ" || q.type === "Scenario") return answers[idx] !== undefined;
+    if (
+      q.type === "Dictation" ||
+      q.type === "FillInBlank" ||
+      q.type === "Speaking"
+    )
       return (textAnswers[idx] || "").trim().length > 0;
     if (q.type === "Matching") {
       const pairCount = q.pairs?.length || 0;
       if (pairCount === 0) return false;
       return Object.keys(matchingAnswers[idx] || {}).length === pairCount;
     }
+    if (q.type === "Arrangement") return (arrangementAnswers[idx] || []).length > 0;
     return false;
   };
 
@@ -381,7 +409,7 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
               </CardHeader>
               <CardContent className="pl-16 pr-6 pb-8">
                 {/* 1. MCQ UI */}
-                {q.type === "MCQ" && (
+                {(q.type === "MCQ" || q.type === "Scenario") && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {q.options?.map((opt, optIdx) => {
@@ -428,7 +456,9 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                 )}
 
                 {/* 2. Dictation UI */}
-                {q.type === "Dictation" && (
+                {(q.type === "Dictation" ||
+                  q.type === "FillInBlank" ||
+                  q.type === "Speaking") && (
                   <div className="space-y-4">
                     <input
                       type="text"
@@ -444,7 +474,10 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                       className={`w-full h-14 px-4 rounded-xl border-2 transition-all outline-none text-lg font-medium ${
                         showResults
                           ? (textAnswers[i] || "").trim().toLowerCase() ===
-                            (q.answer as string).trim().toLowerCase()
+                              (q.answer as string).trim().toLowerCase() ||
+                            (q.acceptableAnswers || [])
+                              .map((a) => a.trim().toLowerCase())
+                              .includes((textAnswers[i] || "").trim().toLowerCase())
                             ? "border-green-500 bg-green-50"
                             : "border-red-500 bg-red-50"
                           : "border-muted focus:border-primary"
@@ -458,6 +491,11 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                         <p className="text-sm font-bold text-green-800">
                           {q.answer}
                         </p>
+                        {q.acceptableAnswers && q.acceptableAnswers.length > 0 && (
+                          <p className="text-xs text-green-700 mt-1">
+                            Chấp nhận thêm: {q.acceptableAnswers.join(", ")}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -563,6 +601,92 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                             </div>
                           );
                         })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {q.type === "Arrangement" && (
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-lg border bg-muted/30">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                        Câu bạn đang sắp xếp
+                      </p>
+                      <div className="min-h-12 p-2 rounded border bg-white flex flex-wrap gap-2">
+                        {(arrangementAnswers[i] || []).length > 0 ? (
+                          (arrangementAnswers[i] || []).map((word, idx) => (
+                            <Button
+                              key={`${word}-${idx}`}
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              disabled={showResults}
+                              onClick={() =>
+                                setArrangementAnswers((prev) => {
+                                  const next = [...(prev[i] || [])];
+                                  next.splice(idx, 1);
+                                  return { ...prev, [i]: next };
+                                })
+                              }
+                            >
+                              {word}
+                            </Button>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Chọn từ bên dưới theo đúng thứ tự.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg border bg-muted/20">
+                      <div className="flex flex-wrap gap-2">
+                        {(q.options || []).map((word, idx) => {
+                          const selected = arrangementAnswers[i] || [];
+                          const usedCount = selected.filter((w) => w === word).length;
+                          const availableCount = (q.options || [])
+                            .slice(0, idx + 1)
+                            .filter((w) => w === word).length;
+                          const disabled = showResults || usedCount >= availableCount;
+                          return (
+                            <Button
+                              key={`${word}-${idx}`}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={disabled}
+                              onClick={() =>
+                                setArrangementAnswers((prev) => ({
+                                  ...prev,
+                                  [i]: [...(prev[i] || []), word],
+                                }))
+                              }
+                            >
+                              {word}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={showResults}
+                      onClick={() =>
+                        setArrangementAnswers((prev) => ({ ...prev, [i]: [] }))
+                      }
+                    >
+                      Xóa sắp xếp
+                    </Button>
+                    {showResults && (
+                      <div className="p-4 rounded-xl bg-green-100 border border-green-200">
+                        <p className="text-xs font-bold text-green-700 uppercase mb-1">
+                          Đáp án đúng:
+                        </p>
+                        <p className="text-sm font-bold text-green-800">
+                          {q.answer}
+                        </p>
                       </div>
                     )}
                   </div>

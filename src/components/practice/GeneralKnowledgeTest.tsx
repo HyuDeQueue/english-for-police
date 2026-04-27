@@ -16,6 +16,7 @@ import {
 
 type MatchingAnswer = Record<string, string>;
 type MatchingPair = NonNullable<Question["pairs"]>[number];
+type ArrangementAnswer = string[];
 
 interface GeneralKnowledgeTestProps {
   lessons: Unit[];
@@ -136,6 +137,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   const [matchingAnswers, setMatchingAnswers] = useState<
     Record<string, MatchingAnswer>
   >({});
+  const [arrangementAnswers, setArrangementAnswers] = useState<
+    Record<string, ArrangementAnswer>
+  >({});
   const [selectedLeft, setSelectedLeft] = useState<
     Record<string, string | null>
   >({});
@@ -151,7 +155,17 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   const pagedQuestions = questions.slice(pageStart, pageEnd);
 
   const isQuestionAnswered = (q: Question): boolean => {
-    if (q.type === "MCQ" || q.type === "Dictation") {
+    if (q.type === "MCQ" || q.type === "Scenario") {
+      return (
+        typeof answers[q.id] === "string" &&
+        (answers[q.id] as string).trim().length > 0
+      );
+    }
+    if (
+      q.type === "Dictation" ||
+      q.type === "FillInBlank" ||
+      q.type === "Speaking"
+    ) {
       return (
         typeof answers[q.id] === "string" &&
         (answers[q.id] as string).trim().length > 0
@@ -161,6 +175,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       const pairCount = q.pairs?.length || 0;
       if (pairCount === 0) return false;
       return Object.keys(matchingAnswers[q.id] || {}).length === pairCount;
+    }
+    if (q.type === "Arrangement") {
+      return (arrangementAnswers[q.id] || []).length > 0;
     }
     return false;
   };
@@ -181,6 +198,15 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         return;
       }
 
+      if (q.type === "Arrangement") {
+        const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
+        const correctAnswer = String(q.answer || "").trim();
+        if (userArranged.toLowerCase() === correctAnswer.toLowerCase()) {
+          correctCount++;
+        }
+        return;
+      }
+
       const userAnswer =
         typeof answers[q.id] === "string"
           ? (answers[q.id] as string).trim().toLowerCase()
@@ -188,7 +214,12 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       const correctAnswer = String(q.answer || "")
         .trim()
         .toLowerCase();
-      if (userAnswer === correctAnswer) correctCount++;
+      const acceptable = (q.acceptableAnswers || []).map((a) =>
+        a.trim().toLowerCase(),
+      );
+      if (userAnswer === correctAnswer || acceptable.includes(userAnswer)) {
+        correctCount++;
+      }
     });
 
     const finalScore = Math.round((correctCount / questions.length) * 100);
@@ -253,15 +284,27 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               answerDisplay = (q.pairs || [])
                 .map((pair) => `${pair.left} - ${pair.right}`)
                 .join(", ");
+            } else if (q.type === "Arrangement") {
+              const userArranged = (arrangementAnswers[q.id] || []).join(" ").trim();
+              const correctAnswer = String(q.answer || "").trim();
+              isCorrect =
+                userArranged.toLowerCase() === correctAnswer.toLowerCase();
+              userDisplay = `Bạn: ${userArranged || "(Chưa trả lời)"}`;
+              answerDisplay = `Đáp án: ${correctAnswer}`;
             } else {
               const userAnswer =
                 typeof answers[q.id] === "string"
                   ? (answers[q.id] as string)
                   : "(Chưa trả lời)";
               const correctAnswer = String(q.answer || "");
+              const normalizedUser = userAnswer.trim().toLowerCase();
+              const normalizedCorrect = correctAnswer.trim().toLowerCase();
+              const acceptable = (q.acceptableAnswers || []).map((a) =>
+                a.trim().toLowerCase(),
+              );
               isCorrect =
-                userAnswer.trim().toLowerCase() ===
-                correctAnswer.trim().toLowerCase();
+                normalizedUser === normalizedCorrect ||
+                acceptable.includes(normalizedUser);
               userDisplay = `Bạn: ${userAnswer || "(Chưa trả lời)"}`;
               answerDisplay = `Đáp án: ${correctAnswer}`;
             }
@@ -438,7 +481,8 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 )}
 
                 <div className="space-y-3 py-2">
-                  {currentQuestion.type === "MCQ" ? (
+                  {currentQuestion.type === "MCQ" ||
+                  currentQuestion.type === "Scenario" ? (
                     <div className="grid grid-cols-1 gap-3">
                       {currentQuestion.options?.map((opt, i) => (
                         <Button
@@ -556,6 +600,102 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                           )}
                         </div>
                       </div>
+                    </div>
+                  ) : currentQuestion.type === "Arrangement" ? (
+                    <div className="space-y-4">
+                      <div className="p-3 rounded-lg border bg-muted/30">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                          Câu bạn đang sắp xếp
+                        </p>
+                        <div className="min-h-12 p-2 rounded border bg-white flex flex-wrap gap-2">
+                          {(arrangementAnswers[currentQuestion.id] || []).length >
+                          0 ? (
+                            (arrangementAnswers[currentQuestion.id] || []).map(
+                              (word, idx) => (
+                                <Button
+                                  key={`${word}-${idx}`}
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-8"
+                                  onClick={() => {
+                                    setArrangementAnswers((prev) => {
+                                      const next = [
+                                        ...(prev[currentQuestion.id] || []),
+                                      ];
+                                      next.splice(idx, 1);
+                                      setAnswers((old) => ({
+                                        ...old,
+                                        [currentQuestion.id]: next.join(" "),
+                                      }));
+                                      return { ...prev, [currentQuestion.id]: next };
+                                    });
+                                  }}
+                                >
+                                  {word}
+                                </Button>
+                              ),
+                            )
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              Chọn từ bên dưới theo đúng thứ tự.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-lg border bg-muted/20">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                          Từ cho sẵn
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {(currentQuestion.options || []).map((word, idx) => {
+                            const selected = arrangementAnswers[currentQuestion.id] || [];
+                            const usedCount = selected.filter((w) => w === word).length;
+                            const availableCount = (currentQuestion.options || []).slice(0, idx + 1).filter((w) => w === word).length;
+                            const disabled = usedCount >= availableCount;
+                            return (
+                              <Button
+                                key={`${word}-${idx}`}
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={disabled}
+                                onClick={() => {
+                                  setArrangementAnswers((prev) => {
+                                    const next = [...(prev[currentQuestion.id] || []), word];
+                                    setAnswers((old) => ({
+                                      ...old,
+                                      [currentQuestion.id]: next.join(" "),
+                                    }));
+                                    return { ...prev, [currentQuestion.id]: next };
+                                  });
+                                }}
+                              >
+                                {word}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setArrangementAnswers((prev) => ({
+                            ...prev,
+                            [currentQuestion.id]: [],
+                          }));
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [currentQuestion.id]: "",
+                          }));
+                        }}
+                      >
+                        Xóa sắp xếp
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-3">
