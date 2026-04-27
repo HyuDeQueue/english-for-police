@@ -1,24 +1,30 @@
-import React, { useState } from "react";
-import type { Unit, UserProgress, FlaggedItem, DailyTask } from "../../types";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
+  Info,
+  ArrowUpRight,
   ClipboardCheck,
   Flag,
-  Zap,
-  ChevronRight,
   BookOpen,
-  ArrowUpRight,
+  ChevronRight,
+  Zap,
 } from "lucide-react";
+import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "../ui/checkbox";
 
 interface HomeViewProps {
   lessons: Unit[];
@@ -27,6 +33,7 @@ interface HomeViewProps {
   dailyTasks: DailyTask;
   onSelectUnit: (unit: Unit) => void;
   onStartQuickTest: () => void;
+  onNavigate: (path: string) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -36,14 +43,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
   dailyTasks,
   onSelectUnit,
   onStartQuickTest,
+  onNavigate,
 }) => {
-  const [tasksExpanded, setTasksExpanded] = useState(true);
-
   const completedCount = dailyTasks.tasks.filter((t) => t.completed).length;
   const overallProgress =
     lessons.length > 0
       ? Math.round((progress.completedUnits.length / lessons.length) * 100)
       : 0;
+
+  const handleNavigate = (path: string | undefined) => {
+    if (path) {
+      onNavigate(path);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -87,60 +99,75 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <ClipboardCheck className="h-5 w-5 text-primary" />
                 Nhiệm vụ hôm nay
               </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs text-primary font-bold hover:bg-primary/5"
-                onClick={() => setTasksExpanded(!tasksExpanded)}
-              >
-                {tasksExpanded ? "Ẩn" : "Hiện"}
-              </Button>
+              <Badge variant="secondary" className="text-[10px] font-bold">
+                {completedCount}/{dailyTasks.tasks.length}
+              </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between items-center mb-4">
-              <span className="text-sm font-medium text-muted-foreground">
-                {completedCount}/{dailyTasks.tasks.length} mục đã hoàn thành
-              </span>
-            </div>
-
-            {tasksExpanded && (
-              <div className="space-y-3 mb-6">
-                {dailyTasks.tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`flex items-center space-x-3 p-3 rounded-lg border transition-colors ${task.completed ? "bg-green-50 border-green-200" : "bg-card"}`}
-                  >
-                    <Checkbox
-                      id={task.id}
-                      checked={task.completed}
-                      className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 pointer-events-none"
-                    />
-                    <div className="flex-1 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <label
-                          htmlFor={task.id}
-                          className={`text-sm font-medium leading-none cursor-default ${task.completed ? "text-green-700" : ""}`}
-                        >
-                          {task.label}
-                        </label>
-                        <span className="text-[10px] font-bold text-muted-foreground">
-                          {task.current}/{task.target}
-                        </span>
-                      </div>
-                      <Progress
-                        value={(task.current / task.target) * 100}
-                        className={`h-1 ${task.completed ? "bg-green-100 [&>div]:bg-green-500" : ""}`}
+            <Accordion
+              type="single"
+              collapsible
+              className="w-full space-y-2 mb-6"
+            >
+              {dailyTasks.tasks.map((task) => (
+                <AccordionItem
+                  key={task.id}
+                  value={task.id}
+                  className={`border rounded-lg px-3 transition-colors ${task.completed ? "bg-green-50/50 border-green-200" : "bg-card hover:bg-muted/30"}`}
+                >
+                  <AccordionTrigger className="hover:no-underline py-3">
+                    <div className="flex items-center space-x-3 text-left w-full mr-2">
+                      <Checkbox
+                        id={task.id}
+                        checked={task.completed}
+                        className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500 pointer-events-none"
                       />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center mb-1">
+                          <span
+                            className={`text-sm font-semibold truncate ${task.completed ? "text-green-700" : ""}`}
+                          >
+                            {task.label}
+                          </span>
+                          <span className="text-[10px] font-bold text-muted-foreground ml-2">
+                            {task.current}/{task.target}
+                          </span>
+                        </div>
+                        <Progress
+                          value={(task.current / task.target) * 100}
+                          className={`h-1 ${task.completed ? "bg-green-100 [&>div]:bg-green-500" : ""}`}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-3 pt-1 border-t border-dashed mt-1">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                        <Info className="h-4 w-4 shrink-0 text-primary" />
+                        <p>
+                          {task.description ||
+                            "Hoàn thành các hoạt động tương ứng để đạt mục tiêu."}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={task.completed ? "outline" : "default"}
+                        className="w-full text-xs font-bold"
+                        onClick={() => handleNavigate(task.navigatePath)}
+                      >
+                        {task.completed ? "Xem lại" : "Đi đến nhiệm vụ"}
+                        <ArrowUpRight className="ml-2 h-3 w-3" />
+                      </Button>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
 
             <div className="space-y-1.5">
               <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
-                <span>Tiến độ nhiệm vụ</span>
+                <span>Tiến độ tổng quát</span>
                 <span>
                   {Math.round((completedCount / dailyTasks.tasks.length) * 100)}
                   %

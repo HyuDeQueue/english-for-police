@@ -1,4 +1,4 @@
-import { Search, BookMarked } from "lucide-react";
+import { Search, BookMarked, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MainLayoutProps {
@@ -13,7 +13,6 @@ interface MainLayoutProps {
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
-  selectedUnitId,
   onLogoClick,
   showPracticeButtons,
   onStartPractice,
@@ -27,14 +26,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       <header className="sticky top-0 z-50 w-full glass border-b primary-gradient">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div
-            className="flex items-center gap-3 cursor-pointer group transition-transform active:scale-95"
+            className="flex items-center gap-2 cursor-pointer group transition-transform active:scale-95"
             onClick={onLogoClick}
           >
-            <span className="bg-white/20 px-2 py-1 rounded text-[10px] font-bold tracking-widest text-white/90">
-              BÀI-{selectedUnitId?.toString().padStart(2, "0") || "00"}
-            </span>
-            <h1 className="text-lg font-heading font-bold tracking-tight text-white group-hover:text-secondary transition-colors">
-              TIẾNG ANH CẢNH SÁT
+            <h1 className="text-lg font-heading font-bold tracking-tight text-white group-hover:text-secondary transition-colors flex items-center gap-2">
+              TIẾNG ANH
+              <div className="bg-white/20 p-1.5 rounded-lg">
+                <Shield className="h-5 w-5 text-secondary fill-secondary" />
+              </div>
             </h1>
           </div>
 

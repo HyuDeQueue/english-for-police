@@ -72,6 +72,8 @@ export interface DailyTask {
   tasks: {
     id: string;
     label: string;
+    description?: string;
+    navigatePath?: string;
     completed: boolean;
     current: number;
     target: number;

@@ -97,39 +97,60 @@ function App() {
   const [dailyTasks, setDailyTasks] = useState<DailyTask>(() => {
     const getTodayKey = () => new Date().toISOString().split("T")[0];
     const saved = localStorage.getItem("police_english_daily");
+
+    const defaultTasks = [
+      {
+        id: "vocab",
+        label: "Ôn 5 từ vựng ngẫu nhiên",
+        description:
+          "Vào phần Flashcard của bất kỳ bài nào và đánh dấu 'Đã thuộc' ít nhất 5 từ.",
+        navigatePath: "flashcards/1",
+        completed: false,
+        current: 0,
+        target: 5,
+      },
+      {
+        id: "test",
+        label: "Hoàn thành 1 bài test nhanh",
+        description: "Làm 1 bài kiểm tra tổng hợp để củng cố kiến thức đã học.",
+        navigatePath: "quicktest",
+        completed: false,
+        current: 0,
+        target: 1,
+      },
+      {
+        id: "speak",
+        label: "Luyện nói 3 câu mẫu",
+        description:
+          "Bấm vào biểu tượng loa để nghe và luyện phát âm ít nhất 3 mẫu câu.",
+        navigatePath: "lesson/1",
+        completed: false,
+        current: 0,
+        target: 3,
+      },
+    ];
+
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as DailyTask;
-        if (parsed.date === getTodayKey()) return parsed;
+        if (parsed.date === getTodayKey()) {
+          const enrichedTasks = parsed.tasks.map((task) => {
+            const def = defaultTasks.find((d) => d.id === task.id);
+            return {
+              ...task,
+              description: task.description || def?.description,
+              navigatePath: task.navigatePath || def?.navigatePath,
+            };
+          });
+          return { ...parsed, tasks: enrichedTasks };
+        }
       } catch (e) {
         console.error("Failed to parse daily tasks", e);
       }
     }
     return {
       date: getTodayKey(),
-      tasks: [
-        {
-          id: "vocab",
-          label: "Ôn 5 từ vựng ngẫu nhiên",
-          completed: false,
-          current: 0,
-          target: 5,
-        },
-        {
-          id: "test",
-          label: "Hoàn thành 1 bài test nhanh",
-          completed: false,
-          current: 0,
-          target: 1,
-        },
-        {
-          id: "speak",
-          label: "Luyện nói 3 câu mẫu",
-          completed: false,
-          current: 0,
-          target: 3,
-        },
-      ],
+      tasks: defaultTasks,
     };
   });
 
@@ -199,7 +220,9 @@ function App() {
       onLogoClick={navigateToHome}
       showPracticeButtons={currentView === "lesson"}
       onStartPractice={() => selectedUnit && navigateToPractice(selectedUnit)}
-      onStartFlashcards={() => selectedUnit && navigateToFlashcards(selectedUnit)}
+      onStartFlashcards={() =>
+        selectedUnit && navigateToFlashcards(selectedUnit)
+      }
       onToggleSearch={toggleSearch}
       onToggleNotebook={toggleNotebook}
     >
@@ -211,6 +234,7 @@ function App() {
           dailyTasks={dailyTasks}
           onSelectUnit={navigateToLesson}
           onStartQuickTest={navigateToQuickTest}
+          onNavigate={(path) => (window.location.hash = path)}
         />
       )}
 

@@ -120,11 +120,17 @@ export const LessonView: React.FC<LessonViewProps> = ({
       {/* Sticky TOC Sidebar */}
       <aside className="w-full lg:w-64 lg:sticky lg:top-24 space-y-6">
         <div className="bg-card rounded-xl border police-shadow overflow-hidden">
-          <div className="p-4 border-b bg-muted/50">
+          <div className="p-4 border-b bg-muted/50 flex items-center justify-between">
             <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
               <List className="h-4 w-4 text-primary" />
               MỤC LỤC
             </h4>
+            <Badge
+              variant="outline"
+              className="bg-primary/10 text-primary border-primary/20 text-[10px] font-bold py-0 h-5"
+            >
+              BÀI-{unit.id.toString().padStart(2, "0")}
+            </Badge>
           </div>
           <div className="p-2 space-y-1">
             <Button
@@ -321,7 +327,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 rounded-full text-xs font-bold group-hover:bg-primary group-hover:text-white transition-all"
+                        className="h-8 rounded-full text-xs font-bold transition-all group-hover:bg-primary group-hover:text-white hover:bg-primary hover:text-white"
                         onClick={(e) => playAudio(v.word, e.currentTarget)}
                       >
                         <Volume2 className="h-3 w-3 mr-1.5" />
@@ -397,7 +403,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-9 w-9 rounded-full hover:bg-primary hover:text-white"
+                            className="h-9 w-9 rounded-full transition-all group-hover:bg-primary group-hover:text-white hover:bg-primary hover:text-white"
                             onClick={(e) =>
                               playAudio(p.text, e.currentTarget, true)
                             }
