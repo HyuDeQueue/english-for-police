@@ -118,6 +118,13 @@ interface Section {
   questionIds: string[];
 }
 
+type SectionResult = {
+  score: number;
+  correctCount: number;
+  total: number;
+  submitted: boolean;
+};
+
 export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   lessons,
   onBack,
@@ -135,7 +142,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       .map((q) => q.id);
     if (vocabIds.length > 0) {
       s.push({
-        title: "KHO TỪ VỰNG",
+        title: "Bài luyện tập 1",
         description:
           "Kiểm tra khả năng nhận diện và ghi nhớ từ vựng cảnh sát chuyên ngành.",
         questionIds: vocabIds,
@@ -147,7 +154,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       .map((q) => q.id);
     if (patternIds.length > 0) {
       s.push({
-        title: "MẪU CÂU TÌNH HUỐNG",
+        title: "Bài luyện tập 2",
         description:
           "Ứng dụng các mẫu câu vào các tình huống thực tế của chiến sĩ cảnh sát.",
         questionIds: patternIds,
@@ -159,7 +166,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       .map((q) => q.id);
     if (matchingIds.length > 0) {
       s.push({
-        title: "GHÉP ĐÔI TƯƠNG TÁC",
+        title: "Bài luyện tập 3",
         description:
           "Kết nối chính xác giữa thuật ngữ và ý nghĩa tiếng Việt tương ứng.",
         questionIds: matchingIds,
@@ -171,7 +178,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       .map((q) => q.id);
     if (writingIds.length > 0) {
       s.push({
-        title: "KỸ NĂNG VIẾT",
+        title: "Bài luyện tập 4",
         description:
           "Thực hành viết lại và sắp xếp các câu tiếng Anh hoàn chỉnh.",
         questionIds: writingIds,
@@ -215,6 +222,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   >({});
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
+  const [sectionResults, setSectionResults] = useState<
+    Record<number, SectionResult>
+  >({});
 
   const currentQuestion = sectionQuestions[currentIndexInSection];
 
@@ -252,19 +262,26 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       section.questionIds.includes(q.id),
     );
     const answered = sectionQs.filter((q) => isQuestionAnswered(q)).length;
+    const result =
+      sectionResults[
+        sections.findIndex((item) => item.title === section.title)
+      ];
     return {
       answered,
       total: sectionQs.length,
       isComplete: sectionQs.length > 0 && answered === sectionQs.length,
+      result,
     };
   });
 
-  const canSubmitAll =
-    sectionProgress.length > 0 && sectionProgress.every((s) => s.isComplete);
+  const allSectionsSubmitted =
+    sections.length > 0 &&
+    sections.every((_, idx) => sectionResults[idx]?.submitted);
 
-  const handleSubmit = () => {
+  const calculateScore = (questionList: Question[]) => {
     let correctCount = 0;
-    questions.forEach((q) => {
+
+    questionList.forEach((q) => {
       if (q.type === "Matching") {
         const userPairs = matchingAnswers[q.id] || {};
         const allCorrect = (q.pairs || []).every(
@@ -298,9 +315,44 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       }
     });
 
-    const finalScore = Math.round((correctCount / questions.length) * 100);
-    setScore(finalScore);
-    setShowResults(true);
+    return {
+      correctCount,
+      total: questionList.length,
+      score:
+        questionList.length > 0
+          ? Math.round((correctCount / questionList.length) * 100)
+          : 0,
+    };
+  };
+
+  const handleSubmitSection = () => {
+    const currentSectionScore = calculateScore(sectionQuestions);
+    const nextResults = {
+      ...sectionResults,
+      [currentSectionIndex]: {
+        ...currentSectionScore,
+        submitted: true,
+      },
+    };
+
+    setSectionResults(nextResults);
+
+    const overallCorrect = Object.values(nextResults).reduce(
+      (sum, result) => sum + result.correctCount,
+      0,
+    );
+    const overallScore =
+      questions.length > 0
+        ? Math.round((overallCorrect / questions.length) * 100)
+        : 0;
+
+    if (
+      sections.length > 0 &&
+      sections.every((_, idx) => nextResults[idx]?.submitted)
+    ) {
+      setScore(overallScore);
+      setShowResults(true);
+    }
   };
 
   const handleBack = () => {
@@ -327,7 +379,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     );
   }
 
-  if (showResults) {
+  if (showResults && allSectionsSubmitted) {
     return (
       <div className="max-w-5xl mx-auto space-y-6 py-8 animate-fade-in">
         <Card className="police-shadow border-none overflow-hidden text-center">
@@ -502,12 +554,13 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
 
               <div className="pt-4 border-t space-y-3">
                 <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
-                  Chọn section để làm theo thứ tự bạn muốn
+                  Chọn bài luyện tập để làm từng test nhỏ
                 </p>
 
                 <div className="space-y-2">
                   {sections.map((section, idx) => {
                     const progress = sectionProgress[idx];
+                    const result = sectionResults[idx];
                     return (
                       <Button
                         key={section.title}
@@ -515,7 +568,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                         variant={
                           idx === currentSectionIndex ? "default" : "outline"
                         }
-                        className="w-full h-11 justify-between text-xs font-bold"
+                        className={`w-full h-11 justify-between text-xs font-bold transition-all ${
+                          idx === currentSectionIndex
+                            ? "text-white shadow-md"
+                            : "text-slate-800"
+                        }`}
                         onClick={() => {
                           setCurrentSectionIndex(idx);
                           setCurrentIndexInSection(0);
@@ -527,11 +584,21 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                         </span>
                         <Badge
                           variant={
-                            progress?.isComplete ? "secondary" : "outline"
+                            result?.submitted
+                              ? "secondary"
+                              : progress?.isComplete
+                                ? "outline"
+                                : "outline"
                           }
-                          className="ml-2 shrink-0"
+                          className={`ml-2 shrink-0 border ${
+                            idx === currentSectionIndex
+                              ? "border-white/30 bg-white/15 text-white"
+                              : "border-slate-200 bg-white text-slate-700"
+                          }`}
                         >
-                          {progress?.answered ?? 0}/{progress?.total ?? 0}
+                          {result?.submitted
+                            ? `${result.score}%`
+                            : `${progress?.answered ?? 0}/${progress?.total ?? 0}`}
                         </Badge>
                       </Button>
                     );
@@ -541,18 +608,20 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 <Button
                   size="lg"
                   className={`w-full h-14 text-base font-black rounded-xl transition-all ${
-                    canSubmitAll
+                    sectionQuestions.length > 0
                       ? "primary-gradient police-shadow scale-100"
                       : "bg-muted text-muted-foreground opacity-60"
                   }`}
-                  disabled={!canSubmitAll}
-                  onClick={handleSubmit}
+                  disabled={sectionQuestions.length === 0}
+                  onClick={handleSubmitSection}
                 >
                   <Send className="mr-2 h-5 w-5" />
-                  NỘP BÀI
+                  {sectionResults[currentSectionIndex]?.submitted
+                    ? "NỘP LẠI BÀI NÀY"
+                    : "NỘP BÀI NÀY"}
                 </Button>
                 <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
-                  Hoàn thành tất cả section để nộp bài
+                  Mỗi bài luyện tập có nút nộp riêng
                 </p>
               </div>
             </CardContent>
@@ -570,6 +639,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                   Câu {currentIndexInSection + 1} / {sectionQuestions.length}
                 </span>
               </div>
+              {sectionResults[currentSectionIndex]?.submitted && (
+                <div className="mt-3 rounded-xl border bg-secondary/5 px-4 py-3 text-sm font-bold text-secondary">
+                  Đã nộp bài này: {sectionResults[currentSectionIndex].score}%
+                </div>
+              )}
             </CardHeader>
 
             <CardContent className="flex-1 p-8 sm:p-12 flex flex-col justify-center">

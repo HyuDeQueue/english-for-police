@@ -125,7 +125,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     <div className="flex items-center space-x-3 text-left w-full mr-2">
                       <span
                         aria-hidden="true"
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-4px border transition-colors ${
                           task.completed
                             ? "border-green-500 bg-green-500 text-white"
                             : "border-input bg-background"
@@ -204,7 +204,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </CardHeader>
           <CardContent>
             {flaggedItems.length > 0 ? (
-              <div className="flex flex-wrap gap-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="flex flex-wrap gap-2 max-h-180px overflow-y-auto pr-2 custom-scrollbar">
                 {flaggedItems.map((item, i) => (
                   <Badge
                     key={i}
