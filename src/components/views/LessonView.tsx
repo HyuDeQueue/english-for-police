@@ -1,24 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Unit, FlaggedItem } from "../../types";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-  ChevronLeft,
-  Volume2,
-  Star,
-  List,
-  Zap,
-  ChevronRight,
-  BookMarked,
-} from "lucide-react";
+import { BookMarked } from "lucide-react";
+import { LessonTableOfContents } from "./lesson/LessonTableOfContents";
+import { LessonShortcutButtons } from "./lesson/LessonShortcutButtons";
+import { LessonVocabularySection } from "./lesson/LessonVocabularySection";
+import { LessonPhrasesSection } from "./lesson/LessonPhrasesSection";
+import { LessonMemoryBoostSection } from "./lesson/LessonMemoryBoostSection";
 
 interface LessonViewProps {
   unit: Unit;
@@ -41,14 +29,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
   const startFlashcards = () => navigate(`/flashcards/${unit.id}`);
   const startGeneralTest = () => navigate(`/generaltest/${unit.id}`);
   const startQuickTest = () => navigate(`/quicktest`);
-  const isFlagged = (
-    unitId: number,
-    type: "vocabulary" | "phrase" | "collocation",
-    key: string,
-  ) =>
-    flaggedItems.some(
-      (f) => f.unitId === unitId && f.type === type && f.key === key,
-    );
+
   const playAudio = (
     text: string,
     buttonEl?: HTMLButtonElement,
@@ -123,53 +104,14 @@ export const LessonView: React.FC<LessonViewProps> = ({
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Sticky TOC Sidebar */}
       <aside className="w-full lg:w-64 sticky top-24 self-start space-y-6">
-        <div className="bg-card rounded-xl border police-shadow overflow-hidden">
-          <div className="p-4 border-b bg-muted/50 flex items-center justify-between">
-            <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
-              <List className="h-4 w-4 text-primary" />
-              MỤC LỤC
-            </h4>
-            <Badge
-              variant="outline"
-              className="bg-primary/10 text-primary border-primary/20 text-[10px] font-bold py-0 h-5"
-            >
-              BÀI-{unit.id.toString().padStart(2, "0")}
-            </Badge>
-          </div>
-          <div className="p-2 space-y-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-xs font-bold text-muted-foreground hover:text-primary"
-              onClick={onBack}
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              QUAY LẠI
-            </Button>
+        <LessonTableOfContents
+          unitId={unit.id}
+          activeSection={activeSection}
+          onBack={onBack}
+          onScrollToSection={scrollToSection}
+        />
 
-            {[
-              { id: "vocabulary", label: "01 Từ vựng", icon: Zap },
-              { id: "phrases", label: "02 Cấu trúc", icon: List },
-              { id: "memory", label: "03 Ghi nhớ", icon: BookMarked },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-3 ${
-                  activeSection === item.id
-                    ? "bg-primary text-white font-bold police-shadow"
-                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                }`}
-              >
-                <item.icon
-                  className={`h-4 w-4 ${activeSection === item.id ? "text-secondary" : ""}`}
-                />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Flagged Items Sidebar (Mini Notebook) */}
+        {/* Notebook + Shortcuts */}
         <div className="bg-card rounded-xl border police-shadow overflow-hidden">
           <div className="p-4 border-b bg-muted/50">
             <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
@@ -208,320 +150,46 @@ export const LessonView: React.FC<LessonViewProps> = ({
                 Chưa có mục nào được lưu vào sổ tay.
               </p>
             )}
-            {/* Shortcut buttons under the Notebook */}
-            <div className="mt-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="default"
-                  className="h-10 justify-between font-bold"
-                  onClick={() => {
-                    startPractice();
-                  }}
-                >
-                  Kiểm tra
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 justify-between font-bold"
-                  onClick={() => {
-                    startFlashcards();
-                  }}
-                >
-                  Ôn tập
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 justify-between font-bold"
-                  onClick={() => {
-                    startGeneralTest();
-                  }}
-                >
-                  Tổng hợp
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 justify-between font-bold"
-                  onClick={() => {
-                    startQuickTest();
-                  }}
-                >
-                  Test nhanh
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+            <LessonShortcutButtons
+              onStartPractice={startPractice}
+              onStartFlashcards={startFlashcards}
+              onStartGeneralTest={startGeneralTest}
+              onStartQuickTest={startQuickTest}
+            />
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 space-y-12 pb-24">
-        {/* 2. Vocabulary */}
-        <section
-          data-section="vocabulary"
-          ref={(el) => {
+        <LessonVocabularySection
+          unit={unit}
+          flaggedItems={flaggedItems}
+          onToggleFlag={toggleFlag}
+          onPlayAudio={playAudio}
+          sectionRef={(el) => {
             sectionRefs.current["vocabulary"] = el;
           }}
-          className="scroll-mt-24"
-        >
-          <div className="flex items-center gap-4 mb-6">
-            <Badge
-              variant="outline"
-              className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
-            >
-              01
-            </Badge>
-            <h2 className="text-2xl font-heading font-extrabold tracking-tight">
-              TỪ VỰNG CHUYÊN NGÀNH
-            </h2>
-          </div>
+        />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {unit.vocabulary.map((v, i) => {
-              const flagged = isFlagged(unit.id, "vocabulary", v.word);
-              return (
-                <Card
-                  key={i}
-                  className={`group relative hover:police-shadow transition-all border-l-4 ${flagged ? "border-l-secondary" : "border-l-primary/20 hover:border-l-primary"}`}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-bold text-primary">
-                            {v.word}
-                          </h3>
-                          <Badge variant="outline" className="text-[10px] py-0">
-                            {v.type}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground font-medium">
-                          {v.phonetic}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 rounded-full ${flagged ? "text-secondary" : "text-muted-foreground"}`}
-                        onClick={() =>
-                          toggleFlag({
-                            unitId: unit.id,
-                            type: "vocabulary",
-                            key: v.word,
-                          })
-                        }
-                      >
-                        <Star
-                          className={`h-4 w-4 ${flagged ? "fill-current" : ""}`}
-                        />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="font-bold text-base leading-tight">
-                      {v.meaning}
-                    </p>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-full text-xs font-bold transition-all group-hover:bg-primary group-hover:text-white hover:bg-primary hover:text-white"
-                        onClick={(e) => playAudio(v.word, e.currentTarget)}
-                      >
-                        <Volume2 className="h-3 w-3 mr-1.5" />
-                        PHÁT ÂM
-                      </Button>
-                    </div>
-                    <div className="bg-muted/50 p-3 rounded-lg border italic text-xs leading-relaxed">
-                      "Ex: {v.example}"
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* 3. Phrases */}
-        <section
-          data-section="phrases"
-          ref={(el) => {
+        <LessonPhrasesSection
+          unit={unit}
+          flaggedItems={flaggedItems}
+          onToggleFlag={toggleFlag}
+          onPlayAudio={playAudio}
+          sectionRef={(el) => {
             sectionRefs.current["phrases"] = el;
           }}
-          className="scroll-mt-100px"
-        >
-          <div className="flex items-center gap-4 mb-6">
-            <Badge
-              variant="outline"
-              className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
-            >
-              02
-            </Badge>
-            <h2 className="text-2xl font-heading font-extrabold tracking-tight">
-              CẤU TRÚC CHUYÊN NGHIỆP
-            </h2>
-          </div>
+        />
 
-          <div className="space-y-4">
-            {unit.phrases.map((p, i) => {
-              const flagged = isFlagged(unit.id, "phrase", p.text);
-              return (
-                <Card
-                  key={i}
-                  className={`overflow-hidden border-l-4 ${flagged ? "border-l-secondary" : "border-l-primary/20"}`}
-                >
-                  <Accordion type="single" collapsible>
-                    <AccordionItem value={`item-${i}`} className="border-none">
-                      <div className="px-6 py-4 flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-bold text-primary text-lg mb-1">
-                            {p.text}
-                          </h4>
-                          <p className="text-muted-foreground font-medium">
-                            {p.translation}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className={`h-9 w-9 rounded-full ${flagged ? "text-secondary" : "text-muted-foreground"}`}
-                            onClick={() =>
-                              toggleFlag({
-                                unitId: unit.id,
-                                type: "phrase",
-                                key: p.text,
-                              })
-                            }
-                          >
-                            <Star
-                              className={`h-5 w-5 ${flagged ? "fill-current" : ""}`}
-                            />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 rounded-full transition-all group-hover:bg-primary group-hover:text-white hover:bg-primary hover:text-white"
-                            onClick={(e) =>
-                              playAudio(p.text, e.currentTarget, true)
-                            }
-                          >
-                            <Volume2 className="h-5 w-5" />
-                          </Button>
-                          <AccordionTrigger className="hover:no-underline p-0 ml-2" />
-                        </div>
-                      </div>
-                      <AccordionContent className="px-6 pb-6 pt-2 bg-muted/30">
-                        <div className="space-y-4 text-sm">
-                          <div className="flex gap-2">
-                            <Badge
-                              variant="outline"
-                              className="h-fit shrink-0 bg-white"
-                            >
-                              NGỮ CẢNH
-                            </Badge>
-                            <p className="leading-relaxed">{p.context}</p>
-                          </div>
-                          <div className="space-y-2">
-                            <Badge variant="outline" className="bg-white">
-                              VÍ DỤ THỰC TẾ
-                            </Badge>
-                            <ul className="list-disc pl-5 space-y-1.5 marker:text-primary">
-                              {p.realWorldExamples &&
-                              p.realWorldExamples.length > 0 ? (
-                                p.realWorldExamples.map((ex, j) => (
-                                  <li
-                                    key={j}
-                                    className="italic text-muted-foreground"
-                                  >
-                                    {ex}
-                                  </li>
-                                ))
-                              ) : (
-                                <li className="italic text-muted-foreground opacity-60">
-                                  Sử dụng trong các tình huống giao tiếp tuần
-                                  tra thực tế.
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* 4. Memory Boost */}
-        <section
-          data-section="memory"
-          ref={(el) => {
+        <LessonMemoryBoostSection
+          unit={unit}
+          flaggedItems={flaggedItems}
+          onToggleFlag={toggleFlag}
+          sectionRef={(el) => {
             sectionRefs.current["memory"] = el;
           }}
-          className="scroll-mt-100px"
-        >
-          <div className="flex items-center gap-4 mb-6">
-            <Badge
-              variant="outline"
-              className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
-            >
-              03
-            </Badge>
-            <h2 className="text-2xl font-heading font-extrabold tracking-tight">
-              GHI NHỚ NHANH
-            </h2>
-          </div>
-          <Card className="police-shadow border-none bg-secondary/5 overflow-hidden">
-            <CardHeader className="bg-secondary/10 border-b border-secondary/20">
-              <CardTitle className="text-lg flex items-center gap-2 text-primary">
-                <Zap className="h-5 w-5 fill-current text-secondary" />
-                Cụm từ đi kèm (Collocations)
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {unit.memoryBoost.collocations.map((c, i) => {
-                  const key = `${c.verb} ${c.noun}`;
-                  const flagged = isFlagged(unit.id, "collocation", key);
-                  return (
-                    <div
-                      key={i}
-                      className={`flex items-center justify-between p-3 bg-white rounded-lg border transition-all ${flagged ? "border-secondary bg-secondary/5" : "border-secondary/10 hover:border-secondary"}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-primary">{c.verb}</span>
-                        <span className="text-muted-foreground">+</span>
-                        <span className="font-medium">{c.noun}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`h-7 w-7 rounded-full ${flagged ? "text-secondary" : "text-muted-foreground hover:text-secondary"}`}
-                        onClick={() =>
-                          toggleFlag({
-                            unitId: unit.id,
-                            type: "collocation",
-                            key: key,
-                          })
-                        }
-                      >
-                        <BookMarked
-                          className={`h-4 w-4 ${flagged ? "fill-current" : ""}`}
-                        />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+        />
       </div>
     </div>
   );
