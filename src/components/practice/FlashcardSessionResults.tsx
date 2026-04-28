@@ -9,19 +9,20 @@ import { RotateCcw, BookOpen } from "lucide-react";
 interface FlashcardSessionResultsProps {
   summary: FlashcardSessionSummary;
   onRetry: () => void;
+  onContinue: () => void;
   onBackToLesson: () => void;
 }
 
 export const FlashcardSessionResults: React.FC<
   FlashcardSessionResultsProps
-> = ({ summary, onRetry, onBackToLesson }) => {
+> = ({ summary, onRetry, onContinue, onBackToLesson }) => {
   const knownDelta =
     summary.previousKnownRate === 0
       ? null
       : summary.currentKnownRate - summary.previousKnownRate;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-2 animate-fade-in">
+    <div className="max-w-4xl mx-auto space-y-4 animate-fade-in">
       {/* Hero Section */}
       <Card className="police-shadow border-none overflow-hidden text-center">
         <div className="primary-gradient p-4 text-white">
@@ -100,19 +101,29 @@ export const FlashcardSessionResults: React.FC<
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 pt-4">
-        <Button
-          className="flex-1 h-16 text-lg font-bold primary-gradient police-shadow rounded-xl transition-all hover:scale-[1.02]"
-          onClick={onRetry}
-        >
-          <RotateCcw className="mr-2 h-6 w-6" /> ÔN LẠI TỪ ĐẦU
-        </Button>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
         <Button
           variant="outline"
-          className="flex-1 h-16 text-lg font-bold border-2 border-primary text-primary hover:bg-primary/5 rounded-xl transition-all"
+          className="h-16 text-base font-bold border-2 border-orange-500 text-orange-500 hover:bg-orange-500/5 rounded-xl transition-all"
+          onClick={onRetry}
+        >
+          <RotateCcw className="mr-2 h-5 w-5" /> ÔN LẠI TỪ ĐẦU
+        </Button>
+
+        <Button
+          className="h-16 text-lg font-black primary-gradient police-shadow rounded-xl transition-all hover:scale-[1.02] uppercase tracking-wider"
+          onClick={onContinue}
+        >
+          {summary.deckMode === "vocabulary" ? "Học mẫu câu" : "Học từ vựng"}
+          <span className="ml-2 text-xs opacity-80">(TIẾP TỤC)</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          className="h-16 text-base font-bold border-2 border-primary text-primary hover:bg-primary/5 rounded-xl transition-all"
           onClick={onBackToLesson}
         >
-          <BookOpen className="mr-2 h-6 w-6" /> QUAY LẠI BÀI HỌC
+          <BookOpen className="mr-2 h-5 w-5" /> QUAY LẠI BÀI HỌC
         </Button>
       </div>
     </div>

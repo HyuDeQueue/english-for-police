@@ -118,15 +118,18 @@ const FlashcardReviewPage = ({
   onComplete: (s: FlashcardSessionSummary) => void;
 }) => {
   const { unitId } = useParams();
+  const location = useLocation();
+  const initialMode = location.state?.initialMode;
   const unit = lessons.find((l) => l.id === Number(unitId));
   if (!unit) return null;
 
   return (
     <FlashcardReview
-      key={`${unit.id}-${flashcardRound}`}
+      key={`${unit.id}-${flashcardRound}-${initialMode}`}
       unit={unit}
       onBack={() => onBack(unit)}
       onComplete={onComplete}
+      initialMode={initialMode}
     />
   );
 };
@@ -136,11 +139,13 @@ const FlashcardResultsPage = ({
   flashcardSummary,
   onBack,
   onRetry,
+  onContinue,
 }: {
   lessons: Unit[];
   flashcardSummary: FlashcardSessionSummary | null;
   onBack: (u: Unit) => void;
   onRetry: (u: Unit) => void;
+  onContinue: (u: Unit) => void;
 }) => {
   const { unitId } = useParams();
   const unit = lessons.find((l) => l.id === Number(unitId));
@@ -151,6 +156,7 @@ const FlashcardResultsPage = ({
       summary={flashcardSummary}
       onBackToLesson={() => onBack(unit)}
       onRetry={() => onRetry(unit)}
+      onContinue={() => onContinue(unit)}
     />
   );
 };
@@ -405,6 +411,15 @@ function AppContent() {
                 );
                 setFlashcardRound((prev) => prev + 1);
                 navigate(`/flashcards/${unit.id}`);
+              }}
+              onContinue={(unit) => {
+                const nextMode =
+                  flashcardSummary?.deckMode === "vocabulary"
+                    ? "sentencePatterns"
+                    : "vocabulary";
+                navigate(`/flashcards/${unit.id}`, {
+                  state: { initialMode: nextMode },
+                });
               }}
             />
           }

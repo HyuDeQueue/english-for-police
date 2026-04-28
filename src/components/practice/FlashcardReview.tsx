@@ -3,8 +3,7 @@ import type { Unit, FlashcardStatus } from "../../types";
 import { FlashcardHeader } from "./flashcard/FlashcardHeader";
 import { FlashcardStats } from "./flashcard/FlashcardStats";
 import { Flashcard } from "./flashcard/Flashcard";
-import { FlashcardControls } from "./flashcard/FlashcardControls";
-import { FlashcardProgress } from "./flashcard/FlashcardProgress";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export interface FlashcardSessionSummary {
   unitId: number;
@@ -24,15 +23,17 @@ export interface FlashcardReviewProps {
   unit: Unit;
   onBack: () => void;
   onComplete: (summary: FlashcardSessionSummary) => void;
+  initialMode?: "vocabulary" | "sentencePatterns";
 }
 
 export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   unit,
   onBack,
   onComplete,
+  initialMode = "vocabulary",
 }) => {
   const [deckMode, setDeckMode] = useState<"vocabulary" | "sentencePatterns">(
-    "vocabulary",
+    initialMode,
   );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -70,8 +71,6 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     return saved ? JSON.parse(saved) : {};
   });
 
-  const [sessionHistory, setSessionHistory] = useState<number[]>([]);
-
   useEffect(() => {
     const key = `police_fc_status_${unit.id}`;
     localStorage.setItem(key, JSON.stringify(cardStatuses));
@@ -81,7 +80,6 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
   const nextCard = useCallback(() => {
     if (currentIndex < cards.length - 1) {
-      setSessionHistory((prev) => [...prev, currentIndex]);
       setIsFlipped(false);
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
@@ -89,63 +87,52 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     }
   }, [currentIndex, cards.length]);
 
-  const undoLast = () => {
-    if (sessionHistory.length > 0) {
-      const lastIndex = sessionHistory[sessionHistory.length - 1];
-      setSessionHistory((prev) => prev.slice(0, -1));
-      setIsFlipped(false);
-      setCurrentIndex(lastIndex);
-    }
-  };
-
   const markCard = useCallback(
     (status: FlashcardStatus) => {
-      setCardStatuses((prev) => ({
-        ...prev,
-        [currentCard.id]: status,
-      }));
-      if (currentIndex === cards.length - 1) {
-        const knownCount =
-          Object.values(cardStatuses).filter((s) => s === "known").length +
-          (status === "known" ? 1 : 0);
-        const reviewCount =
-          Object.values(cardStatuses).filter((s) => s === "review").length +
-          (status === "review" ? 1 : 0);
-
-        const summary: FlashcardSessionSummary = {
-          unitId: unit.id,
-          unitTitle: unit.title,
-          totalCards: cards.length,
-          reviewedCount: cards.length,
-          knownCount,
-          reviewCount,
-          completionPercent: Math.round((knownCount / cards.length) * 100),
-          weakCards: cards
-            .filter(
-              (c) =>
-                cardStatuses[c.id] === "review" ||
-                (c.id === currentCard.id && status === "review"),
-            )
-            .map((c) => ({ id: c.id, front: c.front, back: c.back })),
-          currentKnownRate: Math.round((knownCount / cards.length) * 100),
-          previousKnownRate: 0,
-          deckMode,
+      setCardStatuses((prev) => {
+        const newStatuses = {
+          ...prev,
+          [currentCard.id]: status,
         };
-        onComplete(summary);
-      } else {
-        nextCard();
-      }
+
+        if (currentIndex === cards.length - 1) {
+          const currentCardIds = cards.map((c) => c.id);
+          const relevantStatuses = Object.entries(newStatuses)
+            .filter(([id]) => currentCardIds.includes(id))
+            .map(([, s]) => s);
+
+          const knownCount = relevantStatuses.filter(
+            (s) => s === "known",
+          ).length;
+          const reviewCount = relevantStatuses.filter(
+            (s) => s === "review",
+          ).length;
+
+          const summary: FlashcardSessionSummary = {
+            unitId: unit.id,
+            unitTitle: unit.title,
+            totalCards: cards.length,
+            reviewedCount: cards.length,
+            knownCount,
+            reviewCount,
+            completionPercent: Math.round((knownCount / cards.length) * 100),
+            weakCards: cards
+              .filter((c) => newStatuses[c.id] === "review")
+              .map((c) => ({ id: c.id, front: c.front, back: c.back })),
+            currentKnownRate: Math.round((knownCount / cards.length) * 100),
+            previousKnownRate: 0,
+            deckMode,
+          };
+
+          setTimeout(() => onComplete(summary), 0);
+        } else {
+          nextCard();
+        }
+
+        return newStatuses;
+      });
     },
-    [
-      currentCard,
-      currentIndex,
-      cards,
-      cardStatuses,
-      unit,
-      onComplete,
-      nextCard,
-      deckMode,
-    ],
+    [currentCard, currentIndex, cards, unit, onComplete, nextCard, deckMode],
   );
 
   const playAudio = (text: string) => {
@@ -186,7 +173,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   if (!currentCard) return null;
 
   return (
-    <div className="flex flex-col items-center overflow-x-hidden py-3">
+    <div className="flex flex-col items-center w-full max-w-5xl mx-auto px-4 py-0">
       <FlashcardHeader
         onBack={onBack}
         deckMode={deckMode}
@@ -199,24 +186,40 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
       <FlashcardStats learningCount={stats.learning} knownCount={stats.known} />
 
-      <Flashcard
-        front={currentCard.front}
-        back={currentCard.back}
-        phonetic={"phonetic" in currentCard ? currentCard.phonetic : undefined}
-        example={"example" in currentCard ? currentCard.example : undefined}
-        context={"context" in currentCard ? currentCard.context : undefined}
-        isFlipped={isFlipped}
-        onFlip={() => setIsFlipped(!isFlipped)}
-        onPlayAudio={playAudio}
-      />
+      <div className="w-full flex items-center justify-center gap-2 md:gap-8 mt-6">
+        {/* Left Arrow Button */}
+        <button
+          onClick={() => markCard("review")}
+          className="h-12 w-12 md:h-16 md:w-16 rounded-full flex items-center justify-center transition-all bg-orange-500 text-white hover:scale-110 shadow-lg"
+          title="Học lại (Phím ←)"
+        >
+          <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
+        </button>
 
-      <FlashcardControls
-        onMark={markCard}
-        onUndo={undoLast}
-        canUndo={sessionHistory.length > 0}
-      />
+        <div className="flex-1 max-w-3xl">
+          <Flashcard
+            front={currentCard.front}
+            back={currentCard.back}
+            phonetic={
+              "phonetic" in currentCard ? currentCard.phonetic : undefined
+            }
+            example={"example" in currentCard ? currentCard.example : undefined}
+            context={"context" in currentCard ? currentCard.context : undefined}
+            isFlipped={isFlipped}
+            onFlip={() => setIsFlipped(!isFlipped)}
+            onPlayAudio={playAudio}
+          />
+        </div>
 
-      <FlashcardProgress current={currentIndex + 1} total={cards.length} />
+        {/* Right Arrow Button */}
+        <button
+          onClick={() => markCard("known")}
+          className="h-12 w-12 md:h-16 md:w-16 rounded-full flex items-center justify-center transition-all bg-emerald-500 text-white hover:scale-110 shadow-lg"
+          title="Đã thuộc (Phím →)"
+        >
+          <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
+        </button>
+      </div>
 
       <style
         dangerouslySetInnerHTML={{
