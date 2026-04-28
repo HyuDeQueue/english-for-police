@@ -35,10 +35,6 @@ interface WorkspaceSidebarProps {
   onNavigateToUnit: (unit: Unit) => void;
   onRemoveItem: (item: FlaggedItem) => void;
   activeUnit?: Unit | null;
-  onStartPractice?: () => void;
-  onStartFlashcards?: () => void;
-  onStartGeneralKnowledgeTest?: () => void;
-  onStartQuickTest?: () => void;
 }
 
 type SearchResult = {
@@ -77,9 +73,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   onRemoveItem,
 }) => {
   const [query, setQuery] = useState("");
-  const [expandedChapterIds, setExpandedChapterIds] = useState<number[]>(() =>
-    lessons.map((lesson) => lesson.id),
-  );
+  const [expandedChapterIds, setExpandedChapterIds] = useState<number[]>([]);
 
   const searchTree = useMemo<SearchTreeNode[]>(() => {
     const trimmed = query.trim().toLowerCase();
@@ -395,22 +389,15 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             </div>
           </section>
 
-          <section className="space-y-3">
+          <section className="space-y-4">
             <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground">
               <BookMarked className="h-4 w-4 text-secondary" />
-              Sổ tay cá nhân
+              SỔ TAY BÀI HỌC
             </div>
 
             {flaggedItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 rounded-2xl border bg-muted/20">
-                <BookMarked className="h-10 w-10 text-muted-foreground opacity-30" />
-                <div className="space-y-1">
-                  <p className="font-bold text-base">Chưa có dữ liệu lưu lại</p>
-                  <p className="text-sm text-muted-foreground max-w-260px mx-auto">
-                    Bấm ngôi sao trong bài học để lưu từ vựng, mẫu câu hoặc công
-                    thức.
-                  </p>
-                </div>
+              <div className="italic text-muted-foreground text-sm px-1">
+                Chưa có mục nào được lưu vào sổ tay.
               </div>
             ) : (
               <div className="space-y-6 pb-6">

@@ -1,4 +1,5 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import type { Unit, Question } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   const [questions] = useState<Question[]>(() =>
     generateGeneralQuestions(lessons),
   );
-  const initialMode: TestMode = mode === "unit" ? "type" : "type";
-  const [testMode, setTestMode] = useState<TestMode>(initialMode);
+  const location = useLocation();
+  const locationState = location.state as { mode?: TestMode; sectionTitle?: string } | null;
+  const testMode: TestMode = locationState?.mode || (mode === "unit" ? "type" : "type");
   const [bankLimit, setBankLimit] = useState<number>(40);
   const [shuffleTrigger, setShuffleTrigger] = useState<number>(0);
 
@@ -82,6 +84,19 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [questions, testMode, bankLimit, shuffleTrigger],
   );
+
+  useEffect(() => {
+    if (locationState?.sectionTitle && sections.length > 0) {
+      const idx = sections.findIndex(s => s.title === locationState.sectionTitle);
+      if (idx !== -1) {
+        setTimeout(() => {
+          setCurrentSectionIndex(idx);
+          setExpandedSectionIndex(idx);
+        }, 0);
+      }
+    }
+  }, [locationState?.sectionTitle, sections]);
+
   const currentSection = sections[currentSectionIndex];
 
   const sectionQuestions = useMemo(() => {
@@ -205,24 +220,6 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       </PracticeHeader>
 
       <div className="flex flex-wrap items-center gap-4 px-4">
-        <div className="flex gap-2 bg-muted/30 p-1 rounded-lg">
-          {(["type", "bank"] as TestMode[]).map((m) => (
-            <Button
-              key={m}
-              variant={testMode === m ? "default" : "ghost"}
-              size="sm"
-              className={`font-bold rounded-md ${testMode === m ? "primary-gradient text-white shadow-md" : "hover:bg-background"}`}
-              onClick={() => {
-                if (testMode !== m) {
-                  setTestMode(m);
-                  resetTestState();
-                }
-              }}
-            >
-              {m === "type" ? "Theo dạng" : "Trộn ngân hàng"}
-            </Button>
-          ))}
-        </div>
 
         {testMode === "bank" && (
           <div className="flex items-center gap-2 animate-fade-in">

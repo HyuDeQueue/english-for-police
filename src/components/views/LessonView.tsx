@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Unit, FlaggedItem } from "../../types";
-import { BookMarked } from "lucide-react";
 import { LessonTableOfContents } from "./lesson/LessonTableOfContents";
 import { LessonShortcutButtons } from "./lesson/LessonShortcutButtons";
 import { LessonVocabularySection } from "./lesson/LessonVocabularySection";
@@ -27,7 +26,9 @@ export const LessonView: React.FC<LessonViewProps> = ({
 
   const startPractice = () => navigate(`/practice/${unit.id}`);
   const startFlashcards = () => navigate(`/flashcards/${unit.id}`);
-  const startGeneralTest = () => navigate(`/generaltest/${unit.id}`);
+  const startGeneralTest = (mode?: "type" | "bank", sectionTitle?: string) => {
+    navigate(`/generaltest/${unit.id}`, { state: { mode, sectionTitle } });
+  };
   const startQuickTest = () => navigate(`/quicktest`);
 
   const playAudio = (
@@ -103,7 +104,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Sticky TOC Sidebar */}
-      <aside className="w-full lg:w-64 sticky top-24 self-start space-y-6">
+      <aside className="w-full lg:w-64 sticky top-18 self-start space-y-2">
         <LessonTableOfContents
           unitId={unit.id}
           activeSection={activeSection}
@@ -111,45 +112,9 @@ export const LessonView: React.FC<LessonViewProps> = ({
           onScrollToSection={scrollToSection}
         />
 
-        {/* Notebook + Shortcuts */}
+        {/* Shortcuts */}
         <div className="bg-card rounded-xl border police-shadow overflow-hidden">
-          <div className="p-4 border-b bg-muted/50">
-            <h4 className="font-heading font-bold flex items-center gap-2 text-sm">
-              <BookMarked className="h-4 w-4 text-secondary" />
-              SỔ TAY BÀI HỌC
-            </h4>
-          </div>
           <div className="p-4">
-            {flaggedItems.filter((f) => f.unitId === unit.id).length > 0 ? (
-              <div className="space-y-3 max-h-240px overflow-y-auto pr-2 custom-scrollbar">
-                {flaggedItems
-                  .filter((f) => f.unitId === unit.id)
-                  .map((f, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-2 group cursor-default py-1 border-b border-dashed last:border-0 pb-2"
-                    >
-                      <div className="h-1.5 w-1.5 rounded-full bg-secondary shrink-0 mt-1.5" />
-                      <div className="space-y-0.5 min-w-0">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
-                          {f.type === "vocabulary"
-                            ? "Từ vựng"
-                            : f.type === "phrase"
-                              ? "Mẫu câu"
-                              : "Công thức"}
-                        </p>
-                        <p className="text-xs font-bold truncate group-hover:text-primary transition-colors">
-                          {f.key}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground italic">
-                Chưa có mục nào được lưu vào sổ tay.
-              </p>
-            )}
             <LessonShortcutButtons
               onStartPractice={startPractice}
               onStartFlashcards={startFlashcards}

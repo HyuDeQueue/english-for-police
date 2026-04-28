@@ -297,39 +297,16 @@ function AppContent() {
     },
     [],
   );
-
-  const scrollToTop = () => {
+  // Auto scroll to top on navigation
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, [location.pathname]);
 
   const navigateToHome = () => {
-    scrollToTop();
     navigate("/");
   };
   const navigateToLesson = (unit: Unit) => {
-    scrollToTop();
     navigate(`/lesson/${unit.id}`);
-  };
-  const navigateToPractice = (unit: Unit) => {
-    scrollToTop();
-    navigate(`/practice/${unit.id}`);
-  };
-  const navigateToFlashcards = (unit: Unit) => {
-    scrollToTop();
-    navigate(`/flashcards/${unit.id}`);
-  };
-  const navigateToQuickTest = () => {
-    scrollToTop();
-    navigate("/quicktest");
-  };
-  const navigateToGeneralTest = (unit?: Unit) => {
-    if (unit) {
-      scrollToTop();
-      navigate(`/generaltest/${unit.id}`);
-      return;
-    }
-    scrollToTop();
-    navigate("/generaltest");
   };
   const openTools = () => setToolsOpen(true);
   const closeTools = () => setToolsOpen(false);
@@ -354,7 +331,7 @@ function AppContent() {
       onLogoClick={navigateToHome}
       onOpenSidebar={openTools}
     >
-      <Routes>
+      <Routes location={location}>
         <Route
           path="/"
           element={
@@ -481,12 +458,7 @@ function AppContent() {
         isOpen={toolsOpen}
         onClose={closeTools}
         activeUnit={activeUnit}
-        onStartPractice={() => activeUnit && navigateToPractice(activeUnit)}
-        onStartFlashcards={() => activeUnit && navigateToFlashcards(activeUnit)}
-        onStartGeneralKnowledgeTest={() =>
-          activeUnit && navigateToGeneralTest(activeUnit)
-        }
-        onStartQuickTest={navigateToQuickTest}
+        onNavigateToUnit={navigateToLesson}
         onRemoveItem={(item) => {
           setFlaggedItems(
             flaggedItems.filter(
@@ -499,13 +471,11 @@ function AppContent() {
             ),
           );
         }}
-        onNavigateToUnit={navigateToLesson}
       />
     </MainLayout>
   );
 }
 
-// Helper for extracting ID in callback where useParams isn't available
 function parseHashForFlashcardWorkaround(path: string) {
   const parts = path.split("/");
   return { unitId: parts[2] };

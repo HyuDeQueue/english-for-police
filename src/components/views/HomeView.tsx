@@ -75,14 +75,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   };
 
-  const visibleLessons = useMemo(
-    () => lessons.slice(0, visibleLessonCount),
-    [lessons, visibleLessonCount],
-  );
+  const actualVisibleCount = Math.min(visibleLessonCount, lessons.length);
 
-  useEffect(() => {
-    setVisibleLessonCount(Math.min(LESSONS_PER_PAGE, lessons.length));
-  }, [lessons]);
+  const visibleLessons = useMemo(
+    () => lessons.slice(0, actualVisibleCount),
+    [lessons, actualVisibleCount],
+  );
 
   useEffect(() => {
     const anchor = loadMoreAnchorRef.current;
