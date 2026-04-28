@@ -45,8 +45,12 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     generateGeneralQuestions(lessons),
   );
   const location = useLocation();
-  const locationState = location.state as { mode?: TestMode; sectionTitle?: string } | null;
-  const testMode: TestMode = locationState?.mode || (mode === "unit" ? "type" : "type");
+  const locationState = location.state as {
+    mode?: TestMode;
+    sectionTitle?: string;
+  } | null;
+  const testMode: TestMode =
+    locationState?.mode || (mode === "unit" ? "type" : "type");
   const [bankLimit, setBankLimit] = useState<number>(40);
   const [shuffleTrigger, setShuffleTrigger] = useState<number>(0);
 
@@ -87,7 +91,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
 
   useEffect(() => {
     if (locationState?.sectionTitle && sections.length > 0) {
-      const idx = sections.findIndex(s => s.title === locationState.sectionTitle);
+      const idx = sections.findIndex(
+        (s) => s.title === locationState.sectionTitle,
+      );
       if (idx !== -1) {
         setTimeout(() => {
           setCurrentSectionIndex(idx);
@@ -209,7 +215,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-20">
+    <div className="max-w-7xl mx-auto space-y-2 animate-fade-in pb-20">
       <PracticeHeader onBack={handleBack}>
         {sections.map((_, i) => (
           <div
@@ -220,7 +226,6 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       </PracticeHeader>
 
       <div className="flex flex-wrap items-center gap-4 px-4">
-
         {testMode === "bank" && (
           <div className="flex items-center gap-2 animate-fade-in">
             <div className="flex bg-muted/30 p-1 rounded-lg">
@@ -424,7 +429,8 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                           }
                         />
                       )}
-                      {(currentQuestion.type === "Dictation" || currentQuestion.type === "FillInBlank") && (
+                      {(currentQuestion.type === "Dictation" ||
+                        currentQuestion.type === "FillInBlank") && (
                         <InputQuestion
                           question={currentQuestion}
                           value={answers[currentQuestion.id] || ""}

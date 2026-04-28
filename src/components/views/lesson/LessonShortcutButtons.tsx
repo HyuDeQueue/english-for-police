@@ -43,7 +43,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
           className="w-full h-10 justify-between font-bold"
           onClick={() => setIsTypeExpanded(!isTypeExpanded)}
         >
-          Theo dạng
+          Ôn tập theo các dạng
           <ChevronRight
             className={`h-4 w-4 transition-transform ${isTypeExpanded ? "rotate-180" : ""}`}
           />
@@ -75,7 +75,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
         className="w-full h-10 justify-between font-bold"
         onClick={() => onStartGeneralTest("bank")}
       >
-        Trộn ngân hàng
+        Ngân hàng đề
         <ChevronRight className="h-4 w-4" />
       </Button>
       <Button
