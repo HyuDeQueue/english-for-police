@@ -126,7 +126,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                     {r.type === "vocabulary" ? "Từ vựng" : "Mẫu câu"}
                   </Badge>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase group-hover:text-white/60">
-                    Tuần {r.unitId}
+                    Chương {r.unitId}
                   </span>
                 </div>
                 <div className="font-bold text-primary text-base group-hover:text-white transition-colors">

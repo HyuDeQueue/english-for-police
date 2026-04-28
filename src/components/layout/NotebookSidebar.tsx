@@ -127,7 +127,7 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
                           variant="outline"
                           className="bg-primary/10 text-primary border-primary/20"
                         >
-                          TUẦN {unitId}
+                          CHƯƠNG {unitId}
                         </Badge>
                         <h3 className="font-bold text-sm truncate max-w-180px">
                           {group.unit.title}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -12,18 +12,13 @@ import {
   Flag,
   BookOpen,
   ChevronRight,
-  Loader2,
   Zap,
   Check,
+  Trophy,
+  Target,
+  Sparkles,
 } from "lucide-react";
 import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,16 +40,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectUnit,
   onNavigate,
 }) => {
-  const LESSONS_PER_PAGE = 2;
   const completedCount = dailyTasks.tasks.filter((t) => t.completed).length;
   const overallProgress =
     lessons.length > 0
       ? Math.round((progress.completedUnits.length / lessons.length) * 100)
       : 0;
-  const [visibleLessonCount, setVisibleLessonCount] =
-    useState(LESSONS_PER_PAGE);
-  const [isLoadingMoreLessons, setIsLoadingMoreLessons] = useState(false);
-  const loadMoreAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const displayedTasks = [...dailyTasks.tasks].sort((a, b) => {
     const hash = (value: string) => {
@@ -75,276 +65,286 @@ export const HomeView: React.FC<HomeViewProps> = ({
     }
   };
 
-  const actualVisibleCount = Math.min(visibleLessonCount, lessons.length);
-
-  const visibleLessons = useMemo(
-    () => lessons.slice(0, actualVisibleCount),
-    [lessons, actualVisibleCount],
-  );
-
-  useEffect(() => {
-    const anchor = loadMoreAnchorRef.current;
-    if (!anchor || visibleLessonCount >= lessons.length) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (!entry?.isIntersecting || isLoadingMoreLessons) return;
-
-        setIsLoadingMoreLessons(true);
-        window.setTimeout(() => {
-          setVisibleLessonCount((current) =>
-            Math.min(current + LESSONS_PER_PAGE, lessons.length),
-          );
-          setIsLoadingMoreLessons(false);
-        }, 450);
-      },
-      { rootMargin: "200px 0px" },
-    );
-
-    observer.observe(anchor);
-
-    return () => observer.disconnect();
-  }, [lessons.length, visibleLessonCount, isLoadingMoreLessons]);
-
   return (
-    <div className="space-y-6">
-      {/* Hero Section */}
-      <Card className="primary-gradient relative overflow-hidden border-none police-shadow">
-        <div className="absolute -right-8 -top-8 text-[120px] font-heading font-black opacity-10 pointer-events-none select-none">
-          OPS
-        </div>
-        <CardHeader>
-          <div className="flex items-center gap-2 text-secondary mb-2">
-            <Zap className="h-5 w-5 fill-current" />
-            <span className="text-xs font-bold uppercase tracking-widest">
-              Sẵn sàng huấn luyện
-            </span>
-          </div>
-          <CardTitle className="text-3xl text-white font-heading">
-            Chào mừng quay trở lại
-          </CardTitle>
-          <CardDescription className="text-white/80 text-base max-w-md">
-            Tiếp tục lộ trình rèn luyện tiếng Anh chuyên ngành để nâng cao
-            nghiệp vụ thực tế.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 max-w-xs">
-            <div className="flex justify-between text-xs text-white/90 font-medium">
-              <span>Tiến độ tổng thể</span>
-              <span>{overallProgress}%</span>
+    <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr_320px] gap-8 items-start">
+      {/* Column 1: Profile & Progress */}
+      <div className="space-y-6 xl:sticky xl:top-24">
+        {/* Hero Section Moved to Left */}
+        <Card className="primary-gradient relative overflow-hidden border-none police-shadow rounded-2xl p-5 text-white">
+          <div className="absolute -right-4 -top-4 text-[80px] font-heading font-black opacity-10 pointer-events-none select-none" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 text-secondary mb-2">
+              <Zap className="h-4 w-4 fill-current" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                Huấn luyện
+              </span>
             </div>
-            <Progress value={overallProgress} className="h-2 bg-white/20" />
+            <h1 className="text-2xl font-heading font-black mb-1.5 leading-tight">
+              Chào mừng quay trở lại
+            </h1>
+            <p className="text-white/80 text-xs leading-relaxed">
+              Tiếp tục lộ trình rèn luyện để nâng cao nghiệp vụ.
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Daily Tasks */}
-        <Card className="police-shadow border-t-4 border-t-primary">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5 text-primary" />
-                Nhiệm vụ hôm nay
-              </CardTitle>
-              <Badge variant="secondary" className="text-[10px] font-bold">
-                {completedCount}/{dailyTasks.tasks.length}
-              </Badge>
+        {/* Mini Progress Card */}
+        <Card className="police-shadow border-none bg-white p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-10 w-10 rounded-xl primary-gradient flex items-center justify-center text-white shadow-lg shadow-primary/20">
+              <Target className="h-5 w-5" />
             </div>
+            <div>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                Tiến độ chung
+              </p>
+              <p className="text-xl font-black text-slate-800">
+                {overallProgress}%
+              </p>
+            </div>
+          </div>
+          <Progress value={overallProgress} className="h-2" />
+        </Card>
+
+        {/* Suggested Lesson */}
+        <Card className="police-shadow border-none bg-slate-700 text-white overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform">
+          <CardHeader className="p-4 pb-2">
+            <div className="flex items-center gap-2 text-secondary mb-1">
+              <Sparkles className="h-3 w-3 fill-current" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                Gợi ý bài học
+              </span>
+            </div>
+            <CardTitle className="text-base font-black">
+              {lessons.find((l) => !progress.completedUnits.includes(l.id))
+                ?.title || lessons[0]?.title}
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <Accordion
-              type="single"
-              collapsible
-              className="w-full space-y-2 mb-6"
+          <CardContent className="p-4 pt-0">
+            <Button
+              variant="link"
+              className="p-0 h-auto text-xs text-white/80 group-hover:text-secondary transition-colors"
+              onClick={() => {
+                const nextUnit = lessons.find(
+                  (l) => !progress.completedUnits.includes(l.id),
+                );
+                if (nextUnit) onSelectUnit(nextUnit);
+              }}
             >
-              {displayedTasks.map((task) => (
-                <AccordionItem
-                  key={task.id}
-                  value={task.id}
-                  className={`border rounded-lg px-3 transition-colors ${task.completed ? "bg-green-50/50 border-green-200" : "bg-card hover:bg-muted/30"}`}
-                >
-                  <AccordionTrigger className="hover:no-underline py-3">
-                    <div className="flex items-center space-x-3 text-left w-full mr-2">
-                      <span
-                        aria-hidden="true"
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-4px border transition-colors ${
-                          task.completed
-                            ? "border-green-500 bg-green-500 text-white"
-                            : "border-input bg-background"
-                        }`}
-                      >
-                        {task.completed && <Check className="h-3 w-3" />}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <span
-                            className={`text-sm font-semibold truncate ${task.completed ? "text-green-700" : ""}`}
-                          >
-                            {task.label}
-                          </span>
-                          <span className="text-[10px] font-bold text-muted-foreground ml-2">
-                            {task.current}/{task.target}
-                          </span>
-                        </div>
-                        <Progress
-                          value={(task.current / task.target) * 100}
-                          className={`h-1 ${task.completed ? "bg-green-100 [&>div]:bg-green-500" : ""}`}
-                        />
-                      </div>
-                    </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-3 pt-1 border-t border-dashed mt-1">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                        <Info className="h-4 w-4 shrink-0 text-primary" />
-                        <p>
-                          {task.description ||
-                            "Hoàn thành các hoạt động tương ứng để đạt mục tiêu."}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={task.completed ? "outline" : "default"}
-                        className="w-full text-xs font-bold"
-                        onClick={() => handleNavigate(task.navigatePath)}
-                      >
-                        {task.completed ? "Xem lại" : "Đi đến nhiệm vụ"}
-                        <ArrowUpRight className="ml-2 h-3 w-3" />
-                      </Button>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
-                <span>Tiến độ tổng quát</span>
-                <span>
-                  {Math.round((completedCount / dailyTasks.tasks.length) * 100)}
-                  %
-                </span>
-              </div>
-              <Progress
-                value={(completedCount / dailyTasks.tasks.length) * 100}
-                className="h-1.5"
-              />
-            </div>
+              Tiếp tục ngay <ChevronRight className="ml-1 h-3 w-3" />
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Flagged Items Summary */}
-        <Card className="police-shadow border-t-4 border-t-secondary">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Flag className="h-5 w-5 text-secondary fill-current" />
-              Từ cần ôn lại
-            </CardTitle>
-            <CardDescription>
-              Các từ vựng và mẫu câu bạn đã đánh dấu ưu tiên.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {flaggedItems.length > 0 ? (
-              <div className="flex flex-wrap gap-2 max-h-180px overflow-y-auto pr-2 custom-scrollbar">
-                {flaggedItems.map((item, i) => (
-                  <Badge
-                    key={i}
-                    variant="secondary"
-                    className="bg-secondary/10 text-secondary-foreground border-secondary/20 hover:bg-secondary/20 transition-colors py-1 px-3"
-                  >
-                    {item.key}
-                  </Badge>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Flag className="h-10 w-10 mx-auto opacity-20 mb-2" />
-                <p className="text-sm">Chưa có mục nào được đánh dấu.</p>
-              </div>
-            )}
-          </CardContent>
+        {/* Leaderboard Placeholder */}
+        <Card className="police-shadow border-dashed border-2 bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center opacity-60">
+          <Trophy className="h-8 w-8 text-slate-300 mb-2" />
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Bảng xếp hạng
+          </p>
+          <p className="text-[10px] text-slate-400 mt-1 italic">
+            Sắp ra mắt trong bản cập nhật tới
+          </p>
         </Card>
       </div>
 
-      {/* Lesson List */}
-      <div className="space-y-4">
-        <h3 className="text-xl font-heading font-bold flex items-center gap-2">
-          <BookOpen className="h-6 w-6 text-primary" />
-          Lộ trình bài học
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {visibleLessons.map((unit) => (
+      {/* Column 2: Main Content */}
+      <div className="space-y-8">
+        {/* Tasks and Review */}
+        <div className="space-y-6">
+          <Card className="police-shadow border-none rounded-2xl overflow-hidden">
+            <CardHeader className="bg-slate-50/80 border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2 text-slate-800">
+                  <ClipboardCheck className="h-5 w-5 text-primary" />
+                  Nhiệm vụ hôm nay
+                </CardTitle>
+                <Badge className="primary-gradient border-none">
+                  {completedCount}/{dailyTasks.tasks.length}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Accordion
+                type="single"
+                collapsible
+                className="w-full space-y-3 mb-6"
+              >
+                {displayedTasks.map((task) => (
+                  <AccordionItem
+                    key={task.id}
+                    value={task.id}
+                    className={`border rounded-xl px-4 transition-all duration-300 ${task.completed ? "bg-emerald-50/30 border-emerald-100 shadow-sm" : "bg-white border-slate-100 hover:border-primary/20 hover:shadow-md"}`}
+                  >
+                    <AccordionTrigger className="hover:no-underline py-4">
+                      <div className="flex items-center space-x-4 text-left w-full mr-2">
+                        <span
+                          aria-hidden="true"
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 transition-all ${
+                            task.completed
+                              ? "border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-200"
+                              : "border-slate-200 bg-slate-50"
+                          }`}
+                        >
+                          {task.completed && <Check className="h-4 w-4" />}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1.5">
+                            <span
+                              className={`text-sm font-bold tracking-tight ${task.completed ? "text-emerald-700" : "text-slate-700"}`}
+                            >
+                              {task.label}
+                            </span>
+                            <span className="text-[10px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                              {task.current}/{task.target}
+                            </span>
+                          </div>
+                          <Progress
+                            value={(task.current / task.target) * 100}
+                            className={`h-1.5 ${task.completed ? "bg-emerald-100 [&>div]:bg-emerald-500" : "bg-slate-100"}`}
+                          />
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-2 border-t border-dashed border-slate-100 mt-2">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start gap-3 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                          <Info className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                          <p className="leading-relaxed">
+                            {task.description ||
+                              "Hoàn thành các hoạt động tương ứng để đạt mục tiêu huấn luyện của bạn."}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={task.completed ? "outline" : "default"}
+                          className={`w-full text-xs font-bold h-10 rounded-xl transition-all ${!task.completed ? "primary-gradient border-none shadow-lg shadow-primary/20" : ""}`}
+                          onClick={() => handleNavigate(task.navigatePath)}
+                        >
+                          {task.completed
+                            ? "Xem lại kết quả"
+                            : "Thực hiện ngay"}
+                          <ArrowUpRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </CardContent>
+          </Card>
+
+          {/* Review Card */}
+          <Card className="police-shadow border-none rounded-2xl overflow-hidden">
+            <CardHeader className="bg-slate-50/80 border-b border-slate-100">
+              <CardTitle className="text-lg flex items-center gap-2 text-slate-800">
+                <Flag className="h-4 w-5 text-secondary fill-current" />
+                Từ cần ôn lại
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {flaggedItems.length > 0 ? (
+                <div className="flex flex-wrap gap-2 pb-2">
+                  {flaggedItems.slice(0, 15).map((item, i) => (
+                    <Badge
+                      key={i}
+                      variant="secondary"
+                      className="bg-white text-slate-700 border border-slate-200 shadow-sm hover:border-secondary transition-all py-1.5 px-4 rounded-xl"
+                    >
+                      {item.key}
+                    </Badge>
+                  ))}
+                  {flaggedItems.length > 15 && (
+                    <Badge
+                      variant="ghost"
+                      className="text-slate-400 text-[10px] font-bold"
+                    >
+                      +{flaggedItems.length - 15} từ khác
+                    </Badge>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-dashed border-slate-200">
+                    <Flag className="h-6 w-6 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-400">
+                    Chưa có mục nào được đánh dấu.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Column 3: Roadmap */}
+      <div className="space-y-6 xl:sticky xl:top-24">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-heading font-black text-slate-800 flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Lộ trình học
+          </h3>
+          <Badge variant="outline" className="text-[10px] font-black uppercase">
+            {lessons.length} Bài
+          </Badge>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {lessons.map((unit) => (
             <Card
               key={unit.id}
-              className="group cursor-pointer hover:police-shadow border-transparent hover:border-primary/20 transition-all active:scale-[0.98]"
+              className={`group cursor-pointer border-2 transition-all hover:shadow-xl hover:-translate-y-1 ${
+                progress.completedUnits.includes(unit.id)
+                  ? "border-emerald-100 bg-emerald-50/10"
+                  : "border-slate-100 bg-white hover:border-primary/30"
+              }`}
               onClick={() => onSelectUnit(unit)}
             >
-              <CardHeader className="pb-2 flex-row justify-between items-start space-y-0">
-                <div className="space-y-1">
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] uppercase font-bold border-primary/20 text-primary"
-                  >
-                    Tuần {unit.id}
-                  </Badge>
-                  <CardTitle className="text-base group-hover:text-primary transition-colors">
-                    {unit.title}
-                  </CardTitle>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">
+                        Chương {unit.id}
+                      </span>
+                      {progress.completedUnits.includes(unit.id) && (
+                        <Check className="h-3 w-3 text-emerald-500" />
+                      )}
+                    </div>
+                    <h4 className="font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">
+                      {unit.title}
+                    </h4>
+                  </div>
+                  <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:primary-gradient group-hover:text-white transition-all shadow-sm">
+                    <ChevronRight className="h-4 w-4" />
+                  </div>
                 </div>
-                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors">
-                  <ChevronRight className="h-4 w-4" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-4 h-10">
-                  {unit.description}
-                </p>
-                <div className="space-y-1.5">
+
+                <div className="space-y-2">
                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                    <span className="text-muted-foreground">
-                      Tiến độ bài học
-                    </span>
+                    <span className="text-slate-400">Hoàn thành</span>
                     <span
                       className={
                         progress.completedUnits.includes(unit.id)
-                          ? "text-green-600"
-                          : "text-primary"
+                          ? "text-emerald-600"
+                          : "text-slate-400"
                       }
                     >
                       {progress.completedUnits.includes(unit.id)
-                        ? "Hoàn thành"
+                        ? "100%"
                         : "0%"}
                     </span>
                   </div>
                   <Progress
                     value={progress.completedUnits.includes(unit.id) ? 100 : 0}
-                    className={`h-1 ${progress.completedUnits.includes(unit.id) ? "bg-green-100 [&>div]:bg-green-500" : ""}`}
+                    className={`h-1 ${progress.completedUnits.includes(unit.id) ? "bg-emerald-100 [&>div]:bg-emerald-500" : "bg-slate-100"}`}
                   />
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-        {visibleLessonCount < lessons.length && (
-          <div
-            ref={loadMoreAnchorRef}
-            className="flex flex-col items-center justify-center gap-2 py-8"
-          >
-            <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              Đang tải thêm bài học...
-            </div>
-            {isLoadingMoreLessons && (
-              <p className="text-xs text-muted-foreground">
-                Đang nạp thêm nội dung khi bạn cuộn xuống.
-              </p>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
