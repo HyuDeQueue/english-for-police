@@ -8,7 +8,7 @@ export interface Section {
   questionIds: string[];
 }
 
-export type TestMode = "type" | "chapter" | "bank";
+export type TestMode = "type" | "bank";
 
 export type SectionResult = {
   score: number;
@@ -112,44 +112,20 @@ export function generateGeneralQuestions(lessons: Unit[]): Question[] {
 export function buildSections(
   questions: Question[],
   mode: TestMode,
+  bankLimit: number = 40,
 ): Section[] {
-  if (mode === "chapter") {
-    const grouped = new Map<number, Question[]>();
-
-    questions.forEach((question) => {
-      const unitId = extractUnitId(question.id);
-      if (!unitId) return;
-      const existing = grouped.get(unitId) || [];
-      existing.push(question);
-      grouped.set(unitId, existing);
-    });
-
-    return Array.from(grouped.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([unitId, items]) => ({
-        title: `Luyện tập chương ${unitId}`,
-        description:
-          "Làm toàn bộ câu hỏi của một chương theo nhiều dạng đã tổng hợp.",
-        questionIds: items.map((item) => item.id),
-      }));
-  }
-
   if (mode === "bank") {
     const shuffled = shuffleArray(questions);
-    const chunkSize = 10;
-    const sections: Section[] = [];
+    const batch = shuffled.slice(0, Math.min(bankLimit, shuffled.length));
 
-    for (let index = 0; index < shuffled.length; index += chunkSize) {
-      const batch = shuffled.slice(index, index + chunkSize);
-      sections.push({
-        title: `Ngân hàng câu hỏi ${sections.length + 1}`,
+    return [
+      {
+        title: "Bài test tổng hợp",
         description:
           "Trộn câu hỏi ngẫu nhiên từ nhiều chương và nhiều dạng khác nhau.",
         questionIds: batch.map((item) => item.id),
-      });
-    }
-
-    return sections;
+      },
+    ];
   }
 
   const sections: Section[] = [];

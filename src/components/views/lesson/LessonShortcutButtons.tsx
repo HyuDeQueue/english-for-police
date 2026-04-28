@@ -38,7 +38,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
         className="w-full h-10 justify-between font-bold"
         onClick={onStartGeneralTest}
       >
-        Tổng hợp
+        Luyện tập
         <ChevronRight className="h-4 w-4" />
       </Button>
       <Button

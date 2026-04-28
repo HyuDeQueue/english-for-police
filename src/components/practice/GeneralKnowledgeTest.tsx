@@ -3,24 +3,25 @@ import type { Unit, Question } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Send } from "lucide-react";
+import { ChevronLeft, Send, Shuffle } from "lucide-react";
 
 import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
 import { MatchingQuestion } from "./questions/MatchingQuestion";
 import { ArrangementQuestion } from "./questions/ArrangementQuestion";
+import { InputQuestion } from "./questions/InputQuestion";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeHeader } from "./layout/PracticeHeader";
 import { PracticeResults } from "./results/PracticeResults";
 
 // Modularized imports
-import { 
-  type Section, 
-  type TestMode, 
+import {
+  type Section,
+  type TestMode,
   type MatchingPair,
-  QUESTIONS_PER_PAGE, 
-  generateGeneralQuestions, 
+  QUESTIONS_PER_PAGE,
+  generateGeneralQuestions,
   buildSections,
-  shuffleArray 
+  shuffleArray,
 } from "./utils/testUtils";
 import { useGeneralTestState } from "./hooks/useGeneralTestState";
 import { SectionAccordionItem } from "./components/SectionAccordionItem";
@@ -39,30 +40,48 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   onComplete,
 }) => {
   // 1. Initial State & Questions
-  const [questions] = useState<Question[]>(() => generateGeneralQuestions(lessons));
-  const initialMode: TestMode = mode === "unit" ? "chapter" : "type";
+  const [questions] = useState<Question[]>(() =>
+    generateGeneralQuestions(lessons),
+  );
+  const initialMode: TestMode = mode === "unit" ? "type" : "type";
   const [testMode, setTestMode] = useState<TestMode>(initialMode);
+  const [bankLimit, setBankLimit] = useState<number>(40);
+  const [shuffleTrigger, setShuffleTrigger] = useState<number>(0);
 
   // 2. Navigation State
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
-  const [expandedSectionIndex, setExpandedSectionIndex] = useState<number | null>(0);
+  const [expandedSectionIndex, setExpandedSectionIndex] = useState<
+    number | null
+  >(0);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [currentIndexInSection, setCurrentIndexInSection] = useState(0);
 
   // 3. Test Logic Hook
   const {
-    answers, setAnswers,
-    matchingAnswers, setMatchingAnswers,
-    arrangementAnswers, setArrangementAnswers,
-    selectedLeft, setSelectedLeft,
-    showResults, setShowResults,
-    overallScore, setOverallScore,
-    sectionResults, setSectionResults,
-    isQuestionAnswered, calculateScore, resetBaseState
+    answers,
+    setAnswers,
+    matchingAnswers,
+    setMatchingAnswers,
+    arrangementAnswers,
+    setArrangementAnswers,
+    selectedLeft,
+    setSelectedLeft,
+    showResults,
+    setShowResults,
+    overallScore,
+    setOverallScore,
+    sectionResults,
+    setSectionResults,
+    isQuestionAnswered,
+    calculateScore,
+    resetBaseState,
   } = useGeneralTestState();
 
-  // 4. Derived Data
-  const sections: Section[] = useMemo(() => buildSections(questions, testMode), [questions, testMode]);
+  const sections: Section[] = useMemo(
+    () => buildSections(questions, testMode, bankLimit),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [questions, testMode, bankLimit, shuffleTrigger],
+  );
   const currentSection = sections[currentSectionIndex];
 
   const sectionQuestions = useMemo(() => {
@@ -75,15 +94,21 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     return sectionQuestions.slice(start, start + QUESTIONS_PER_PAGE);
   }, [currentPageIndex, sectionQuestions]);
 
-  const sectionProgress = useMemo(() => sections.map((section) => {
-    const sectionQs = questions.filter((q) => section.questionIds.includes(q.id));
-    const answered = sectionQs.filter((q) => isQuestionAnswered(q)).length;
-    return {
-      answered,
-      total: sectionQs.length,
-      isComplete: sectionQs.length > 0 && answered === sectionQs.length,
-    };
-  }), [sections, questions, isQuestionAnswered]);
+  const sectionProgress = useMemo(
+    () =>
+      sections.map((section) => {
+        const sectionQs = questions.filter((q) =>
+          section.questionIds.includes(q.id),
+        );
+        const answered = sectionQs.filter((q) => isQuestionAnswered(q)).length;
+        return {
+          answered,
+          total: sectionQs.length,
+          isComplete: sectionQs.length > 0 && answered === sectionQs.length,
+        };
+      }),
+    [sections, questions, isQuestionAnswered],
+  );
 
   const matchingRightOptionsByQuestionId = useMemo(() => {
     const stableOrders: Record<string, MatchingPair[]> = {};
@@ -116,10 +141,19 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
 
     setSectionResults(nextResults);
 
-    const overallCorrect = Object.values(nextResults).reduce((sum, r) => sum + r.correctCount, 0);
-    const calculatedOverallScore = questions.length > 0 ? Math.round((overallCorrect / questions.length) * 100) : 0;
+    const overallCorrect = Object.values(nextResults).reduce(
+      (sum, r) => sum + r.correctCount,
+      0,
+    );
+    const calculatedOverallScore =
+      questions.length > 0
+        ? Math.round((overallCorrect / questions.length) * 100)
+        : 0;
 
-    if (sections.length > 0 && sections.every((_, idx) => nextResults[idx]?.submitted)) {
+    if (
+      sections.length > 0 &&
+      sections.every((_, idx) => nextResults[idx]?.submitted)
+    ) {
       setOverallScore(calculatedOverallScore);
       setShowResults(true);
     }
@@ -135,8 +169,12 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     return (
       <div className="max-w-2xl mx-auto py-20 text-center px-4">
         <Card className="police-shadow border-none p-10">
-          <CardTitle className="text-xl mb-3">Chưa có dữ liệu cho bài kiểm tra</CardTitle>
-          <Button onClick={onBack}><ChevronLeft className="mr-2 h-4 w-4" /> QUAY LẠI</Button>
+          <CardTitle className="text-xl mb-3">
+            Chưa có dữ liệu cho bài kiểm tra
+          </CardTitle>
+          <Button onClick={onBack}>
+            <ChevronLeft className="mr-2 h-4 w-4" /> QUAY LẠI
+          </Button>
         </Card>
       </div>
     );
@@ -159,22 +197,63 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-20">
       <PracticeHeader onBack={handleBack}>
         {sections.map((_, i) => (
-          <div key={i} className={`h-2 w-12 rounded-full transition-all ${i === currentSectionIndex ? "bg-primary w-20" : i < currentSectionIndex ? "bg-green-500" : "bg-muted"}`} />
+          <div
+            key={i}
+            className={`h-2 w-12 rounded-full transition-all ${i === currentSectionIndex ? "bg-primary w-20" : i < currentSectionIndex ? "bg-green-500" : "bg-muted"}`}
+          />
         ))}
       </PracticeHeader>
 
-      <div className="flex flex-wrap gap-2 px-4">
-        {(["type", "chapter", "bank"] as TestMode[]).map((m) => (
-          <Button
-            key={m}
-            variant={testMode === m ? "default" : "outline"}
-            size="sm"
-            className="font-bold"
-            onClick={() => { if (testMode !== m) { setTestMode(m); resetTestState(); } }}
-          >
-            {m === "type" ? "Theo dạng" : m === "chapter" ? "Theo chương" : "Trộn ngân hàng"}
-          </Button>
-        ))}
+      <div className="flex flex-wrap items-center gap-4 px-4">
+        <div className="flex gap-2 bg-muted/30 p-1 rounded-lg">
+          {(["type", "bank"] as TestMode[]).map((m) => (
+            <Button
+              key={m}
+              variant={testMode === m ? "default" : "ghost"}
+              size="sm"
+              className={`font-bold rounded-md ${testMode === m ? "primary-gradient text-white shadow-md" : "hover:bg-background"}`}
+              onClick={() => {
+                if (testMode !== m) {
+                  setTestMode(m);
+                  resetTestState();
+                }
+              }}
+            >
+              {m === "type" ? "Theo dạng" : "Trộn ngân hàng"}
+            </Button>
+          ))}
+        </div>
+
+        {testMode === "bank" && (
+          <div className="flex items-center gap-2 animate-fade-in">
+            <div className="flex bg-muted/30 p-1 rounded-lg">
+              <Button
+                variant={bankLimit === 40 ? "secondary" : "ghost"}
+                size="sm"
+                className={`text-xs font-bold px-3 h-8 rounded-md ${bankLimit === 40 ? "shadow-sm" : ""}`}
+                onClick={() => {
+                  setBankLimit(40);
+                  resetTestState();
+                }}
+              >
+                40 Câu
+              </Button>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 font-bold text-primary border-primary/20 hover:bg-primary/10 gap-2"
+              onClick={() => {
+                setShuffleTrigger((prev) => prev + 1);
+                resetTestState();
+              }}
+            >
+              <Shuffle className="h-3 w-3" />
+              Trộn câu hỏi
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start px-4">
@@ -190,9 +269,13 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 onClick={handleSubmitSection}
               >
                 <Send className="mr-2 h-5 w-5" />
-                {sectionResults[currentSectionIndex]?.submitted ? "NỘP LẠI BÀI NÀY" : "NỘP BÀI NÀY"}
+                {sectionResults[currentSectionIndex]?.submitted
+                  ? "NỘP LẠI BÀI NÀY"
+                  : "NỘP BÀI NÀY"}
               </Button>
-              <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">Mỗi bài luyện tập có nút nộp riêng</p>
+              <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
+                Mỗi bài luyện tập có nút nộp riêng
+              </p>
             </>
           }
         >
@@ -211,7 +294,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 currentPageIndex={currentPageIndex}
                 questionsPerPage={QUESTIONS_PER_PAGE}
                 isQuestionAnswered={isQuestionAnswered}
-                onToggle={(i) => setExpandedSectionIndex(expandedSectionIndex === i ? null : i)}
+                onToggle={(i) =>
+                  setExpandedSectionIndex(expandedSectionIndex === i ? null : i)
+                }
                 onSelectSection={(i, page = 0, qIdx = 0) => {
                   setCurrentSectionIndex(i);
                   setExpandedSectionIndex(i);
@@ -221,7 +306,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 }}
                 onSelectQuestion={(qIdx) => setCurrentIndexInSection(qIdx)}
                 onPageChange={(dir) => {
-                  setCurrentPageIndex(prev => dir === "prev" ? Math.max(0, prev - 1) : prev + 1);
+                  setCurrentPageIndex((prev) =>
+                    dir === "prev" ? Math.max(0, prev - 1) : prev + 1,
+                  );
                   setCurrentIndexInSection(0);
                 }}
               />
@@ -232,9 +319,15 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         <div className="flex-1 w-full space-y-6">
           <Card className="police-shadow border-none min-h-360px flex flex-col">
             <CardHeader className="border-b bg-muted/20 py-2.5 px-4 sm:px-5 flex flex-row justify-between items-center">
-              <Badge className="bg-primary/10 text-primary border-none px-2.5 py-0.5 font-bold text-[9px] uppercase tracking-wider">{currentSection?.title}</Badge>
+              <Badge className="bg-primary/10 text-primary border-none px-2.5 py-0.5 font-bold text-[9px] uppercase tracking-wider">
+                {currentSection?.title}
+              </Badge>
               <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                Câu {currentPageIndex * QUESTIONS_PER_PAGE + currentIndexInSection + 1} / {sectionQuestions.length}
+                Câu{" "}
+                {currentPageIndex * QUESTIONS_PER_PAGE +
+                  currentIndexInSection +
+                  1}{" "}
+                / {sectionQuestions.length}
               </span>
             </CardHeader>
 
@@ -242,42 +335,108 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               <div className="space-y-6 max-w-xl mx-auto w-full">
                 {currentQuestion && (
                   <>
-                    <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">{currentQuestion.prompt}</h3>
-                    {currentQuestion.vnPrompt && <div className="p-3 bg-secondary/5 border-l-4 border-secondary rounded-r-xl italic text-secondary text-sm font-medium">{currentQuestion.vnPrompt}</div>}
-                    
+                    <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">
+                      {currentQuestion.prompt}
+                    </h3>
+                    {currentQuestion.vnPrompt && (
+                      <div className="p-3 bg-secondary/5 border-l-4 border-secondary rounded-r-xl italic text-secondary text-sm font-medium">
+                        {currentQuestion.vnPrompt}
+                      </div>
+                    )}
+
                     <div className="space-y-3 py-1">
-                      {(currentQuestion.type === "MCQ" || currentQuestion.type === "Scenario") && (
-                        <MultipleChoiceQuestion 
-                          question={currentQuestion} 
-                          selectedAnswer={answers[currentQuestion.id]} 
-                          onSelect={(ans) => setAnswers(prev => ({ ...prev, [currentQuestion.id]: ans }))} 
+                      {(currentQuestion.type === "MCQ" ||
+                        currentQuestion.type === "Scenario") && (
+                        <MultipleChoiceQuestion
+                          question={currentQuestion}
+                          selectedAnswer={answers[currentQuestion.id]}
+                          onSelect={(ans) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: ans,
+                            }))
+                          }
                         />
                       )}
                       {currentQuestion.type === "Matching" && (
                         <MatchingQuestion
                           question={currentQuestion}
-                          matchingAnswers={matchingAnswers[currentQuestion.id] || {}}
-                          selectedLeft={selectedLeft[currentQuestion.id] || null}
-                          onSelectLeft={(left) => setSelectedLeft(prev => ({ ...prev, [currentQuestion.id]: left }))}
+                          matchingAnswers={
+                            matchingAnswers[currentQuestion.id] || {}
+                          }
+                          selectedLeft={
+                            selectedLeft[currentQuestion.id] || null
+                          }
+                          onSelectLeft={(left) =>
+                            setSelectedLeft((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: left,
+                            }))
+                          }
                           onMatch={(l, r) => {
-                            const newMatches = { ...(matchingAnswers[currentQuestion.id] || {}), [l]: r };
-                            setMatchingAnswers(prev => ({ ...prev, [currentQuestion.id]: newMatches }));
-                            setSelectedLeft(prev => ({ ...prev, [currentQuestion.id]: null }));
+                            const newMatches = {
+                              ...(matchingAnswers[currentQuestion.id] || {}),
+                              [l]: r,
+                            };
+                            setMatchingAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: newMatches,
+                            }));
+                            setSelectedLeft((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: null,
+                            }));
                           }}
-                          shuffledRightOptions={matchingRightOptionsByQuestionId[currentQuestion.id] || []}
+                          shuffledRightOptions={
+                            matchingRightOptionsByQuestionId[
+                              currentQuestion.id
+                            ] || []
+                          }
                         />
                       )}
                       {currentQuestion.type === "Arrangement" && (
                         <ArrangementQuestion
                           question={currentQuestion}
-                          selectedWords={arrangementAnswers[currentQuestion.id] || []}
-                          onAddWord={(w) => setArrangementAnswers(prev => ({ ...prev, [currentQuestion.id]: [...(prev[currentQuestion.id] || []), w] }))}
+                          selectedWords={
+                            arrangementAnswers[currentQuestion.id] || []
+                          }
+                          onAddWord={(w) =>
+                            setArrangementAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: [
+                                ...(prev[currentQuestion.id] || []),
+                                w,
+                              ],
+                            }))
+                          }
                           onRemoveWord={(idx) => {
-                            const nextArr = [...(arrangementAnswers[currentQuestion.id] || [])];
+                            const nextArr = [
+                              ...(arrangementAnswers[currentQuestion.id] || []),
+                            ];
                             nextArr.splice(idx, 1);
-                            setArrangementAnswers(prev => ({ ...prev, [currentQuestion.id]: nextArr }));
+                            setArrangementAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: nextArr,
+                            }));
                           }}
-                          onReset={() => setArrangementAnswers(prev => ({ ...prev, [currentQuestion.id]: [] }))}
+                          onReset={() =>
+                            setArrangementAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: [],
+                            }))
+                          }
+                        />
+                      )}
+                      {(currentQuestion.type === "Dictation" || currentQuestion.type === "FillInBlank") && (
+                        <InputQuestion
+                          question={currentQuestion}
+                          value={answers[currentQuestion.id] || ""}
+                          onChange={(ans) =>
+                            setAnswers((prev) => ({
+                              ...prev,
+                              [currentQuestion.id]: ans,
+                            }))
+                          }
                         />
                       )}
                     </div>

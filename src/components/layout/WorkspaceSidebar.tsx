@@ -3,14 +3,12 @@ import type {
   Collocation,
   FlaggedItem,
   Phrase,
-  Question,
   Unit,
   Vocabulary,
 } from "@/types";
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -19,7 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   BookMarked,
+  ChevronDown,
   ExternalLink,
+  Folder,
+  FolderOpen,
   Search,
   Trash2,
   Volume2,
@@ -48,16 +49,24 @@ type SearchResult = {
   subtitle: string;
 };
 
+type SearchTreeCategory = {
+  key: SearchResult["category"];
+  label: string;
+  items: SearchResult[];
+};
+
+type SearchTreeNode = {
+  unit: Unit;
+  matchesChapter: boolean;
+  categories: SearchTreeCategory[];
+};
+
 type GroupedItem = {
   unit: Unit;
   vocabulary: (Vocabulary & { rawItem: FlaggedItem })[];
   phrases: (Phrase & { rawItem: FlaggedItem })[];
   collocations: (Collocation & { rawItem: FlaggedItem })[];
 };
-
-function normalizeAnswer(answer: Question["answer"]): string {
-  return Array.isArray(answer) ? answer.join(" ") : String(answer || "");
-}
 
 export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   lessons,
@@ -68,98 +77,105 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   onRemoveItem,
 }) => {
   const [query, setQuery] = useState("");
+  const [expandedChapterIds, setExpandedChapterIds] = useState<number[]>(() =>
+    lessons.map((lesson) => lesson.id),
+  );
 
-  const searchResults = useMemo<SearchResult[]>(() => {
+  const searchTree = useMemo<SearchTreeNode[]>(() => {
     const trimmed = query.trim().toLowerCase();
-    if (trimmed.length < 2) return [];
 
-    const results: SearchResult[] = [];
+    return lessons
+      .map((unit) => {
+        const matchesChapter =
+          trimmed.length === 0 ||
+          unit.title.toLowerCase().includes(trimmed) ||
+          unit.description.toLowerCase().includes(trimmed);
 
-    for (const unit of lessons) {
-      if (
-        unit.title.toLowerCase().includes(trimmed) ||
-        unit.description.toLowerCase().includes(trimmed)
-      ) {
-        results.push({
+        const categories: SearchTreeCategory[] = [
+          {
+            key: "vocabulary",
+            label: "Từ vựng",
+            items: unit.vocabulary
+              .filter((vocab) => {
+                const matches = [
+                  vocab.word,
+                  vocab.meaning,
+                  vocab.example,
+                  vocab.phonetic,
+                ]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(trimmed);
+                return matchesChapter || trimmed.length === 0 || matches;
+              })
+              .map((vocab) => ({
+                unit,
+                unitId: unit.id,
+                category: "vocabulary",
+                title: vocab.word,
+                subtitle: `${vocab.meaning} · ${vocab.example}`,
+              })),
+          },
+          {
+            key: "phrase",
+            label: "Cấu trúc / Mẫu câu",
+            items: unit.phrases
+              .filter((phrase) => {
+                const matches = [
+                  phrase.text,
+                  phrase.translation,
+                  phrase.context,
+                ]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(trimmed);
+                return matchesChapter || trimmed.length === 0 || matches;
+              })
+              .map((phrase) => ({
+                unit,
+                unitId: unit.id,
+                category: "phrase",
+                title: phrase.text,
+                subtitle: phrase.translation,
+              })),
+          },
+          {
+            key: "collocation",
+            label: "Công thức ghi nhớ",
+            items: unit.memoryBoost.collocations
+              .filter((collocation) => {
+                const combined =
+                  `${collocation.verb} ${collocation.noun}`.toLowerCase();
+                return (
+                  matchesChapter ||
+                  trimmed.length === 0 ||
+                  combined.includes(trimmed)
+                );
+              })
+              .map((collocation) => ({
+                unit,
+                unitId: unit.id,
+                category: "collocation",
+                title: `${collocation.verb} ${collocation.noun}`,
+                subtitle: "Công thức ghi nhớ",
+              })),
+          },
+        ];
+
+        const hasCategoryItems = categories.some(
+          (category) => category.items.length > 0,
+        );
+        if (!matchesChapter && !hasCategoryItems) {
+          return null;
+        }
+
+        return {
           unit,
-          unitId: unit.id,
-          category: "unit",
-          title: unit.title,
-          subtitle: unit.description,
-        });
-      }
-
-      for (const vocab of unit.vocabulary) {
-        if (
-          [vocab.word, vocab.meaning, vocab.example, vocab.phonetic]
-            .join(" ")
-            .toLowerCase()
-            .includes(trimmed)
-        ) {
-          results.push({
-            unit,
-            unitId: unit.id,
-            category: "vocabulary",
-            title: vocab.word,
-            subtitle: `${vocab.meaning} · ${vocab.example}`,
-          });
-        }
-      }
-
-      for (const phrase of unit.phrases) {
-        if (
-          [phrase.text, phrase.translation, phrase.context]
-            .join(" ")
-            .toLowerCase()
-            .includes(trimmed)
-        ) {
-          results.push({
-            unit,
-            unitId: unit.id,
-            category: "phrase",
-            title: phrase.text,
-            subtitle: phrase.translation,
-          });
-        }
-      }
-
-      for (const collocation of unit.memoryBoost.collocations) {
-        const combined =
-          `${collocation.verb} ${collocation.noun}`.toLowerCase();
-        if (combined.includes(trimmed)) {
-          results.push({
-            unit,
-            unitId: unit.id,
-            category: "collocation",
-            title: `${collocation.verb} ${collocation.noun}`,
-            subtitle: "Công thức ghi nhớ",
-          });
-        }
-      }
-
-      for (const practice of unit.practice) {
-        const joined = [
-          practice.prompt,
-          practice.vnPrompt,
-          normalizeAnswer(practice.answer),
-          ...(practice.acceptableAnswers || []),
-          practice.explanation || "",
-        ]
-          .join(" ")
-          .toLowerCase();
-        if (joined.includes(trimmed)) {
-          results.push({
-            unit,
-            unitId: unit.id,
-            category: "practice",
-            title: practice.prompt,
-            subtitle: `Bài tập · ${practice.type}`,
-          });
-        }
-      }
-    }
-
-    return results.slice(0, 30);
+          matchesChapter,
+          categories,
+        };
+      })
+      .filter((node): node is SearchTreeNode => node !== null);
   }, [lessons, query]);
 
   const groupedItems = flaggedItems.reduce(
@@ -207,26 +223,28 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
     window.speechSynthesis.speak(utterance);
   };
 
+  const toggleChapter = (chapterId: number) => {
+    setExpandedChapterIds((current) =>
+      current.includes(chapterId)
+        ? current.filter((id) => id !== chapterId)
+        : [...current, chapterId],
+    );
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
-        className="w-420px sm:w-560px p-0 flex flex-col bg-background shadow-2xl border-l"
+        className="w-450px sm:w-580px p-0 flex flex-col bg-background shadow-2xl border-l"
       >
         <SheetHeader className="p-6 border-b bg-primary/5">
           <SheetTitle className="flex items-center gap-2 font-heading text-primary">
             <BookMarked className="h-6 w-6" />
             Bảng công cụ
           </SheetTitle>
-          <SheetDescription>
-            Chứa lối tắt luyện tập, tìm kiếm toàn bộ dữ liệu và sổ tay đã đánh
-            dấu.
-          </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar space-y-6">
-          {/* Shortcut buttons relocated below Notebook section as requested */}
-
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground">
               <Search className="h-4 w-4 text-primary" />
@@ -241,50 +259,139 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
             />
 
             <div className="space-y-3">
-              {query.trim().length >= 2 && searchResults.length === 0 && (
+              {query.trim().length > 0 && searchTree.length === 0 && (
                 <p className="text-center py-8 text-muted-foreground text-sm">
                   Không tìm thấy kết quả phù hợp.
                 </p>
               )}
 
-              {searchResults.map((result, index) => (
-                <button
-                  key={`${result.category}-${result.unitId}-${index}`}
-                  className="group w-full text-left p-4 rounded-xl border bg-card hover:bg-primary hover:border-primary hover:police-shadow cursor-pointer transition-all active:scale-[0.98]"
-                  onClick={() => {
-                    onNavigateToUnit(result.unit);
-                    onClose();
-                  }}
-                >
-                  <div className="flex justify-between items-start mb-2 gap-2">
-                    <Badge
-                      variant={
-                        result.category === "unit" ? "default" : "secondary"
-                      }
-                      className="text-[10px] uppercase tracking-wider"
-                    >
-                      {result.category === "unit"
-                        ? "Chương"
-                        : result.category === "vocabulary"
-                          ? "Từ vựng"
-                          : result.category === "phrase"
-                            ? "Mẫu câu"
-                            : result.category === "collocation"
-                              ? "Công thức"
-                              : "Bài tập"}
-                    </Badge>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase group-hover:text-white/60">
-                      Chương {result.unitId}
-                    </span>
+              {searchTree.map((node) => {
+                const isExpanded =
+                  query.trim().length > 0 ||
+                  expandedChapterIds.includes(node.unit.id);
+
+                return (
+                  <div
+                    key={node.unit.id}
+                    className="rounded-2xl border bg-card overflow-hidden"
+                  >
+                    <div className="flex items-stretch gap-0 border-b bg-muted/30">
+                      <button
+                        className="group flex flex-1 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-primary/5"
+                        onClick={() => {
+                          onNavigateToUnit(node.unit);
+                          onClose();
+                        }}
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          {isExpanded ? (
+                            <FolderOpen className="h-5 w-5" />
+                          ) : (
+                            <Folder className="h-5 w-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] uppercase tracking-wider"
+                            >
+                              CHƯƠNG {node.unit.id}
+                            </Badge>
+                            {node.matchesChapter && query.trim().length > 0 && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] uppercase tracking-wider"
+                              >
+                                Khớp chương
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="font-bold text-primary text-sm transition-colors group-hover:text-primary/90 line-clamp-2">
+                            {node.unit.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            {node.unit.description}
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        className="flex shrink-0 items-center justify-center px-3 text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary"
+                        onClick={() => toggleChapter(node.unit.id)}
+                        disabled={query.trim().length > 0}
+                        aria-label={
+                          isExpanded
+                            ? `Thu gọn chương ${node.unit.id}`
+                            : `Mở rộng chương ${node.unit.id}`
+                        }
+                      >
+                        <ChevronDown
+                          className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="space-y-3 p-3">
+                        {node.categories
+                          .filter((category) => category.items.length > 0)
+                          .map((category) => (
+                            <div
+                              key={category.key}
+                              className="rounded-xl border border-dashed bg-background/70 p-3"
+                            >
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                  {category.label}
+                                </div>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] uppercase tracking-wider"
+                                >
+                                  {category.items.length}
+                                </Badge>
+                              </div>
+
+                              <div className="space-y-2">
+                                {category.items.map((item) => (
+                                  <button
+                                    key={`${item.category}-${item.unitId}-${item.title}`}
+                                    className="group flex w-full items-start gap-3 rounded-xl border bg-card p-3 text-left transition-all hover:border-primary/30 hover:police-shadow"
+                                    onClick={() => {
+                                      onNavigateToUnit(item.unit);
+                                      onClose();
+                                    }}
+                                  >
+                                    <span
+                                      className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+                                        item.category === "vocabulary"
+                                          ? "bg-blue-500"
+                                          : item.category === "phrase"
+                                            ? "bg-secondary"
+                                            : item.category === "collocation"
+                                              ? "bg-primary"
+                                              : "bg-amber-500"
+                                      }`}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <div className="font-bold text-sm text-primary transition-colors group-hover:text-primary/90 line-clamp-2">
+                                        {item.title}
+                                      </div>
+                                      <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                                        {item.subtitle}
+                                      </div>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
-                  <div className="font-bold text-primary text-sm group-hover:text-white transition-colors line-clamp-2">
-                    {result.title}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1 group-hover:text-white/80 transition-colors line-clamp-2">
-                    {result.subtitle}
-                  </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </section>
 

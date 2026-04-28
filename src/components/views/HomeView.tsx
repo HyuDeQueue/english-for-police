@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -11,6 +12,7 @@ import {
   Flag,
   BookOpen,
   ChevronRight,
+  Loader2,
   Zap,
   Check,
 } from "lucide-react";
@@ -43,11 +45,16 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectUnit,
   onNavigate,
 }) => {
+  const LESSONS_PER_PAGE = 2;
   const completedCount = dailyTasks.tasks.filter((t) => t.completed).length;
   const overallProgress =
     lessons.length > 0
       ? Math.round((progress.completedUnits.length / lessons.length) * 100)
       : 0;
+  const [visibleLessonCount, setVisibleLessonCount] =
+    useState(LESSONS_PER_PAGE);
+  const [isLoadingMoreLessons, setIsLoadingMoreLessons] = useState(false);
+  const loadMoreAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const displayedTasks = [...dailyTasks.tasks].sort((a, b) => {
     const hash = (value: string) => {
@@ -67,6 +74,40 @@ export const HomeView: React.FC<HomeViewProps> = ({
       onNavigate(path);
     }
   };
+
+  const visibleLessons = useMemo(
+    () => lessons.slice(0, visibleLessonCount),
+    [lessons, visibleLessonCount],
+  );
+
+  useEffect(() => {
+    setVisibleLessonCount(Math.min(LESSONS_PER_PAGE, lessons.length));
+  }, [lessons]);
+
+  useEffect(() => {
+    const anchor = loadMoreAnchorRef.current;
+    if (!anchor || visibleLessonCount >= lessons.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (!entry?.isIntersecting || isLoadingMoreLessons) return;
+
+        setIsLoadingMoreLessons(true);
+        window.setTimeout(() => {
+          setVisibleLessonCount((current) =>
+            Math.min(current + LESSONS_PER_PAGE, lessons.length),
+          );
+          setIsLoadingMoreLessons(false);
+        }, 450);
+      },
+      { rootMargin: "200px 0px" },
+    );
+
+    observer.observe(anchor);
+
+    return () => observer.disconnect();
+  }, [lessons.length, visibleLessonCount, isLoadingMoreLessons]);
 
   return (
     <div className="space-y-6">
@@ -238,7 +279,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           Lộ trình bài học
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {lessons.map((unit) => (
+          {visibleLessons.map((unit) => (
             <Card
               key={unit.id}
               className="group cursor-pointer hover:police-shadow border-transparent hover:border-primary/20 transition-all active:scale-[0.98]"
@@ -290,6 +331,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </Card>
           ))}
         </div>
+        {visibleLessonCount < lessons.length && (
+          <div
+            ref={loadMoreAnchorRef}
+            className="flex flex-col items-center justify-center gap-2 py-8"
+          >
+            <div className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm font-medium text-muted-foreground shadow-sm">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              Đang tải thêm bài học...
+            </div>
+            {isLoadingMoreLessons && (
+              <p className="text-xs text-muted-foreground">
+                Đang nạp thêm nội dung khi bạn cuộn xuống.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
