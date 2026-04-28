@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Unit, FlaggedItem } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   Star,
   List,
   Zap,
+  ChevronRight,
   BookMarked,
 } from "lucide-react";
 
@@ -33,6 +35,12 @@ export const LessonView: React.FC<LessonViewProps> = ({
   toggleFlag,
   onPhraseAction,
 }) => {
+  const navigate = useNavigate();
+
+  const startPractice = () => navigate(`/practice/${unit.id}`);
+  const startFlashcards = () => navigate(`/flashcards/${unit.id}`);
+  const startGeneralTest = () => navigate(`/generaltest/${unit.id}`);
+  const startQuickTest = () => navigate(`/quicktest`);
   const isFlagged = (
     unitId: number,
     type: "vocabulary" | "phrase" | "collocation",
@@ -200,6 +208,51 @@ export const LessonView: React.FC<LessonViewProps> = ({
                 Chưa có mục nào được lưu vào sổ tay.
               </p>
             )}
+            {/* Shortcut buttons under the Notebook */}
+            <div className="mt-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="default"
+                  className="h-10 justify-between font-bold"
+                  onClick={() => {
+                    startPractice();
+                  }}
+                >
+                  Kiểm tra
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-10 justify-between font-bold"
+                  onClick={() => {
+                    startFlashcards();
+                  }}
+                >
+                  Ôn tập
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-10 justify-between font-bold"
+                  onClick={() => {
+                    startGeneralTest();
+                  }}
+                >
+                  Tổng hợp
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-10 justify-between font-bold"
+                  onClick={() => {
+                    startQuickTest();
+                  }}
+                >
+                  Test nhanh
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </aside>

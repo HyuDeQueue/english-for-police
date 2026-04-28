@@ -34,7 +34,6 @@ const LessonViewPage = ({
   updateDailyTask: (id: string, inc: number) => void;
   setFlaggedItems: (items: FlaggedItem[]) => void;
   onBack: () => void;
-  onStartGeneralKnowledgeTest?: () => void;
 }) => {
   const { unitId } = useParams();
   const unit = lessons.find((l) => l.id === Number(unitId));
@@ -379,9 +378,6 @@ function AppContent() {
               flaggedItems={flaggedItems}
               setFlaggedItems={setFlaggedItems}
               updateDailyTask={updateDailyTask}
-              onStartGeneralKnowledgeTest={() =>
-                activeUnit && navigateToGeneralTest(activeUnit)
-              }
               onBack={navigateToHome}
             />
           }

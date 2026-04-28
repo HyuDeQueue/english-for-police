@@ -19,7 +19,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   BookMarked,
-  ChevronRight,
   ExternalLink,
   Search,
   Trash2,
@@ -67,11 +66,6 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
   onClose,
   onNavigateToUnit,
   onRemoveItem,
-  activeUnit,
-  onStartPractice,
-  onStartFlashcards,
-  onStartGeneralKnowledgeTest,
-  onStartQuickTest,
 }) => {
   const [query, setQuery] = useState("");
 
@@ -231,67 +225,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar space-y-6">
-          <section className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground">
-              <Zap className="h-4 w-4 text-secondary" />
-              Lối tắt
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="default"
-                className="h-12 justify-between font-bold"
-                onClick={() => {
-                  onStartPractice?.();
-                  onClose();
-                }}
-                disabled={!onStartPractice || !activeUnit}
-              >
-                Kiểm tra
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12 justify-between font-bold"
-                onClick={() => {
-                  onStartFlashcards?.();
-                  onClose();
-                }}
-                disabled={!onStartFlashcards || !activeUnit}
-              >
-                Ôn tập
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12 justify-between font-bold"
-                onClick={() => {
-                  onStartGeneralKnowledgeTest?.();
-                  onClose();
-                }}
-                disabled={!onStartGeneralKnowledgeTest || !activeUnit}
-              >
-                Tổng hợp
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                className="h-12 justify-between font-bold"
-                onClick={() => {
-                  onStartQuickTest?.();
-                  onClose();
-                }}
-                disabled={!onStartQuickTest}
-              >
-                Test nhanh
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            {!activeUnit && (
-              <p className="text-xs text-muted-foreground">
-                Mở một chương để dùng các nút luyện tập theo bài.
-              </p>
-            )}
-          </section>
+          {/* Shortcut buttons relocated below Notebook section as requested */}
 
           <section className="space-y-3">
             <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground">
