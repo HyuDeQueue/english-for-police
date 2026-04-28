@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { Volume2, Star, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
+import {
+  Volume2,
+  Star,
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -46,14 +52,13 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
   };
 
   const startIndex = currentPage * itemsPerPage;
-  const visibleItems = unit.phrases.slice(startIndex, startIndex + itemsPerPage);
+  const visibleItems = unit.phrases.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   return (
-    <section
-      data-section="phrases"
-      ref={sectionRef}
-      className="scroll-mt-24"
-    >
+    <section data-section="phrases" ref={sectionRef} className="scroll-mt-24">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <Badge
@@ -76,10 +81,12 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
               onClick={prevPage}
               disabled={currentPage === 0}
             >
-              <ChevronLeft className={`h-5 w-5 ${currentPage === 0 ? "text-slate-300" : "text-primary font-bold"}`} />
+              <ChevronLeft
+                className={`h-5 w-5 ${currentPage === 0 ? "text-slate-300" : "text-primary font-bold"}`}
+              />
             </Button>
-            
-            <div className="flex flex-col items-center px-2 min-w-[60px]">
+
+            <div className="flex flex-col items-center px-2 min-w-60px">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1.5">
                 {currentPage + 1} / {totalPages}
               </span>
@@ -88,7 +95,9 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                   <div
                     key={i}
                     className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                      i === currentPage ? "w-5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]" : "bg-slate-300"
+                      i === currentPage
+                        ? "w-5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]"
+                        : "bg-slate-300"
                     }`}
                   />
                 ))}
@@ -102,13 +111,15 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
               onClick={nextPage}
               disabled={currentPage === totalPages - 1}
             >
-              <ChevronRight className={`h-5 w-5 ${currentPage === totalPages - 1 ? "text-slate-300" : "text-primary font-bold"}`} />
+              <ChevronRight
+                className={`h-5 w-5 ${currentPage === totalPages - 1 ? "text-slate-300" : "text-primary font-bold"}`}
+              />
             </Button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-[400px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-400px">
         {visibleItems.map((p, i) => {
           const flagged = isFlagged(p.text);
           return (
@@ -156,19 +167,24 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                     PHÁT ÂM
                   </Button>
                 </div>
-                
+
                 <div className="space-y-3 mt-auto">
                   <div className="flex items-start gap-2 text-[11px] text-muted-foreground bg-slate-50 p-2 rounded-lg border border-slate-100">
                     <MessageSquare className="h-3 w-3 mt-0.5 shrink-0 text-primary/50" />
                     <p className="italic leading-relaxed">{p.context}</p>
                   </div>
-                  
+
                   {p.realWorldExamples && p.realWorldExamples.length > 0 && (
                     <div className="space-y-1.5">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Ví dụ thực tế</p>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        Ví dụ thực tế
+                      </p>
                       <ul className="space-y-1">
                         {p.realWorldExamples.slice(0, 2).map((ex, j) => (
-                          <li key={j} className="text-[11px] leading-relaxed text-slate-600 border-l-2 border-primary/10 pl-2">
+                          <li
+                            key={j}
+                            className="text-[11px] leading-relaxed text-slate-600 border-l-2 border-primary/10 pl-2"
+                          >
                             {ex}
                           </li>
                         ))}

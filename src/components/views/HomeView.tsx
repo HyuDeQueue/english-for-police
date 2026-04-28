@@ -68,84 +68,86 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr_320px] gap-8 items-start">
       {/* Column 1: Profile & Progress */}
-      <div className="space-y-6 xl:sticky xl:top-24">
-        {/* Hero Section Moved to Left */}
-        <Card className="primary-gradient relative overflow-hidden border-none police-shadow rounded-2xl p-5 text-white">
-          <div className="absolute -right-4 -top-4 text-[80px] font-heading font-black opacity-10 pointer-events-none select-none" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 text-secondary mb-2">
-              <Zap className="h-4 w-4 fill-current" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">
-                Huấn luyện
-              </span>
+      <div className="xl:sticky xl:top-16 self-start">
+        <div className="space-y-6">
+          {/* Hero Section Moved to Left */}
+          <Card className="primary-gradient relative overflow-hidden border-none police-shadow rounded-2xl p-5 text-white">
+            <div className="absolute -right-4 -top-4 text-[80px] font-heading font-black opacity-10 pointer-events-none select-none" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 text-secondary mb-2">
+                <Zap className="h-4 w-4 fill-current" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Huấn luyện
+                </span>
+              </div>
+              <h1 className="text-2xl font-heading font-black mb-1.5 leading-tight">
+                Chào mừng quay trở lại
+              </h1>
+              <p className="text-white/80 text-xs leading-relaxed">
+                Tiếp tục lộ trình rèn luyện để nâng cao nghiệp vụ.
+              </p>
             </div>
-            <h1 className="text-2xl font-heading font-black mb-1.5 leading-tight">
-              Chào mừng quay trở lại
-            </h1>
-            <p className="text-white/80 text-xs leading-relaxed">
-              Tiếp tục lộ trình rèn luyện để nâng cao nghiệp vụ.
+          </Card>
+
+          {/* Mini Progress Card */}
+          <Card className="police-shadow border-none bg-white p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-xl primary-gradient flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <Target className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Tiến độ chung
+                </p>
+                <p className="text-xl font-black text-slate-800">
+                  {overallProgress}%
+                </p>
+              </div>
+            </div>
+            <Progress value={overallProgress} className="h-2" />
+          </Card>
+
+          {/* Suggested Lesson */}
+          <Card className="police-shadow border-none bg-slate-700 text-white overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform">
+            <CardHeader className="p-4 pb-2">
+              <div className="flex items-center gap-2 text-secondary mb-1">
+                <Sparkles className="h-3 w-3 fill-current" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Gợi ý bài học
+                </span>
+              </div>
+              <CardTitle className="text-base font-black">
+                {lessons.find((l) => !progress.completedUnits.includes(l.id))
+                  ?.title || lessons[0]?.title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <Button
+                variant="link"
+                className="p-0 h-auto text-xs text-white/80 group-hover:text-secondary transition-colors"
+                onClick={() => {
+                  const nextUnit = lessons.find(
+                    (l) => !progress.completedUnits.includes(l.id),
+                  );
+                  if (nextUnit) onSelectUnit(nextUnit);
+                }}
+              >
+                Tiếp tục ngay <ChevronRight className="ml-1 h-3 w-3" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Leaderboard Placeholder */}
+          <Card className="police-shadow border-dashed border-2 bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center opacity-60">
+            <Trophy className="h-8 w-8 text-slate-300 mb-2" />
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              Bảng xếp hạng
             </p>
-          </div>
-        </Card>
-
-        {/* Mini Progress Card */}
-        <Card className="police-shadow border-none bg-white p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-10 w-10 rounded-xl primary-gradient flex items-center justify-center text-white shadow-lg shadow-primary/20">
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Tiến độ chung
-              </p>
-              <p className="text-xl font-black text-slate-800">
-                {overallProgress}%
-              </p>
-            </div>
-          </div>
-          <Progress value={overallProgress} className="h-2" />
-        </Card>
-
-        {/* Suggested Lesson */}
-        <Card className="police-shadow border-none bg-slate-700 text-white overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform">
-          <CardHeader className="p-4 pb-2">
-            <div className="flex items-center gap-2 text-secondary mb-1">
-              <Sparkles className="h-3 w-3 fill-current" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">
-                Gợi ý bài học
-              </span>
-            </div>
-            <CardTitle className="text-base font-black">
-              {lessons.find((l) => !progress.completedUnits.includes(l.id))
-                ?.title || lessons[0]?.title}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <Button
-              variant="link"
-              className="p-0 h-auto text-xs text-white/80 group-hover:text-secondary transition-colors"
-              onClick={() => {
-                const nextUnit = lessons.find(
-                  (l) => !progress.completedUnits.includes(l.id),
-                );
-                if (nextUnit) onSelectUnit(nextUnit);
-              }}
-            >
-              Tiếp tục ngay <ChevronRight className="ml-1 h-3 w-3" />
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Leaderboard Placeholder */}
-        <Card className="police-shadow border-dashed border-2 bg-slate-50/50 p-6 flex flex-col items-center justify-center text-center opacity-60">
-          <Trophy className="h-8 w-8 text-slate-300 mb-2" />
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-            Bảng xếp hạng
-          </p>
-          <p className="text-[10px] text-slate-400 mt-1 italic">
-            Sắp ra mắt trong bản cập nhật tới
-          </p>
-        </Card>
+            <p className="text-[10px] text-slate-400 mt-1 italic">
+              Sắp ra mắt trong bản cập nhật tới
+            </p>
+          </Card>
+        </div>
       </div>
 
       {/* Column 2: Main Content */}
@@ -279,7 +281,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </div>
 
       {/* Column 3: Roadmap */}
-      <div className="space-y-6 xl:sticky xl:top-24">
+      <div className="space-y-6 xl:sticky xl:top-16">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-heading font-black text-slate-800 flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />

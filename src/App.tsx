@@ -9,8 +9,9 @@ import {
 } from "react-router-dom";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
 import { initialLessons } from "@/data/lessons";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/layout/AppSidebar";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { WorkspaceSidebar } from "@/components/layout/WorkspaceSidebar";
 import { HomeView } from "@/components/views/HomeView";
 import { LessonView } from "@/components/views/LessonView";
 import { AdminView } from "@/components/views/AdminView";
@@ -204,7 +205,6 @@ function AppContent() {
   const [flashcardRound, setFlashcardRound] = useState(1);
   const [flashcardSummary, setFlashcardSummary] =
     useState<FlashcardSessionSummary | null>(null);
-  const [toolsOpen, setToolsOpen] = useState(false);
 
   // Daily Tasks state
   const [dailyTasks, setDailyTasks] = useState<DailyTask>(() => {
@@ -314,8 +314,6 @@ function AppContent() {
   const navigateToLesson = (unit: Unit) => {
     navigate(`/lesson/${unit.id}`);
   };
-  const openTools = () => setToolsOpen(true);
-  const closeTools = () => setToolsOpen(false);
 
   const activeUnitId = useMemo(() => {
     const path = location.pathname;
@@ -325,154 +323,11 @@ function AppContent() {
     return match ? Number(match[2]) : undefined;
   }, [location.pathname]);
 
-  const activeUnit = useMemo(() => {
-    return activeUnitId
-      ? lessons.find((l) => l.id === activeUnitId) || null
-      : null;
-  }, [activeUnitId, lessons]);
-
   return (
-    <MainLayout
-      selectedUnitId={activeUnitId}
-      onLogoClick={navigateToHome}
-      onOpenSidebar={openTools}
-    >
-      <Routes location={location}>
-        <Route
-          path="/"
-          element={
-            <HomeView
-              lessons={lessons}
-              progress={progress}
-              flaggedItems={flaggedItems}
-              dailyTasks={dailyTasks}
-              onSelectUnit={navigateToLesson}
-              onNavigate={(path) =>
-                navigate(path.startsWith("#") ? path.slice(1) : path)
-              }
-            />
-          }
-        />
-        <Route
-          path="/lesson/:unitId"
-          element={
-            <LessonViewPage
-              lessons={lessons}
-              flaggedItems={flaggedItems}
-              setFlaggedItems={setFlaggedItems}
-              updateDailyTask={updateDailyTask}
-              onBack={navigateToHome}
-            />
-          }
-        />
-        <Route
-          path="/practice/:unitId"
-          element={
-            <TrainingGroundPage
-              lessons={lessons}
-              progress={progress}
-              setProgress={setProgress}
-              onBack={navigateToLesson}
-              onComplete={navigateToHome}
-            />
-          }
-        />
-        <Route
-          path="/flashcards/:unitId"
-          element={
-            <FlashcardReviewPage
-              lessons={lessons}
-              flashcardRound={flashcardRound}
-              onBack={navigateToLesson}
-              onComplete={(summary) => {
-                setFlashcardSummary(summary);
-                const { unitId } = parseHashForFlashcardWorkaround(
-                  location.pathname,
-                );
-                navigate(`/flashcards/${unitId}/results`);
-                updateDailyTask("vocab", summary.knownCount);
-              }}
-            />
-          }
-        />
-        <Route
-          path="/flashcards/:unitId/results"
-          element={
-            <FlashcardResultsPage
-              lessons={lessons}
-              flashcardSummary={flashcardSummary}
-              onBack={navigateToLesson}
-              onRetry={(unit) => {
-                localStorage.removeItem(
-                  getFlashcardStatusStorageKey(
-                    unit.id,
-                    flashcardSummary!.deckMode,
-                  ),
-                );
-                setFlashcardRound((prev) => prev + 1);
-                navigate(`/flashcards/${unit.id}`);
-              }}
-              onContinue={(unit) => {
-                const nextMode =
-                  flashcardSummary?.deckMode === "vocabulary"
-                    ? "sentencePatterns"
-                    : "vocabulary";
-                navigate(`/flashcards/${unit.id}`, {
-                  state: { initialMode: nextMode },
-                });
-              }}
-            />
-          }
-        />
-        <Route
-          path="/quicktest"
-          element={
-            <QuickTest
-              lessons={lessons}
-              completedUnitIds={progress.completedUnits}
-              onBack={navigateToHome}
-              onComplete={() => updateDailyTask("test", 1)}
-            />
-          }
-        />
-        <Route
-          path="/generaltest"
-          element={
-            <GeneralTestPage
-              lessons={lessons}
-              onBack={navigateToHome}
-              onComplete={() => updateDailyTask("test", 1)}
-            />
-          }
-        />
-        <Route
-          path="/generaltest/:unitId"
-          element={
-            <GeneralTestPage
-              lessons={lessons}
-              onBack={(u) => (u ? navigateToLesson(u) : navigateToHome())}
-              onComplete={() => updateDailyTask("test", 1)}
-            />
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <AdminView
-              lessons={lessons}
-              onBack={navigateToHome}
-              onSave={(newLessons) => setLessons(newLessons)}
-            />
-          }
-        />
-      </Routes>
-
-      <WorkspaceSidebar
+    <SidebarProvider>
+      <AppSidebar
         lessons={lessons}
         flaggedItems={flaggedItems}
-        isOpen={toolsOpen}
-        onClose={closeTools}
-        activeUnit={activeUnit}
         onNavigateToUnit={navigateToLesson}
         onRemoveItem={(item) => {
           setFlaggedItems(
@@ -487,7 +342,138 @@ function AppContent() {
           );
         }}
       />
-    </MainLayout>
+      <MainLayout selectedUnitId={activeUnitId} onLogoClick={navigateToHome}>
+        <Routes location={location}>
+          <Route
+            path="/"
+            element={
+              <HomeView
+                lessons={lessons}
+                progress={progress}
+                flaggedItems={flaggedItems}
+                dailyTasks={dailyTasks}
+                onSelectUnit={navigateToLesson}
+                onNavigate={(path) =>
+                  navigate(path.startsWith("#") ? path.slice(1) : path)
+                }
+              />
+            }
+          />
+          <Route
+            path="/lesson/:unitId"
+            element={
+              <LessonViewPage
+                lessons={lessons}
+                flaggedItems={flaggedItems}
+                setFlaggedItems={setFlaggedItems}
+                updateDailyTask={updateDailyTask}
+                onBack={navigateToHome}
+              />
+            }
+          />
+          <Route
+            path="/practice/:unitId"
+            element={
+              <TrainingGroundPage
+                lessons={lessons}
+                progress={progress}
+                setProgress={setProgress}
+                onBack={navigateToLesson}
+                onComplete={navigateToHome}
+              />
+            }
+          />
+          <Route
+            path="/flashcards/:unitId"
+            element={
+              <FlashcardReviewPage
+                lessons={lessons}
+                flashcardRound={flashcardRound}
+                onBack={navigateToLesson}
+                onComplete={(summary) => {
+                  setFlashcardSummary(summary);
+                  const { unitId } = parseHashForFlashcardWorkaround(
+                    location.pathname,
+                  );
+                  navigate(`/flashcards/${unitId}/results`);
+                  updateDailyTask("vocab", summary.knownCount);
+                }}
+              />
+            }
+          />
+          <Route
+            path="/flashcards/:unitId/results"
+            element={
+              <FlashcardResultsPage
+                lessons={lessons}
+                flashcardSummary={flashcardSummary}
+                onBack={navigateToLesson}
+                onRetry={(unit) => {
+                  localStorage.removeItem(
+                    getFlashcardStatusStorageKey(
+                      unit.id,
+                      flashcardSummary!.deckMode,
+                    ),
+                  );
+                  setFlashcardRound((prev) => prev + 1);
+                  navigate(`/flashcards/${unit.id}`);
+                }}
+                onContinue={(unit) => {
+                  const nextMode =
+                    flashcardSummary?.deckMode === "vocabulary"
+                      ? "sentencePatterns"
+                      : "vocabulary";
+                  navigate(`/flashcards/${unit.id}`, {
+                    state: { initialMode: nextMode },
+                  });
+                }}
+              />
+            }
+          />
+          <Route
+            path="/quicktest"
+            element={
+              <QuickTest
+                lessons={lessons}
+                completedUnitIds={progress.completedUnits}
+                onBack={navigateToHome}
+                onComplete={() => updateDailyTask("test", 1)}
+              />
+            }
+          />
+          <Route
+            path="/generaltest"
+            element={
+              <GeneralTestPage
+                lessons={lessons}
+                onBack={navigateToHome}
+                onComplete={() => updateDailyTask("test", 1)}
+              />
+            }
+          />
+          <Route
+            path="/generaltest/:unitId"
+            element={
+              <GeneralTestPage
+                lessons={lessons}
+                onBack={(u) => (u ? navigateToLesson(u) : navigateToHome())}
+                onComplete={() => updateDailyTask("test", 1)}
+              />
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminView
+                lessons={lessons}
+                onBack={navigateToHome}
+                onSave={(newLessons) => setLessons(newLessons)}
+              />
+            }
+          />
+        </Routes>
+      </MainLayout>
+    </SidebarProvider>
   );
 }
 

@@ -38,7 +38,10 @@ export const LessonVocabularySection: React.FC<
   };
 
   const startIndex = currentPage * itemsPerPage;
-  const visibleItems = unit.vocabulary.slice(startIndex, startIndex + itemsPerPage);
+  const visibleItems = unit.vocabulary.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
 
   return (
     <section
@@ -68,10 +71,12 @@ export const LessonVocabularySection: React.FC<
               onClick={prevPage}
               disabled={currentPage === 0}
             >
-              <ChevronLeft className={`h-5 w-5 ${currentPage === 0 ? "text-slate-300" : "text-primary font-bold"}`} />
+              <ChevronLeft
+                className={`h-5 w-5 ${currentPage === 0 ? "text-slate-300" : "text-primary font-bold"}`}
+              />
             </Button>
-            
-            <div className="flex flex-col items-center px-2 min-w-[60px]">
+
+            <div className="flex flex-col items-center px-2 min-w-60px">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1.5">
                 {currentPage + 1} / {totalPages}
               </span>
@@ -80,7 +85,9 @@ export const LessonVocabularySection: React.FC<
                   <div
                     key={i}
                     className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                      i === currentPage ? "w-5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]" : "bg-slate-300"
+                      i === currentPage
+                        ? "w-5 bg-primary shadow-[0_0_8px_rgba(var(--primary),0.3)]"
+                        : "bg-slate-300"
                     }`}
                   />
                 ))}
@@ -94,13 +101,15 @@ export const LessonVocabularySection: React.FC<
               onClick={nextPage}
               disabled={currentPage === totalPages - 1}
             >
-              <ChevronRight className={`h-5 w-5 ${currentPage === totalPages - 1 ? "text-slate-300" : "text-primary font-bold"}`} />
+              <ChevronRight
+                className={`h-5 w-5 ${currentPage === totalPages - 1 ? "text-slate-300" : "text-primary font-bold"}`}
+              />
             </Button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-[400px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-400px">
         {visibleItems.map((v, i) => {
           const flagged = isFlagged(v.word);
           return (
