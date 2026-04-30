@@ -349,14 +349,11 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
         </div>
       </PracticeSidebar>
 
-      <div className="flex-1 space-y-8 order-1 lg:order-2">
-        <header className="mb-10">
+      <div className="flex-1 space-y-4 order-1 lg:order-2">
+        <header className="mb-6">
           <Badge variant="outline" className="mb-2 border-primary text-primary">
             UNIT {unit.id}
           </Badge>
-          <h2 className="text-3xl font-heading font-black text-primary tracking-tight uppercase">
-            KIỂM TRA NĂNG LỰC
-          </h2>
           <p className="text-muted-foreground mt-1">
             Hoàn thành các câu hỏi trắc nghiệm, viết câu và ghép đôi.
           </p>

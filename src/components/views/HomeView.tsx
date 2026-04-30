@@ -150,7 +150,76 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {/* Column 2: Main Content */}
+      {/* Column 2: Roadmap */}
+      <div className="space-y-6 xl:sticky xl:top-20">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-heading font-black text-slate-800 flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Lộ trình học
+          </h3>
+          <Badge variant="outline" className="text-[10px] font-black uppercase">
+            {lessons.length} Bài
+          </Badge>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          {lessons.map((unit) => (
+            <Card
+              key={unit.id}
+              className={`group cursor-pointer border-2 transition-all hover:shadow-xl hover:-translate-y-1 ${
+                progress.completedUnits.includes(unit.id)
+                  ? "border-emerald-100 bg-emerald-50/10"
+                  : "border-slate-100 bg-white hover:border-primary/30"
+              }`}
+              onClick={() => onSelectUnit(unit)}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">
+                        Chương {unit.id}
+                      </span>
+                      {progress.completedUnits.includes(unit.id) && (
+                        <Check className="h-3 w-3 text-emerald-500" />
+                      )}
+                    </div>
+                    <h4 className="font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">
+                      {unit.title}
+                    </h4>
+                  </div>
+                  <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:primary-gradient group-hover:text-white transition-all shadow-sm">
+                    <ChevronRight className="h-4 w-4" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
+                    <span className="text-slate-400">Hoàn thành</span>
+                    <span
+                      className={
+                        progress.completedUnits.includes(unit.id)
+                          ? "text-emerald-600"
+                          : "text-slate-400"
+                      }
+                    >
+                      {progress.completedUnits.includes(unit.id)
+                        ? "100%"
+                        : "0%"}
+                    </span>
+                  </div>
+                  <Progress
+                    value={progress.completedUnits.includes(unit.id) ? 100 : 0}
+                    className={`h-1 ${progress.completedUnits.includes(unit.id) ? "bg-emerald-100 [&>div]:bg-emerald-500" : "bg-slate-100"}`}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Column 3: Main Content */}
       <div className="space-y-8">
         {/* Tasks and Review */}
         <div className="space-y-6">
@@ -277,75 +346,6 @@ export const HomeView: React.FC<HomeViewProps> = ({
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
-
-      {/* Column 3: Roadmap */}
-      <div className="space-y-6 xl:sticky xl:top-20">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-heading font-black text-slate-800 flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
-            Lộ trình học
-          </h3>
-          <Badge variant="outline" className="text-[10px] font-black uppercase">
-            {lessons.length} Bài
-          </Badge>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {lessons.map((unit) => (
-            <Card
-              key={unit.id}
-              className={`group cursor-pointer border-2 transition-all hover:shadow-xl hover:-translate-y-1 ${
-                progress.completedUnits.includes(unit.id)
-                  ? "border-emerald-100 bg-emerald-50/10"
-                  : "border-slate-100 bg-white hover:border-primary/30"
-              }`}
-              onClick={() => onSelectUnit(unit)}
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded uppercase">
-                        Chương {unit.id}
-                      </span>
-                      {progress.completedUnits.includes(unit.id) && (
-                        <Check className="h-3 w-3 text-emerald-500" />
-                      )}
-                    </div>
-                    <h4 className="font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">
-                      {unit.title}
-                    </h4>
-                  </div>
-                  <div className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:primary-gradient group-hover:text-white transition-all shadow-sm">
-                    <ChevronRight className="h-4 w-4" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider">
-                    <span className="text-slate-400">Hoàn thành</span>
-                    <span
-                      className={
-                        progress.completedUnits.includes(unit.id)
-                          ? "text-emerald-600"
-                          : "text-slate-400"
-                      }
-                    >
-                      {progress.completedUnits.includes(unit.id)
-                        ? "100%"
-                        : "0%"}
-                    </span>
-                  </div>
-                  <Progress
-                    value={progress.completedUnits.includes(unit.id) ? 100 : 0}
-                    className={`h-1 ${progress.completedUnits.includes(unit.id) ? "bg-emerald-100 [&>div]:bg-emerald-500" : "bg-slate-100"}`}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       </div>
     </div>

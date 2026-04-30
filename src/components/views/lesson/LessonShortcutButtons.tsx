@@ -34,7 +34,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
         className="w-full h-10 justify-between font-bold"
         onClick={onStartFlashcards}
       >
-        Ôn tập
+        Flashcard
         <ChevronRight className="h-4 w-4" />
       </Button>
       <div className="space-y-2">
@@ -43,7 +43,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
           className="w-full h-10 justify-between font-bold"
           onClick={() => setIsTypeExpanded(!isTypeExpanded)}
         >
-          Ôn tập theo các dạng
+          Luyện tập
           <ChevronRight
             className={`h-4 w-4 transition-transform ${isTypeExpanded ? "rotate-180" : ""}`}
           />
@@ -75,7 +75,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
         className="w-full h-10 justify-between font-bold"
         onClick={() => onStartGeneralTest("bank")}
       >
-        Ngân hàng đề
+        Kiểm tra tổng quát
         <ChevronRight className="h-4 w-4" />
       </Button>
       <Button
