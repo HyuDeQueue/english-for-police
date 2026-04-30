@@ -68,7 +68,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr_320px] gap-8 items-start">
       {/* Column 1: Profile & Progress */}
-      <div className="xl:sticky xl:top-16 self-start">
+      <div className="xl:sticky xl:top-20 self-start">
         <div className="space-y-6">
           {/* Hero Section Moved to Left */}
           <Card className="primary-gradient relative overflow-hidden border-none police-shadow rounded-2xl p-5 text-white">
@@ -281,7 +281,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
       </div>
 
       {/* Column 3: Roadmap */}
-      <div className="space-y-6 xl:sticky xl:top-16">
+      <div className="space-y-6 xl:sticky xl:top-20">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-heading font-black text-slate-800 flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />

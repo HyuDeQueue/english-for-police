@@ -13,8 +13,8 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 }) => {
   return (
     <SidebarInset className="flex flex-col">
-      <header className="sticky top-0 z-40 w-full border-b border-primary/20 primary-gradient shrink-0">
-        <div className="px-4 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full h-16 border-b border-primary/20 primary-gradient shrink-0 flex items-center">
+        <div className="px-4 flex-1 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="h-10 w-10 text-white hover:bg-white/20 transition-colors" />
 

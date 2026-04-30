@@ -8,7 +8,7 @@ import {
   useParams,
 } from "react-router-dom";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
-import { initialLessons } from "@/data/lessons";
+
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -22,6 +22,7 @@ import { FlashcardSessionResults } from "@/components/practice/FlashcardSessionR
 import { QuickTest } from "@/components/practice/QuickTest";
 import { GeneralKnowledgeTest } from "@/components/practice/GeneralKnowledgeTest";
 import { getFlashcardStatusStorageKey } from "@/components/practice/flashcardStorage";
+import { initialLessons } from "@/data/lesson/lessons";
 
 const LessonViewPage = ({
   lessons,
