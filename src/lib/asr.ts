@@ -9,18 +9,28 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   url.searchParams.append("task", "transcribe");
   url.searchParams.append("output", "json");
 
+  console.log("Starting transcription...", {
+    url: url.toString(),
+    blobSize: audioBlob.size,
+    blobType: audioBlob.type,
+  });
+
   try {
     const response = await fetch(url.toString(), {
       method: "POST",
       body: formData,
     });
 
+    console.log("ASR Response status:", response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("ASR Error body:", errorText);
       throw new Error(`ASR API failed: ${response.status} ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("ASR Data received:", data);
     return typeof data === "string" ? data : data.text || "";
   } catch (error) {
     console.error("Transcription error:", error);

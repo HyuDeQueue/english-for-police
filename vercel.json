@@ -5,6 +5,10 @@
       "destination": "http://115.73.218.193:9000/:path*"
     },
     {
+      "source": "/api/tts/:path*",
+      "destination": "http://115.73.218.193:5500/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
