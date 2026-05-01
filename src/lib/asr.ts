@@ -5,7 +5,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   formData.append("audio_file", audioBlob, "recording.wav");
 
   const url = new URL(`${ASR_API_BASE_URL}/asr`, window.location.origin);
-  url.searchParams.append("encode", "true");
+  url.searchParams.append("encode", "false");
   url.searchParams.append("task", "transcribe");
   url.searchParams.append("output", "json");
 
