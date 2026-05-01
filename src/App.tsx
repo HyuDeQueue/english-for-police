@@ -191,7 +191,25 @@ function AppContent() {
 
   const [lessons, setLessons] = useState<Unit[]>(() => {
     const savedLessons = localStorage.getItem("police_english_lessons");
-    return savedLessons ? JSON.parse(savedLessons) : initialLessons;
+    if (savedLessons) {
+      try {
+        const parsed = JSON.parse(savedLessons) as Unit[];
+        if (parsed.length < initialLessons.length) {
+          const combined = [...initialLessons];
+          parsed.forEach((savedUnit) => {
+            const index = combined.findIndex((u) => u.id === savedUnit.id);
+            if (index !== -1) {
+              combined[index] = savedUnit;
+            }
+          });
+          return combined;
+        }
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse saved lessons", e);
+      }
+    }
+    return initialLessons;
   });
   const [progress, setProgress] = useState<UserProgress>(() => {
     const savedProgress = localStorage.getItem("police_english_progress");
@@ -312,16 +330,16 @@ function AppContent() {
 
   useEffect(() => {
     initSpeech();
-    
+
     const handleFirstInteraction = () => {
       unlockSpeech();
       window.removeEventListener("click", handleFirstInteraction);
       window.removeEventListener("touchstart", handleFirstInteraction);
     };
-    
+
     window.addEventListener("click", handleFirstInteraction);
     window.addEventListener("touchstart", handleFirstInteraction);
-    
+
     return () => {
       window.removeEventListener("click", handleFirstInteraction);
       window.removeEventListener("touchstart", handleFirstInteraction);
