@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { initSpeech } from "@/lib/speech";
 import {
   BrowserRouter as Router,
   Route,
@@ -304,10 +305,14 @@ function AppContent() {
     },
     [],
   );
-  // Auto scroll to top on navigation
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [location.pathname]);
+
+  useEffect(() => {
+    initSpeech();
+  }, []);
 
   const navigateToHome = () => {
     navigate("/");

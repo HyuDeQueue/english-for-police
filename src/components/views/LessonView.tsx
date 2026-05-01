@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { speak } from "@/lib/speech";
 import { useNavigate } from "react-router-dom";
 import type { Unit, FlaggedItem } from "../../types";
 import { LessonTableOfContents } from "./lesson/LessonTableOfContents";
@@ -45,17 +46,14 @@ export const LessonView: React.FC<LessonViewProps> = ({
       onPhraseAction();
     }
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-
-    utterance.onend = () => {
-      if (buttonEl) {
-        buttonEl.classList.remove("text-primary", "animate-pulse");
-        buttonEl.disabled = false;
-      }
-    };
-
-    window.speechSynthesis.speak(utterance);
+    speak(text, {
+      onend: () => {
+        if (buttonEl) {
+          buttonEl.classList.remove("text-primary", "animate-pulse");
+          buttonEl.disabled = false;
+        }
+      },
+    });
   };
 
   const [activeSection, setActiveSection] = useState<string>("vocabulary");
@@ -104,7 +102,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Sticky TOC Sidebar */}
-      <aside className="w-full lg:w-64 sticky top-16 self-start space-y-2">
+      <aside className="w-full lg:w-64 lg:sticky lg:top-16 lg:self-start space-y-2">
         <LessonTableOfContents
           unitId={unit.id}
           activeSection={activeSection}

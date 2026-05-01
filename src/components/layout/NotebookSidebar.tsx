@@ -1,4 +1,5 @@
 import React from "react";
+import { speak } from "@/lib/speech";
 import type {
   Unit,
   FlaggedItem,
@@ -80,9 +81,7 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
     .sort((a, b) => a - b);
 
   const playAudio = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    window.speechSynthesis.speak(utterance);
+    speak(text);
   };
 
   return (
