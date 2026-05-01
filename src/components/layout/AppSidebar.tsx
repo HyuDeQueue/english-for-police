@@ -491,12 +491,24 @@ export function AppSidebar({
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                          <h4 className="font-bold text-xs text-primary leading-snug tracking-tight">
-                            {p.text}
-                          </h4>
-                          <p className="text-[10px] text-muted-foreground/80 font-medium line-clamp-2 mt-1.5">
-                            {p.translation}
-                          </p>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-xs text-primary leading-snug tracking-tight">
+                                {p.text}
+                              </h4>
+                              <p className="text-[10px] text-muted-foreground/80 font-medium line-clamp-2 mt-1.5">
+                                {p.translation}
+                              </p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-xl shrink-0 border-border/50 hover:bg-secondary hover:text-white transition-all shadow-sm"
+                              onClick={() => playAudio(p.text)}
+                            >
+                              <Volume2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
 
@@ -519,13 +531,23 @@ export function AppSidebar({
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="bg-secondary/10 p-1 rounded-md">
-                              <Zap className="h-3 w-3 text-secondary fill-secondary" />
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="bg-secondary/10 p-1 rounded-md shrink-0">
+                                <Zap className="h-3 w-3 text-secondary fill-secondary" />
+                              </div>
+                              <div className="font-black text-primary uppercase text-[10px] tracking-wider truncate">
+                                {c.verb} + {c.noun}
+                              </div>
                             </div>
-                            <div className="font-black text-primary uppercase text-[10px] tracking-wider">
-                              {c.verb} + {c.noun}
-                            </div>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 rounded-xl shrink-0 border-border/50 hover:bg-primary hover:text-white transition-all shadow-sm"
+                              onClick={() => playAudio(`${c.verb} ${c.noun}`)}
+                            >
+                              <Volume2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
                         </div>
                       ))}
