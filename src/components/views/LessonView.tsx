@@ -102,7 +102,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
       {/* Sticky TOC Sidebar */}
-      <aside className="w-full lg:w-64 lg:sticky lg:top-16 lg:self-start space-y-2">
+      <aside className="w-full lg:w-64 lg:sticky lg:top-20 lg:self-start space-y-2">
         <LessonTableOfContents
           unitId={unit.id}
           activeSection={activeSection}
