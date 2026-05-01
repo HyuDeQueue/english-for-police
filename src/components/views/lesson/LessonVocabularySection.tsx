@@ -3,6 +3,7 @@ import { Volume2, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { AudioRecorderButton } from "@/components/common/AudioRecorderButton";
 import type { Unit, FlaggedItem } from "@/types";
 
 interface LessonVocabularySectionProps {
@@ -162,6 +163,7 @@ export const LessonVocabularySection: React.FC<
                     <Volume2 className="h-3 w-3 mr-1.5" />
                     PHÁT ÂM
                   </Button>
+                  <AudioRecorderButton className="h-8 text-xs font-bold" />
                 </div>
                 <div className="bg-muted/50 p-3 rounded-lg border italic text-xs leading-relaxed">
                   "Ex: {v.example}"

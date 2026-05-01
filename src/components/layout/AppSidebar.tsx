@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { speak } from "@/lib/speech";
+import { useAudioRecorder } from "@/hooks/use-audio-recorder";
 import type {
   Collocation,
   FlaggedItem,
@@ -25,6 +26,8 @@ import {
   ExternalLink,
   Folder,
   FolderOpen,
+  Mic,
+  MicOff,
   Search,
   Trash2,
   Volume2,
@@ -214,6 +217,28 @@ export function AppSidebar({
 
   const playAudio = (text: string) => {
     speak(text);
+  };
+
+  const {
+    status: recorderStatus,
+    transcription,
+    startRecording,
+    stopRecording,
+    reset: resetRecorder,
+  } = useAudioRecorder();
+
+  const [activeRecordingId, setActiveRecordingId] = useState<string | null>(
+    null,
+  );
+
+  const handleToggleRecording = (id: string) => {
+    if (activeRecordingId === id && recorderStatus === "recording") {
+      stopRecording();
+    } else {
+      resetRecorder();
+      setActiveRecordingId(id);
+      startRecording();
+    }
   };
 
   const toggleChapter = (chapterId: number) => {
@@ -468,7 +493,37 @@ export function AppSidebar({
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className={cn(
+                                "h-8 w-8 rounded-xl shrink-0 border-border/50 transition-all shadow-sm",
+                                activeRecordingId === `v-${v.word}` &&
+                                  recorderStatus === "recording"
+                                  ? "bg-red-500 text-white animate-pulse"
+                                  : "hover:bg-primary hover:text-white",
+                              )}
+                              onClick={() =>
+                                handleToggleRecording(`v-${v.word}`)
+                              }
+                            >
+                              {activeRecordingId === `v-${v.word}` &&
+                              recorderStatus === "recording" ? (
+                                <MicOff className="h-3.5 w-3.5" />
+                              ) : (
+                                <Mic className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
+                          {activeRecordingId === `v-${v.word}` &&
+                            (recorderStatus === "transcribing" ||
+                              recorderStatus === "success") && (
+                              <div className="mt-2 p-2 bg-muted/50 rounded-lg text-[10px] italic">
+                                {recorderStatus === "transcribing"
+                                  ? "Đang nhận diện..."
+                                  : `Bạn nói: "${transcription}"`}
+                              </div>
+                            )}
                         </div>
                       ))}
 
@@ -508,7 +563,37 @@ export function AppSidebar({
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className={cn(
+                                "h-8 w-8 rounded-xl shrink-0 border-border/50 transition-all shadow-sm",
+                                activeRecordingId === `p-${p.text}` &&
+                                  recorderStatus === "recording"
+                                  ? "bg-red-500 text-white animate-pulse"
+                                  : "hover:bg-secondary hover:text-white",
+                              )}
+                              onClick={() =>
+                                handleToggleRecording(`p-${p.text}`)
+                              }
+                            >
+                              {activeRecordingId === `p-${p.text}` &&
+                              recorderStatus === "recording" ? (
+                                <MicOff className="h-3.5 w-3.5" />
+                              ) : (
+                                <Mic className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
+                          {activeRecordingId === `p-${p.text}` &&
+                            (recorderStatus === "transcribing" ||
+                              recorderStatus === "success") && (
+                              <div className="mt-2 p-2 bg-muted/50 rounded-lg text-[10px] italic">
+                                {recorderStatus === "transcribing"
+                                  ? "Đang nhận diện..."
+                                  : `Bạn nói: "${transcription}"`}
+                              </div>
+                            )}
                         </div>
                       ))}
 

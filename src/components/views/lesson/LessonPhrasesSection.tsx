@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { AudioRecorderButton } from "@/components/common/AudioRecorderButton";
 import type { Unit, FlaggedItem } from "@/types";
 
 interface LessonPhrasesSectionProps {
@@ -166,6 +167,7 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                     <Volume2 className="h-3 w-3 mr-1.5" />
                     PHÁT ÂM
                   </Button>
+                  <AudioRecorderButton className="h-8 text-xs font-bold" />
                 </div>
 
                 <div className="space-y-3 mt-auto">
