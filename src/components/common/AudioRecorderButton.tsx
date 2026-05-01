@@ -17,7 +17,7 @@ export const AudioRecorderButton: React.FC<AudioRecorderButtonProps> = ({
   variant = "outline",
   size = "sm",
 }) => {
-  const { status, transcription, startRecording, stopRecording, reset } =
+  const { status, transcription, error, startRecording, stopRecording, reset } =
     useAudioRecorder();
 
   const [showTranscription, setShowTranscription] = useState(false);
@@ -33,6 +33,8 @@ export const AudioRecorderButton: React.FC<AudioRecorderButtonProps> = ({
       await startRecording();
     }
   };
+
+  const isVisible = showTranscription || status === "transcribing" || status === "error";
 
   React.useEffect(() => {
     if (status === "success" && onTranscription) {
@@ -71,14 +73,15 @@ export const AudioRecorderButton: React.FC<AudioRecorderButtonProps> = ({
         )}
       </Button>
 
-      {showTranscription &&
-        (status === "transcribing" || status === "success") && (
+      {isVisible && (
           <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 w-48 p-2 bg-white border rounded-lg shadow-xl text-[10px] italic pointer-events-none animate-in fade-in slide-in-from-top-1">
             {status === "transcribing" ? (
               <div className="flex items-center gap-2">
                 <Loader2 className="h-2 w-2 animate-spin" />
                 Đang nhận diện...
               </div>
+            ) : status === "error" ? (
+              <div className="text-red-500 font-medium">Lỗi: {error}</div>
             ) : (
               <div className="text-primary font-medium">
                 Bạn nói: "{transcription}"

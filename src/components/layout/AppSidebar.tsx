@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { speak } from "@/lib/speech";
-import { useAudioRecorder } from "@/hooks/use-audio-recorder";
+import { AudioRecorderButton } from "@/components/common/AudioRecorderButton";
 import type {
   Collocation,
   FlaggedItem,
@@ -16,8 +16,8 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarInput,
-  useSidebar,
 } from "@/components/ui/sidebar";
+import { useSidebar } from "@/components/ui/sidebar-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,8 +26,6 @@ import {
   ExternalLink,
   Folder,
   FolderOpen,
-  Mic,
-  MicOff,
   Search,
   Trash2,
   Volume2,
@@ -217,28 +215,6 @@ export function AppSidebar({
 
   const playAudio = (text: string) => {
     speak(text);
-  };
-
-  const {
-    status: recorderStatus,
-    transcription,
-    startRecording,
-    stopRecording,
-    reset: resetRecorder,
-  } = useAudioRecorder();
-
-  const [activeRecordingId, setActiveRecordingId] = useState<string | null>(
-    null,
-  );
-
-  const handleToggleRecording = (id: string) => {
-    if (activeRecordingId === id && recorderStatus === "recording") {
-      stopRecording();
-    } else {
-      resetRecorder();
-      setActiveRecordingId(id);
-      startRecording();
-    }
   };
 
   const toggleChapter = (chapterId: number) => {
@@ -454,9 +430,6 @@ export function AppSidebar({
                       >
                         CHI TIẾT <ExternalLink className="ml-1 h-3 w-3" />
                       </Button>
-                    </div>
-
-                    <div className="grid gap-2">
                       {group.vocabulary.map((v, i) => (
                         <div
                           key={`v-${i}`}
@@ -485,45 +458,21 @@ export function AppSidebar({
                                 {v.meaning}
                               </p>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-xl shrink-0 border-border/50 hover:bg-primary hover:text-white transition-all shadow-sm"
-                              onClick={() => playAudio(v.word)}
-                            >
-                              <Volume2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className={cn(
-                                "h-8 w-8 rounded-xl shrink-0 border-border/50 transition-all shadow-sm",
-                                activeRecordingId === `v-${v.word}` &&
-                                  recorderStatus === "recording"
-                                  ? "bg-red-500 text-white animate-pulse"
-                                  : "hover:bg-primary hover:text-white",
-                              )}
-                              onClick={() =>
-                                handleToggleRecording(`v-${v.word}`)
-                              }
-                            >
-                              {activeRecordingId === `v-${v.word}` &&
-                              recorderStatus === "recording" ? (
-                                <MicOff className="h-3.5 w-3.5" />
-                              ) : (
-                                <Mic className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-xl border-border/50 hover:bg-primary hover:text-white transition-all shadow-sm"
+                                onClick={() => playAudio(v.word)}
+                              >
+                                <Volume2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <AudioRecorderButton
+                                size="icon"
+                                className="h-8 w-8 rounded-xl"
+                              />
+                            </div>
                           </div>
-                          {activeRecordingId === `v-${v.word}` &&
-                            (recorderStatus === "transcribing" ||
-                              recorderStatus === "success") && (
-                              <div className="mt-2 p-2 bg-muted/50 rounded-lg text-[10px] italic">
-                                {recorderStatus === "transcribing"
-                                  ? "Đang nhận diện..."
-                                  : `Bạn nói: "${transcription}"`}
-                              </div>
-                            )}
                         </div>
                       ))}
 
@@ -555,45 +504,21 @@ export function AppSidebar({
                                 {p.translation}
                               </p>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 rounded-xl shrink-0 border-border/50 hover:bg-secondary hover:text-white transition-all shadow-sm"
-                              onClick={() => playAudio(p.text)}
-                            >
-                              <Volume2 className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className={cn(
-                                "h-8 w-8 rounded-xl shrink-0 border-border/50 transition-all shadow-sm",
-                                activeRecordingId === `p-${p.text}` &&
-                                  recorderStatus === "recording"
-                                  ? "bg-red-500 text-white animate-pulse"
-                                  : "hover:bg-secondary hover:text-white",
-                              )}
-                              onClick={() =>
-                                handleToggleRecording(`p-${p.text}`)
-                              }
-                            >
-                              {activeRecordingId === `p-${p.text}` &&
-                              recorderStatus === "recording" ? (
-                                <MicOff className="h-3.5 w-3.5" />
-                              ) : (
-                                <Mic className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-xl border-border/50 hover:bg-secondary hover:text-white transition-all shadow-sm"
+                                onClick={() => playAudio(p.text)}
+                              >
+                                <Volume2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <AudioRecorderButton
+                                size="icon"
+                                className="h-8 w-8 rounded-xl"
+                              />
+                            </div>
                           </div>
-                          {activeRecordingId === `p-${p.text}` &&
-                            (recorderStatus === "transcribing" ||
-                              recorderStatus === "success") && (
-                              <div className="mt-2 p-2 bg-muted/50 rounded-lg text-[10px] italic">
-                                {recorderStatus === "transcribing"
-                                  ? "Đang nhận diện..."
-                                  : `Bạn nói: "${transcription}"`}
-                              </div>
-                            )}
                         </div>
                       ))}
 

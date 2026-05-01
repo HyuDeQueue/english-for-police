@@ -18,6 +18,19 @@ export function useAudioRecorder() {
 
   const startRecording = useCallback(async () => {
     try {
+      if (!window.isSecureContext) {
+        throw new Error(
+          "Microphone access requires a secure context (HTTPS or localhost).",
+        );
+      }
+
+      if (
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+      ) {
+        throw new Error("Your browser does not support microphone access.");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -31,7 +44,7 @@ export function useAudioRecorder() {
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/wav",
+          type: mediaRecorder.mimeType || "audio/webm",
         });
         setStatus("transcribing");
         try {
@@ -52,6 +65,7 @@ export function useAudioRecorder() {
       setError(null);
       setTranscription("");
     } catch (err) {
+      console.error("Recording error:", err);
       setError(
         err instanceof Error ? err.message : "Could not access microphone",
       );
