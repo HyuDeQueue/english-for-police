@@ -56,8 +56,6 @@ export async function speak(text: string, opts?: { onend?: () => void }) {
     url.searchParams.append("text", text);
     url.searchParams.append("vocoder", "high");
 
-    console.log("TTS Request URL:", url.toString());
-
     const audio = new Audio(url.toString());
     currentAudio = audio;
 
@@ -71,10 +69,12 @@ export async function speak(text: string, opts?: { onend?: () => void }) {
     };
 
     await audio.play();
-    console.log("TTS Playback started");
     return;
   } catch (error) {
-    console.warn("Remote TTS execution failed, falling back to browser TTS", error);
+    console.warn(
+      "Remote TTS execution failed, falling back to browser TTS",
+      error,
+    );
     speakWithBrowser(text, opts);
   }
 }

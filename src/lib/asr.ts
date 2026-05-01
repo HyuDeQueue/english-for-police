@@ -9,33 +9,18 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   url.searchParams.append("task", "transcribe");
   url.searchParams.append("output", "json");
 
-  console.log("Starting transcription...", {
-    url: url.toString(),
-    blobSize: audioBlob.size,
-    blobType: audioBlob.type,
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    body: formData,
   });
 
-  try {
-    const response = await fetch(url.toString(), {
-      method: "POST",
-      body: formData,
-    });
-
-    console.log("ASR Response status:", response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("ASR Error body:", errorText);
-      throw new Error(`ASR API failed: ${response.status} ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log("ASR Data received:", data);
-    return typeof data === "string" ? data : data.text || "";
-  } catch (error) {
-    console.error("Transcription error:", error);
-    throw error;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`ASR API failed: ${response.status} ${errorText}`);
   }
+
+  const data = await response.json();
+  return typeof data === "string" ? data : data.text || "";
 }
 
 export async function detectLanguage(audioBlob: Blob): Promise<string> {
@@ -48,19 +33,14 @@ export async function detectLanguage(audioBlob: Blob): Promise<string> {
   );
   url.searchParams.append("encode", "true");
 
-  try {
-    const response = await fetch(url.toString(), {
-      method: "POST",
-      body: formData,
-    });
+  const response = await fetch(url.toString(), {
+    method: "POST",
+    body: formData,
+  });
 
-    if (!response.ok) {
-      throw new Error(`Detect Language API failed: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Language detection error:", error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Detect Language API failed: ${response.status}`);
   }
+
+  return await response.json();
 }
