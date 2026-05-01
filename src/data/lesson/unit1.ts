@@ -8,7 +8,7 @@ export const unit1: Unit = {
     "Tiếp xúc ban đầu và kiểm tra, xác minh giấy tờ tùy thân của người nước ngoài.",
   vocabulary: [
     {
-      word: "identification (ID)",
+      word: "identification",
       phonetic: "/aɪˌdentɪfɪˈkeɪʃn/",
       meaning: "giấy tờ tùy thân",
       type: "Noun",
