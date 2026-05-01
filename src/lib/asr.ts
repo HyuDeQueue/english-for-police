@@ -4,7 +4,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   const formData = new FormData();
   formData.append("audio_file", audioBlob, "recording.wav");
 
-  const url = new URL(`${ASR_API_BASE_URL}/asr`);
+  const url = new URL(`${ASR_API_BASE_URL}/asr`, window.location.origin);
   url.searchParams.append("encode", "true");
   url.searchParams.append("task", "transcribe");
   url.searchParams.append("output", "json");
@@ -32,7 +32,10 @@ export async function detectLanguage(audioBlob: Blob): Promise<string> {
   const formData = new FormData();
   formData.append("audio_file", audioBlob, "recording.wav");
 
-  const url = new URL(`${ASR_API_BASE_URL}/detect-language`);
+  const url = new URL(
+    `${ASR_API_BASE_URL}/detect-language`,
+    window.location.origin,
+  );
   url.searchParams.append("encode", "true");
 
   try {

@@ -1,4 +1,7 @@
+import { TTS_API_BASE_URL, DEFAULT_TTS_VOICE } from "./config";
+
 let preferredVoice: SpeechSynthesisVoice | null = null;
+let currentAudio: HTMLAudioElement | null = null;
 
 export function initSpeech() {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -6,7 +9,6 @@ export function initSpeech() {
   const loadVoices = () => {
     const voices = window.speechSynthesis.getVoices();
     if (voices && voices.length) {
-      // Prefer Google US English or any English voice
       preferredVoice =
         voices.find((v) => v.lang === "en-US" && v.name.includes("Google")) ||
         voices.find((v) => v.lang === "en-US") ||
@@ -21,31 +23,70 @@ export function initSpeech() {
   }
 }
 
-/**
- * Mobile browsers often require a user gesture to enable speech.
- * This function can be called on the first click to "unlock" audio.
- */
 export function unlockSpeech() {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  if (typeof window === "undefined") return;
 
-  // Create a silent utterance to kickstart the engine
-  const u = new SpeechSynthesisUtterance("");
-  u.volume = 0;
-  window.speechSynthesis.cancel();
-  window.speechSynthesis.speak(u);
-}
-
-export function speak(text: string, opts?: { onend?: () => void }) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
-  // Crucial for mobile: cancel any current speech before starting new one
-  try {
+  // For SpeechSynthesis fallback
+  if ("speechSynthesis" in window) {
+    const u = new SpeechSynthesisUtterance("");
+    u.volume = 0;
     window.speechSynthesis.cancel();
-  } catch (e) {
-    console.warn("Speech cancel failed", e);
+    window.speechSynthesis.speak(u);
   }
 
-  // Small delay helps on iOS/mobile after cancel to ensure the engine is ready
+  // Create a silent audio to unlock audio context
+  const audio = new Audio();
+  audio.play().catch(() => {});
+}
+
+export async function speak(text: string, opts?: { onend?: () => void }) {
+  if (typeof window === "undefined") return;
+
+  // Stop current audio if playing
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+
+  // Try Remote TTS first
+  try {
+    const apiUrl = `${window.location.origin}${TTS_API_BASE_URL}/api/tts`;
+    const url = new URL(apiUrl);
+    url.searchParams.append("voice", DEFAULT_TTS_VOICE);
+    url.searchParams.append("text", text);
+    url.searchParams.append("vocoder", "high");
+
+    console.log("TTS Request URL:", url.toString());
+
+    const audio = new Audio(url.toString());
+    currentAudio = audio;
+
+    audio.onended = () => {
+      if (opts?.onend) opts.onend();
+    };
+
+    audio.onerror = (e) => {
+      console.warn("Audio element error, falling back to browser TTS", e);
+      speakWithBrowser(text, opts);
+    };
+
+    await audio.play();
+    console.log("TTS Playback started");
+    return;
+  } catch (error) {
+    console.warn("Remote TTS execution failed, falling back to browser TTS", error);
+    speakWithBrowser(text, opts);
+  }
+}
+
+function speakWithBrowser(text: string, opts?: { onend?: () => void }) {
+  if (!("speechSynthesis" in window)) {
+    if (opts?.onend) opts.onend();
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
   setTimeout(() => {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
@@ -61,12 +102,11 @@ export function speak(text: string, opts?: { onend?: () => void }) {
       if (voice) u.voice = voice;
     }
 
-    if (opts && opts.onend) {
+    if (opts?.onend) {
       u.onend = opts.onend;
     }
-    
+
     u.onerror = (event) => {
-      // 'interrupted' usually happens when we call .cancel(), so we ignore it
       if (event.error !== "interrupted") {
         console.error("SpeechSynthesisUtterance error", event);
       }
