@@ -120,7 +120,7 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 min-h-400px">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-400px">
         {visibleItems.map((p, i) => {
           const flagged = isFlagged(p.text);
           return (
