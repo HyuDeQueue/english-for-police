@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { initSpeech } from "@/lib/speech";
+import { initSpeech, unlockSpeech } from "@/lib/speech";
 import {
   BrowserRouter as Router,
   Route,
@@ -312,6 +312,20 @@ function AppContent() {
 
   useEffect(() => {
     initSpeech();
+    
+    const handleFirstInteraction = () => {
+      unlockSpeech();
+      window.removeEventListener("click", handleFirstInteraction);
+      window.removeEventListener("touchstart", handleFirstInteraction);
+    };
+    
+    window.addEventListener("click", handleFirstInteraction);
+    window.addEventListener("touchstart", handleFirstInteraction);
+    
+    return () => {
+      window.removeEventListener("click", handleFirstInteraction);
+      window.removeEventListener("touchstart", handleFirstInteraction);
+    };
   }, []);
 
   const navigateToHome = () => {

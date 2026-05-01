@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { speak } from "@/lib/speech";
 import type {
   Collocation,
   FlaggedItem,
@@ -212,9 +213,7 @@ export function AppSidebar({
     .sort((a, b) => a - b);
 
   const playAudio = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    window.speechSynthesis.speak(utterance);
+    speak(text);
   };
 
   const toggleChapter = (chapterId: number) => {

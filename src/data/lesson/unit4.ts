@@ -1,0 +1,351 @@
+import type { Unit } from "@/types";
+import { unit4Questions } from "../questions/unit4-questions";
+
+export const unit4: Unit = {
+  id: 4,
+  title: "Giving Instructions and Ensuring Safety",
+  description:
+    "Hướng dẫn, chỉ dẫn và bảo đảm an toàn cho người dân trong các tình huống công tác.",
+  vocabulary: [
+    {
+      word: "follow instructions",
+      phonetic: "/ˈfɒləʊ ɪnˈstrʌkʃnz/",
+      meaning: "tuân theo hướng dẫn",
+      type: "Expression",
+      example: "Please follow our instructions.",
+    },
+    {
+      word: "instruction",
+      phonetic: "/ɪnˈstrʌkʃn/",
+      meaning: "chỉ dẫn",
+      type: "Noun",
+      example: "Kindly follow the directions given.",
+    },
+    {
+      word: "warning",
+      phonetic: "/ˈwɔːnɪŋ/",
+      meaning: "cảnh báo",
+      type: "Noun",
+      example: "This is an official warning.",
+    },
+    {
+      word: "comply",
+      phonetic: "/kəmˈplaɪ/",
+      meaning: "chấp hành",
+      type: "Verb",
+      example: "Please comply with the instructions given by the police.",
+    },
+    {
+      word: "restricted area",
+      phonetic: "/rɪˈstrɪktɪd ˈeəriə/",
+      meaning: "khu vực hạn chế",
+      type: "Noun",
+      example: "This is a restricted area. Do not enter.",
+    },
+    {
+      word: "public safety",
+      phonetic: "/ˈpʌblɪk ˈseɪfti/",
+      meaning: "an toàn công cộng",
+      type: "Noun",
+      example: "We are here to ensure public safety.",
+    },
+    {
+      word: "dangerous",
+      phonetic: "/ˈdeɪndʒərəs/",
+      meaning: "nguy hiểm",
+      type: "Adjective",
+      example: "This area may be dangerous.",
+    },
+    {
+      word: "keep a safe distance",
+      phonetic: "/kiːp ə seɪf ˈdɪstəns/",
+      meaning: "giữ khoảng cách an toàn",
+      type: "Expression",
+      example: "Please step back and keep a safe distance.",
+    },
+    {
+      word: "step back",
+      phonetic: "/step bæk/",
+      meaning: "lùi lại",
+      type: "Verb",
+      example: "Please step back to allow emergency access.",
+    },
+    {
+      word: "move to",
+      phonetic: "/muːv tuː/",
+      meaning: "di chuyển đến",
+      type: "Verb",
+      example: "Please move to the designated area.",
+    },
+    {
+      word: "clear the area",
+      phonetic: "/klɪə ði ˈeəriə/",
+      meaning: "rời khỏi khu vực",
+      type: "Verb",
+      example: "Please clear the area to ensure public safety.",
+    },
+    {
+      word: "disperse",
+      phonetic: "/dɪˈspɜːs/",
+      meaning: "giải tán",
+      type: "Verb",
+      example: "The crowd is required to disperse immediately.",
+    },
+    {
+      word: "block",
+      phonetic: "/blɒk/",
+      meaning: "chắn, cản trở",
+      type: "Verb",
+      example: "Do not block the passage.",
+    },
+    {
+      word: "access",
+      phonetic: "/ˈækses/",
+      meaning: "lối tiếp cận",
+      type: "Noun",
+      example: "Please step back to allow emergency access.",
+    },
+    {
+      word: "prohibited",
+      phonetic: "/prəˈhɪbɪtɪd/",
+      meaning: "bị cấm",
+      type: "Adjective",
+      example: "Entry to this area is prohibited.",
+    },
+    {
+      word: "official warning",
+      phonetic: "/əˈfɪʃl ˈwɔːnɪŋ/",
+      meaning: "cảnh báo chính thức",
+      type: "Noun",
+      example: "This is an official warning. Please comply immediately.",
+    },
+    {
+      word: "ensure safety",
+      phonetic: "/ɪnˈʃʊə ˈseɪfti/",
+      meaning: "bảo đảm an toàn",
+      type: "Expression",
+      example: "Your safety is our priority.",
+    },
+    {
+      word: "safety procedures",
+      phonetic: "/ˈseɪfti prəˈsiːdʒəz/",
+      meaning: "quy trình an toàn",
+      type: "Noun",
+      example: "Please follow safety procedures at all times.",
+    },
+  ],
+  phrases: [
+    {
+      text: "Please follow our instructions.",
+      translation: "Đề nghị anh/chị thực hiện theo hướng dẫn.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please comply with the instructions given by the police.",
+      translation: "Đề nghị anh/chị chấp hành các hướng dẫn của Cảnh sát.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please remain where you are.",
+      translation: "Đề nghị anh/chị đứng yên tại chỗ.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please move to the designated area.",
+      translation: "Đề nghị anh/chị di chuyển đến khu vực được chỉ định.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please wait here until further notice.",
+      translation: "Đề nghị anh/chị chờ tại đây cho đến khi có thông báo tiếp theo.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please do exactly as instructed.",
+      translation: "Đề nghị anh/chị thực hiện đúng theo hướng dẫn.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Kindly follow the directions given.",
+      translation: "Đề nghị anh/chị thực hiện theo chỉ dẫn đã được thông báo.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please cooperate and follow our guidance.",
+      translation: "Đề nghị anh/chị hợp tác và làm theo sự hướng dẫn của chúng tôi.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Your cooperation in following these instructions is required.",
+      translation: "Yêu cầu anh/chị hợp tác và thực hiện đúng các chỉ dẫn này.",
+      context: "Giving instructions",
+    },
+    {
+      text: "Please observe and follow the instructions carefully.",
+      translation: "Đề nghị anh/chị chú ý và thực hiện theo hướng dẫn một cách nghiêm túc.",
+      context: "Giving instructions",
+    },
+    {
+      text: "This is a restricted area. Do not enter.",
+      translation: "Khu vực cấm, không được vào!",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "This is an official warning. Please comply immediately.",
+      translation: "Đây là cảnh báo chính thức. Yêu cầu chấp hành ngay.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Do not cross the line.",
+      translation: "Đề nghị không vượt qua vạch giới hạn.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Do not touch anything in this area.",
+      translation: "Đề nghị không chạm vào bất kỳ vật gì trong khu vực này.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "You are not allowed to enter this area.",
+      translation: "Anh/chị không được phép vào khu vực này.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Entry to this area is prohibited.",
+      translation: "Việc vào khu vực này bị nghiêm cấm.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Please stay behind the safety line.",
+      translation: "Đề nghị anh/chị đứng sau vạch an toàn.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "For safety reasons, access to this area is restricted.",
+      translation: "Vì lý do an toàn, việc tiếp cận khu vực này bị hạn chế.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Any violation will be handled in accordance with regulations.",
+      translation: "Mọi hành vi vi phạm sẽ bị xử lý theo quy định.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Please refrain from approaching this area.",
+      translation: "Đề nghị anh/chị không tiếp cận khu vực này.",
+      context: "Warnings and prohibitions",
+    },
+    {
+      text: "Please move to the sidewalk.",
+      translation: "Đề nghị anh/chị di chuyển lên vỉa hè.",
+      context: "Directing movement",
+    },
+    {
+      text: "Please keep moving and do not gather here.",
+      translation: "Đề nghị tiếp tục di chuyển, không tụ tập tại đây.",
+      context: "Directing movement",
+    },
+    {
+      text: "Please clear the area to ensure public safety.",
+      translation: "Đề nghị rời khỏi khu vực để bảo đảm an toàn công cộng.",
+      context: "Directing movement",
+    },
+    {
+      text: "The crowd is required to disperse immediately.",
+      translation: "Yêu cầu giải tán ngay, không tụ tập đông người.",
+      context: "Directing movement",
+    },
+    {
+      text: "Please move away from the scene.",
+      translation: "Đề nghị anh/chị rời xa hiện trường.",
+      context: "Directing movement",
+    },
+    {
+      text: "Please proceed in an orderly manner.",
+      translation: "Đề nghị anh/chị di chuyển trật tự.",
+      context: "Directing movement",
+    },
+    {
+      text: "Please follow the direction given by the police.",
+      translation: "Đề nghị chấp hành theo sự hướng dẫn của lực lượng Cảnh sát.",
+      context: "Directing movement",
+    },
+    {
+      text: "Kindly make way and keep the passage clear.",
+      translation: "Đề nghị nhường đường và giữ lối đi thông thoáng.",
+      context: "Directing movement",
+    },
+    {
+      text: "Please step back to allow emergency access.",
+      translation: "Đề nghị lùi lại để tạo lối cho lực lượng khẩn cấp tiếp cận.",
+      context: "Directing movement",
+    },
+    {
+      text: "Do not block the passage.",
+      translation: "Đề nghị không chắn lối đi.",
+      context: "Directing movement",
+    },
+    {
+      text: "This area may be dangerous. Please leave immediately.",
+      translation: "Khu vực này có thể nguy hiểm. Đề nghị rời đi ngay.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "For your safety, please stay away from the scene.",
+      translation: "Vì sự an toàn của anh/chị, đề nghị tránh xa hiện trường.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "Please move to a safe location.",
+      translation: "Đề nghị di chuyển đến vị trí an toàn.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "We are securing the area for safety reasons.",
+      translation: "Chúng tôi đang triển khai biện pháp bảo đảm an toàn khu vực.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "Emergency services are on the way. Please keep clear.",
+      translation: "Lực lượng chức năng đang trên đường tới. Đề nghị giữ thông thoáng.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "There is a potential risk in this area.",
+      translation: "Khu vực này có nguy cơ mất an toàn.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "Please do not remain near the scene.",
+      translation: "Đề nghị không ở lại gần hiện trường.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "Your safety is our priority.",
+      translation: "Sự an toàn của anh/chị là ưu tiên của chúng tôi.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "Please follow safety procedures at all times.",
+      translation: "Đề nghị tuân thủ các quy định về an toàn.",
+      context: "Ensuring safety",
+    },
+    {
+      text: "We are taking necessary measures to ensure public safety.",
+      translation: "Chúng tôi đang triển khai các biện pháp cần thiết để bảo đảm an toàn công cộng.",
+      context: "Ensuring safety",
+    },
+  ],
+  memoryBoost: {
+    collocations: [
+      { verb: "follow", noun: "instructions" },
+      { verb: "comply with", noun: "regulations" },
+      { verb: "keep", noun: "a safe distance" },
+      { verb: "clear", noun: "the area" },
+      { verb: "ensure", noun: "public safety" },
+    ],
+    summary:
+      "Khi hướng dẫn và bảo đảm an toàn, cần đưa ra các mệnh lệnh rõ ràng (move to, step back), thiết lập các giới hạn (restricted area, do not enter) và ưu tiên cao nhất cho sự an toàn của người dân.",
+  },
+  practice: unit4Questions,
+};

@@ -4,6 +4,7 @@ import { FlashcardHeader } from "./flashcard/FlashcardHeader";
 import { FlashcardStats } from "./flashcard/FlashcardStats";
 import { Flashcard } from "./flashcard/Flashcard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { speak } from "@/lib/speech";
 
 export interface FlashcardSessionSummary {
   unitId: number;
@@ -136,9 +137,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   );
 
   const playAudio = (text: string) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    window.speechSynthesis.speak(utterance);
+    speak(text);
   };
 
   useEffect(() => {

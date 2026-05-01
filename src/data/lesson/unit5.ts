@@ -1,0 +1,346 @@
+import type { Unit } from "@/types";
+import { unit5Questions } from "../questions/unit5-questions";
+
+export const unit5: Unit = {
+  id: 5,
+  title: "Traffic Control and Road Situations",
+  description:
+    "Xử lý, kiểm soát các tình huống giao thông và hướng dẫn người tham gia giao thông.",
+  vocabulary: [
+    {
+      word: "pull over",
+      phonetic: "/pʊl ˈoʊvər/",
+      meaning: "tấp xe vào lề",
+      type: "Verb",
+      example: "Please pull over and stop your vehicle safely.",
+    },
+    {
+      word: "stop the vehicle",
+      phonetic: "/stɒp ðə ˈviːɪkl/",
+      meaning: "dừng phương tiện",
+      type: "Expression",
+      example: "Please stop the vehicle, please.",
+    },
+    {
+      word: "driving license",
+      phonetic: "/ˈdraɪvɪŋ ˈlaɪsəns/",
+      meaning: "giấy phép lái xe",
+      type: "Noun",
+      example: "Please show me your driving license.",
+    },
+    {
+      word: "vehicle registration",
+      phonetic: "/ˈviːɪkl ˌredʒɪˈstreɪʃn/",
+      meaning: "đăng ký phương tiện",
+      type: "Noun",
+      example: "We need to check your vehicle registration.",
+    },
+    {
+      word: "traffic violation",
+      phonetic: "/ˈtræfɪk ˌvaɪəˈleɪʃn/",
+      meaning: "vi phạm giao thông",
+      type: "Noun",
+      example: "You have committed a traffic violation.",
+    },
+    {
+      word: "speed limit",
+      phonetic: "/spiːd ˈlɪmɪt/",
+      meaning: "giới hạn tốc độ",
+      type: "Noun",
+      example: "You were driving over the speed limit.",
+    },
+    {
+      word: "illegal parking",
+      phonetic: "/ɪˈliːɡl ˈpɑːrkɪŋ/",
+      meaning: "đỗ xe trái phép",
+      type: "Noun",
+      example: "This is an illegal parking violation.",
+    },
+    {
+      word: "traffic signal",
+      phonetic: "/ˈtræfɪk ˈsɪɡnəl/",
+      meaning: "tín hiệu giao thông",
+      type: "Noun",
+      example: "Please follow the traffic signals.",
+    },
+    {
+      word: "intersection",
+      phonetic: "/ˌɪntərˈsekʃn/",
+      meaning: "ngã tư, giao lộ",
+      type: "Noun",
+      example: "Turn left at the intersection.",
+    },
+    {
+      word: "lane",
+      phonetic: "/leɪn/",
+      meaning: "làn đường",
+      type: "Noun",
+      example: "Please change lanes carefully.",
+    },
+    {
+      word: "overtake",
+      phonetic: "/ˌoʊvərˈteɪk/",
+      meaning: "vượt xe",
+      type: "Verb",
+      example: "Do not overtake here.",
+    },
+    {
+      word: "routine check",
+      phonetic: "/ruːˈtiːn tʃek/",
+      meaning: "kiểm tra theo quy định",
+      type: "Noun",
+      example: "This is a routine traffic check.",
+    },
+    {
+      word: "fine",
+      phonetic: "/faɪn/",
+      meaning: "tiền phạt",
+      type: "Noun",
+      example: "You may be fined for this violation.",
+    },
+    {
+      word: "procedure",
+      phonetic: "/prəˈsiːdʒər/",
+      meaning: "thủ tục",
+      type: "Noun",
+      example: "Please follow the instructions to complete the procedure.",
+    },
+    {
+      word: "regulations",
+      phonetic: "/ˌreɡjuˈleɪʃnz/",
+      meaning: "quy định",
+      type: "Noun",
+      example: "Your case will be handled according to regulations.",
+    },
+    {
+      word: "documents",
+      phonetic: "/ˈdɒkjʊmənts/",
+      meaning: "giấy tờ",
+      type: "Noun",
+      example: "Please hand over your documents for inspection.",
+    },
+    {
+      word: "inspection",
+      phonetic: "/ɪnˈspekʃn/",
+      meaning: "kiểm tra",
+      type: "Noun",
+      example: "Please hand over your documents for inspection.",
+    },
+    {
+      word: "commit",
+      phonetic: "/kəˈmɪt/",
+      meaning: "thực hiện/ gây ra",
+      type: "Verb",
+      example: "You have committed a traffic violation.",
+    },
+  ],
+  phrases: [
+    {
+      text: "Please pull over and stop your vehicle safely.",
+      translation: "Đề nghị anh/chị tấp xe vào lề và dừng phương tiện an toàn.",
+      context: "Stopping vehicles",
+    },
+    {
+      text: "Please stop the vehicle, please.",
+      translation: "Đề nghị dừng phương tiện.",
+      context: "Stopping vehicles",
+    },
+    {
+      text: "Please show me your driving license/ vehicle registration.",
+      translation: "Đề nghị anh/chị xuất trình giấy phép lái xe/ giấy đăng ký phương tiện.",
+      context: "Checking documents",
+    },
+    {
+      text: "We need to conduct an alcohol test.",
+      translation: "Chúng tôi cần kiểm tra nồng độ cồn.",
+      context: "Traffic checks",
+    },
+    {
+      text: "Please breathe into this device.",
+      translation: "Đề nghị anh/chị thổi vào thiết bị này.",
+      context: "Traffic checks",
+    },
+    {
+      text: "Please hand over your documents for inspection.",
+      translation: "Đề nghị anh/chị cung cấp giấy tờ để chúng tôi kiểm tra.",
+      context: "Checking documents",
+    },
+    {
+      text: "Please calm down and cooperate with us.",
+      translation: "Anh/chị bình tĩnh và hợp tác với chúng tôi.",
+      context: "Interaction",
+    },
+    {
+      text: "Turn off the engine, please.",
+      translation: "Đề nghị anh/chị tắt máy.",
+      context: "Stopping vehicles",
+    },
+    {
+      text: "This is a routine traffic check.",
+      translation: "Đây là kiểm tra giao thông theo quy định.",
+      context: "Traffic checks",
+    },
+    {
+      text: "Please pull over to the side of the road.",
+      translation: "Đề nghị anh/chị tấp xe vào lề đường.",
+      context: "Stopping vehicles",
+    },
+    {
+      text: "You have committed a traffic violation.",
+      translation: "Anh/chị đã có hành vi vi phạm quy định giao thông.",
+      context: "Explaining violations",
+    },
+    {
+      text: "You were driving over the speed limit.",
+      translation: "Anh/chị đã điều khiển phương tiện vượt quá tốc độ cho phép.",
+      context: "Explaining violations",
+    },
+    {
+      text: "You ran a red light.",
+      translation: "Anh/chị đã điều khiển phương tiện vượt đèn đỏ.",
+      context: "Explaining violations",
+    },
+    {
+      text: "This is an illegal parking violation.",
+      translation: "Đây là hành vi dừng, đỗ xe trái phép.",
+      context: "Explaining violations",
+    },
+    {
+      text: "You did not wear a helmet/seat belt.",
+      translation: "Anh/chị không đội mũ bảo hiểm / không thắt dây an toàn theo quy định.",
+      context: "Explaining violations",
+    },
+    {
+      text: "Your driving license is no longer valid.",
+      translation: "Giấy phép lái xe của anh/chị không còn hiệu lực.",
+      context: "Checking documents",
+    },
+    {
+      text: "Your driving license has expired.",
+      translation: "Giấy phép lái xe của anh/chị đã hết hạn.",
+      context: "Checking documents",
+    },
+    {
+      text: "You may be fined for this violation.",
+      translation: "Hành vi này có thể bị xử phạt theo quy định.",
+      context: "Explaining violations",
+    },
+    {
+      text: "We will handle this violation in accordance with the law.",
+      translation: "Chúng tôi sẽ xử lý hành vi vi phạm này theo đúng quy định của pháp luật.",
+      context: "Explaining violations",
+    },
+    {
+      text: "You need to follow the traffic rules.",
+      translation: "Anh/chị cần chấp hành các quy định giao thông.",
+      context: "Explaining violations",
+    },
+    {
+      text: "Please go straight ahead.",
+      translation: "Đề nghị anh/chị đi thẳng.",
+      context: "Giving directions",
+    },
+    {
+      text: "Turn left at the intersection.",
+      translation: "Rẽ trái tại ngã tư.",
+      context: "Giving directions",
+    },
+    {
+      text: "Turn right at the next junction.",
+      translation: "Rẽ phải tại giao lộ tiếp theo.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please follow the traffic signals.",
+      translation: "Đề nghị anh/chị chấp hành tín hiệu giao thông.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please stop behind the line.",
+      translation: "Đề nghị anh/chị dừng xe sau vạch.",
+      context: "Giving directions",
+    },
+    {
+      text: "Do not overtake here.",
+      translation: "Không được vượt xe tại vị trí này.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please keep to the right/left.",
+      translation: "Đề nghị anh/chị đi sát bên phải/bên trái.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please slow down and proceed carefully.",
+      translation: "Đề nghị anh/chị giảm tốc độ và di chuyển cẩn thận.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please stop here.",
+      translation: "Đề nghị anh/chị dừng xe tại đây.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please change lanes carefully.",
+      translation: "Đề nghị anh/chị chuyển làn đường cẩn thận.",
+      context: "Giving directions",
+    },
+    {
+      text: "Please follow the instructions to complete the procedure.",
+      translation: "Đề nghị anh/chị thực hiện theo hướng dẫn để hoàn tất thủ tục.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "You will be informed of the next steps.",
+      translation: "Anh/chị sẽ được thông báo về các bước tiếp theo.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "Please wait here while we check your information.",
+      translation: "Đề nghị anh/chị chờ tại đây trong khi chúng tôi kiểm tra thông tin.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "You may be required to come to the traffic police office.",
+      translation: "Anh/chị có thể được yêu cầu đến làm việc tại trụ sở Cảnh sát giao thông.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "We will guide you on what to do next.",
+      translation: "Chúng tôi sẽ hướng dẫn anh/chị các bước tiếp theo cần thực hiện.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "Please cooperate so we can complete the procedure.",
+      translation: "Đề nghị anh/chị hợp tác để chúng tôi hoàn tất thủ tục.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "Your case will be handled according to regulations.",
+      translation: "Vụ việc của anh/chị sẽ được xử lý theo quy định.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "Please keep your documents ready.",
+      translation: "Đề nghị anh/chị chuẩn bị sẵn giấy tờ.",
+      context: "Explaining procedures",
+    },
+    {
+      text: "If you have any questions, please ask the officer on duty.",
+      translation: "Nếu có thắc mắc, anh/chị có thể trao đổi với cán bộ đang làm nhiệm vụ.",
+      context: "Explaining procedures",
+    },
+  ],
+  memoryBoost: {
+    collocations: [
+      { verb: "pull", noun: "over" },
+      { verb: "show", noun: "driving license" },
+      { verb: "commit", noun: "a violation" },
+      { verb: "run", noun: "a red light" },
+      { verb: "follow", noun: "traffic signals" },
+    ],
+    summary:
+      "Trong kiểm soát giao thông, quan trọng nhất là ra hiệu dừng xe an toàn (pull over), kiểm tra giấy tờ (license, registration) và giải thích rõ lỗi vi phạm (speed limit, red light) cùng các bước xử lý tiếp theo.",
+  },
+  practice: unit5Questions,
+};
