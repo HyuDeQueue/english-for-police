@@ -4,7 +4,7 @@ import type { Unit, Question } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
 
 import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
 import { MatchingQuestion } from "./questions/MatchingQuestion";
@@ -431,6 +431,68 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                 )}
               </div>
             </CardContent>
+
+            {/* In-card prev/next navigation for mobile-friendly UX */}
+            {currentQuestion && (
+              <div className="border-t bg-muted/10 px-5 py-3 flex items-center justify-between gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1.5 font-bold text-xs border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-30"
+                  disabled={
+                    currentIndexInSection === 0 && currentPageIndex === 0
+                  }
+                  onClick={() => {
+                    if (currentIndexInSection > 0) {
+                      setCurrentIndexInSection(currentIndexInSection - 1);
+                    } else if (currentPageIndex > 0) {
+                      const prevPage = currentPageIndex - 1;
+                      setCurrentPageIndex(prevPage);
+                      const prevPageStart = prevPage * QUESTIONS_PER_PAGE;
+                      const prevPageQuestions = sectionQuestions.slice(
+                        prevPageStart,
+                        prevPageStart + QUESTIONS_PER_PAGE,
+                      );
+                      setCurrentIndexInSection(prevPageQuestions.length - 1);
+                    }
+                  }}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Câu Trước
+                </Button>
+
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  {currentPageIndex * QUESTIONS_PER_PAGE +
+                    currentIndexInSection +
+                    1}
+                  {" / "}
+                  {sectionQuestions.length}
+                </span>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1.5 font-bold text-xs border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-30"
+                  disabled={
+                    currentPageIndex * QUESTIONS_PER_PAGE +
+                      currentIndexInSection >=
+                    sectionQuestions.length - 1
+                  }
+                  onClick={() => {
+                    const lastIndexOnPage = pagedSectionQuestions.length - 1;
+                    if (currentIndexInSection < lastIndexOnPage) {
+                      setCurrentIndexInSection(currentIndexInSection + 1);
+                    } else {
+                      setCurrentPageIndex(currentPageIndex + 1);
+                      setCurrentIndexInSection(0);
+                    }
+                  }}
+                >
+                  Câu Sau
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
           </Card>
         </div>
       </div>
