@@ -89,30 +89,6 @@ export function AppSidebar({
 
         const categories: SearchTreeCategory[] = [
           {
-            key: "vocabulary",
-            label: "Từ vựng",
-            items: unit.vocabulary
-              .filter((vocab) => {
-                const matches = [
-                  vocab.word,
-                  vocab.meaning,
-                  vocab.example,
-                  vocab.phonetic,
-                ]
-                  .join(" ")
-                  .toLowerCase()
-                  .includes(trimmed);
-                return matchesChapter || trimmed.length === 0 || matches;
-              })
-              .map((vocab) => ({
-                unit,
-                unitId: unit.id,
-                category: "vocabulary",
-                title: vocab.word,
-                subtitle: `${vocab.meaning} · ${vocab.example}`,
-              })),
-          },
-          {
             key: "phrase",
             label: "Cấu trúc / Mẫu câu",
             items: unit.phrases
@@ -154,6 +130,30 @@ export function AppSidebar({
                 category: "collocation",
                 title: `${collocation.verb} ${collocation.noun}`,
                 subtitle: "Công thức ghi nhớ",
+              })),
+          },
+          {
+            key: "vocabulary",
+            label: "Từ vựng",
+            items: unit.vocabulary
+              .filter((vocab) => {
+                const matches = [
+                  vocab.word,
+                  vocab.meaning,
+                  vocab.example,
+                  vocab.phonetic,
+                ]
+                  .join(" ")
+                  .toLowerCase()
+                  .includes(trimmed);
+                return matchesChapter || trimmed.length === 0 || matches;
+              })
+              .map((vocab) => ({
+                unit,
+                unitId: unit.id,
+                category: "vocabulary",
+                title: vocab.word,
+                subtitle: `${vocab.meaning} · ${vocab.example}`,
               })),
           },
         ];
@@ -318,7 +318,7 @@ export function AppSidebar({
                           Chương {node.unit.id}
                         </span>
                       </div>
-                      <div className="font-bold text-primary text-sm line-clamp-1 leading-tight">
+                      <div className="font-bold text-primary text-sm line-clamp-2 leading-snug">
                         {node.unit.title}
                       </div>
                     </div>
@@ -418,7 +418,7 @@ export function AppSidebar({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <div className="h-5 w-1 bg-primary rounded-full" />
-                        <span className="font-black text-[10px] uppercase tracking-wider text-primary truncate">
+                        <span className="font-black text-[10px] uppercase tracking-wider text-primary line-clamp-1">
                           {group.unit.title}
                         </span>
                       </div>
@@ -430,52 +430,8 @@ export function AppSidebar({
                       >
                         CHI TIẾT <ExternalLink className="ml-1 h-3 w-3" />
                       </Button>
-                      {group.vocabulary.map((v, i) => (
-                        <div
-                          key={`v-${i}`}
-                          className="group p-3 rounded-xl border border-border/40 bg-white hover:border-blue-200 hover:shadow-sm transition-all duration-300 relative overflow-hidden"
-                        >
-                          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/20" />
-                          <div className="flex justify-between items-start mb-2">
-                            <Badge className="bg-blue-50 text-blue-700 border-none text-[8px] font-black h-4 px-1.5 rounded-md">
-                              TỪ VỰNG
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-muted-foreground/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
-                              onClick={() => onRemoveItem(v.rawItem)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-xs text-primary truncate tracking-tight">
-                                {v.word}
-                              </h4>
-                              <p className="text-[10px] text-muted-foreground/80 font-medium line-clamp-1 mt-0.5">
-                                {v.meaning}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-xl border-border/50 hover:bg-primary hover:text-white transition-all shadow-sm"
-                                onClick={() => playAudio(v.word)}
-                              >
-                                <Volume2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <AudioRecorderButton
-                                size="icon"
-                                className="h-8 w-8 rounded-xl"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
+                    </div>
+                    <div className="space-y-2">
                       {group.phrases.map((p, i) => (
                         <div
                           key={`p-${i}`}
@@ -558,6 +514,52 @@ export function AppSidebar({
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </Button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {group.vocabulary.map((v, i) => (
+                        <div
+                          key={`v-${i}`}
+                          className="group p-3 rounded-xl border border-border/40 bg-white hover:border-blue-200 hover:shadow-sm transition-all duration-300 relative overflow-hidden"
+                        >
+                          <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/20" />
+                          <div className="flex justify-between items-start mb-2">
+                            <Badge className="bg-blue-50 text-blue-700 border-none text-[8px] font-black h-4 px-1.5 rounded-md">
+                              TỪ VỰNG
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
+                              onClick={() => onRemoveItem(v.rawItem)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-xs text-primary truncate tracking-tight">
+                                {v.word}
+                              </h4>
+                              <p className="text-[10px] text-muted-foreground/80 font-medium line-clamp-1 mt-0.5">
+                                {v.meaning}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8 rounded-xl border-border/50 hover:bg-primary hover:text-white transition-all shadow-sm"
+                                onClick={() => playAudio(v.word)}
+                              >
+                                <Volume2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <AudioRecorderButton
+                                size="icon"
+                                className="h-8 w-8 rounded-xl"
+                              />
+                            </div>
                           </div>
                         </div>
                       ))}

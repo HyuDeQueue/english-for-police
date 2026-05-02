@@ -43,7 +43,7 @@ export const MatchingQuestion: React.FC<MatchingQuestionProps> = ({
                 }
                 disabled={disabled || isMatched || showResults}
                 onClick={() => onSelectLeft(pair.left)}
-                className="w-full justify-start text-xs h-10 relative overflow-hidden font-bold"
+                className="w-full justify-start text-xs h-auto min-h-10 py-2 relative overflow-hidden font-bold whitespace-normal text-left leading-tight"
               >
                 {pair.left}
                 {isMatched && (
@@ -73,7 +73,7 @@ export const MatchingQuestion: React.FC<MatchingQuestionProps> = ({
                     onMatch(selectedLeft, pair.right);
                   }
                 }}
-                className="w-full justify-start text-xs h-10 font-medium"
+                className="w-full justify-start text-xs h-auto min-h-10 py-2 font-medium whitespace-normal text-left leading-tight"
               >
                 {pair.right}
               </Button>

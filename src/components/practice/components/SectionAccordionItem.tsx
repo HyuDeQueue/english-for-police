@@ -21,6 +21,7 @@ interface SectionAccordionItemProps {
   onSelectSection: (idx: number, page?: number, qIdx?: number) => void;
   onSelectQuestion: (qIdx: number) => void;
   onPageChange: (dir: "prev" | "next") => void;
+  onSubmit: () => void;
 }
 
 export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
@@ -39,16 +40,13 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
   onSelectSection,
   onSelectQuestion,
   onPageChange,
+  onSubmit,
 }) => {
   const sectionQuestions = React.useMemo(() => {
     return allQuestions.filter((q) => section.questionIds.includes(q.id));
   }, [allQuestions, section.questionIds]);
 
   const pagedQuestions = React.useMemo(() => {
-    // If this section is active, use the global page index.
-    // Otherwise, always show the first page for preview?
-    // Actually, the user might want to paginate the preview too.
-    // But since currentPageIndex is shared, let's just use it for now if active.
     const page = isActive ? currentPageIndex : 0;
     const start = page * questionsPerPage;
     return sectionQuestions.slice(start, start + questionsPerPage);
@@ -97,11 +95,12 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
             <p className="text-[10px] text-muted-foreground italic mb-3 line-clamp-2">
               {section.description}
             </p>
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-5 gap-2">
               {pagedQuestions.map((q, qIdx) => {
-                const globalIdx = (activePage * questionsPerPage) + qIdx;
+                const globalIdx = activePage * questionsPerPage + qIdx;
                 const answered = isQuestionAnswered(q);
-                const isCurrent = isActive && globalIdx === currentIndexInSection;
+                const isCurrent =
+                  isActive && globalIdx === currentIndexInSection;
                 return (
                   <button
                     key={q.id}
@@ -157,8 +156,7 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
                 size="sm"
                 className="h-7 px-1.5 text-[10px] font-bold"
                 disabled={
-                  (activePage + 1) * questionsPerPage >=
-                  sectionQuestions.length
+                  (activePage + 1) * questionsPerPage >= sectionQuestions.length
                 }
                 onClick={(e) => {
                   e.stopPropagation();
@@ -174,6 +172,17 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
               </Button>
             </div>
           )}
+          <Button
+            size="sm"
+            className={`w-full h-10 text-[11px] font-black rounded-xl transition-all ${isActive ? "primary-gradient police-shadow" : "bg-muted text-muted-foreground opacity-60"}`}
+            disabled={!isActive}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSubmit();
+            }}
+          >
+            {result?.submitted ? "NỘP LẠI PHẦN NÀY" : "NỘP PHẦN NÀY"}
+          </Button>
         </div>
       )}
     </div>

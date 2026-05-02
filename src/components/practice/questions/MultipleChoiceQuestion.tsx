@@ -21,7 +21,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {question.options?.map((opt, i) => {
           const isSelected = selectedAnswer === opt;
           let stateClasses = isSelected
@@ -46,7 +46,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
               key={i}
               variant={isSelected ? "default" : "outline"}
               disabled={disabled || showResults}
-              className={`h-auto py-3.5 px-4 justify-start text-left text-sm font-bold transition-all border-2 ${stateClasses}`}
+              className={`h-auto min-h-14 py-3 px-4 justify-start text-left text-sm font-bold transition-all border-2 whitespace-normal leading-normal ${stateClasses}`}
               onClick={() => onSelect(opt)}
             >
               <span

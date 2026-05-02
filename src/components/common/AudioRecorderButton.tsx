@@ -34,7 +34,8 @@ export const AudioRecorderButton: React.FC<AudioRecorderButtonProps> = ({
     }
   };
 
-  const isVisible = showTranscription || status === "transcribing" || status === "error";
+  const isVisible =
+    showTranscription || status === "transcribing" || status === "error";
 
   React.useEffect(() => {
     if (status === "success" && onTranscription) {
@@ -62,33 +63,33 @@ export const AudioRecorderButton: React.FC<AudioRecorderButtonProps> = ({
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : status === "recording" ? (
           <>
-            <MicOff className="h-3 w-3 mr-1.5" />
-            DỪNG
+            <MicOff className={cn("h-3 w-3", size !== "icon" && "mr-1.5")} />
+            {size !== "icon" && "DỪNG"}
           </>
         ) : (
           <>
-            <Mic className="h-3 w-3 mr-1.5" />
-            LUYỆN NÓI
+            <Mic className={cn("h-3 w-3", size !== "icon" && "mr-1.5")} />
+            {size !== "icon" && "LUYỆN NÓI"}
           </>
         )}
       </Button>
 
       {isVisible && (
-          <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 w-48 p-2 bg-white border rounded-lg shadow-xl text-[10px] italic pointer-events-none animate-in fade-in slide-in-from-top-1">
-            {status === "transcribing" ? (
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-2 w-2 animate-spin" />
-                Đang nhận diện...
-              </div>
-            ) : status === "error" ? (
-              <div className="text-red-500 font-medium">Lỗi: {error}</div>
-            ) : (
-              <div className="text-primary font-medium">
-                Bạn nói: "{transcription}"
-              </div>
-            )}
-          </div>
-        )}
+        <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 w-48 p-2 bg-white border rounded-lg shadow-xl text-[10px] italic pointer-events-none animate-in fade-in slide-in-from-top-1">
+          {status === "transcribing" ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-2 w-2 animate-spin" />
+              Đang nhận diện...
+            </div>
+          ) : status === "error" ? (
+            <div className="text-red-500 font-medium">Lỗi: {error}</div>
+          ) : (
+            <div className="text-primary font-medium">
+              Bạn nói: "{transcription}"
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

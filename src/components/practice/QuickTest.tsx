@@ -238,7 +238,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-fade-in">
+    <div className="w-full space-y-8 animate-fade-in">
       <PracticeHeader onBack={onBack} />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -267,7 +267,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
             </Button>
           }
         >
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-6 gap-2">
             {questions.map((q, i) => (
               <button
                 key={q.id}
@@ -300,7 +300,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
             </CardHeader>
 
             <CardContent className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
-              <div className="space-y-6 max-w-xl mx-auto w-full">
+              <div className="space-y-6 max-w-3xl mx-auto w-full">
                 <div className="space-y-3">
                   <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">
                     {currentQ.prompt}

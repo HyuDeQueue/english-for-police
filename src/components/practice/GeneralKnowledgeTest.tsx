@@ -4,7 +4,7 @@ import type { Unit, Question } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, Send, Shuffle } from "lucide-react";
+import { ChevronLeft, Shuffle } from "lucide-react";
 
 import { MultipleChoiceQuestion } from "./questions/MultipleChoiceQuestion";
 import { MatchingQuestion } from "./questions/MatchingQuestion";
@@ -215,7 +215,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-2 animate-fade-in pb-20">
+    <div className="w-full space-y-2 animate-fade-in pb-20">
       <PracticeHeader onBack={handleBack}>
         {sections.map((_, i) => (
           <div
@@ -262,24 +262,6 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         <PracticeSidebar
           title="DANH SÁCH CÂU HỎI"
           description="Chọn từng phần để bắt đầu làm bài. Bạn có thể nộp bài riêng cho từng phần."
-          footer={
-            <>
-              <Button
-                size="lg"
-                className={`w-full h-14 text-base font-black rounded-xl transition-all ${sectionQuestions.length > 0 ? "primary-gradient police-shadow" : "bg-muted text-muted-foreground opacity-60"}`}
-                disabled={sectionQuestions.length === 0}
-                onClick={handleSubmitSection}
-              >
-                <Send className="mr-2 h-5 w-5" />
-                {sectionResults[currentSectionIndex]?.submitted
-                  ? "NỘP LẠI BÀI NÀY"
-                  : "NỘP BÀI NÀY"}
-              </Button>
-              <p className="text-[10px] text-center text-muted-foreground font-bold uppercase">
-                Mỗi bài luyện tập có nút nộp riêng
-              </p>
-            </>
-          }
         >
           <div className="space-y-3">
             {sections.map((section, idx) => (
@@ -313,6 +295,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                   );
                   setCurrentIndexInSection(0);
                 }}
+                onSubmit={handleSubmitSection}
               />
             ))}
           </div>
@@ -334,7 +317,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
             </CardHeader>
 
             <CardContent className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
-              <div className="space-y-6 max-w-xl mx-auto w-full">
+              <div className="space-y-6 max-w-3xl mx-auto w-full">
                 {currentQuestion && (
                   <>
                     <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">
@@ -430,7 +413,8 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                         />
                       )}
                       {(currentQuestion.type === "Dictation" ||
-                        currentQuestion.type === "FillInBlank") && (
+                        currentQuestion.type === "FillInBlank" ||
+                        currentQuestion.type === "Speaking") && (
                         <InputQuestion
                           question={currentQuestion}
                           value={answers[currentQuestion.id] || ""}

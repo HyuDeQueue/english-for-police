@@ -25,7 +25,7 @@ export const PracticeSidebar: React.FC<PracticeSidebarProps> = ({
   footer,
 }) => {
   return (
-    <aside className="w-full lg:w-80 space-y-6 shrink-0 lg:sticky lg:top-24">
+    <aside className="w-full lg:w-[400px] space-y-6 shrink-0 lg:sticky lg:top-24">
       <Card className="police-shadow border-none overflow-hidden">
         <CardHeader className="bg-muted/50 border-b p-4">
           <CardTitle className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
