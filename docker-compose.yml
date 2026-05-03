@@ -1,0 +1,6 @@
+services:
+  app:
+    image: huyhoang204205/policefe:latest
+    restart: unless-stopped
+    ports:
+      - "3007:80"
