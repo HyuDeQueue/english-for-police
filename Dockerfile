@@ -2,6 +2,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_API_BASE_URL=http://localhost:1600
+ARG VITE_API_GRADER_URL=https://grader.gsenglish.org
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_API_GRADER_URL=${VITE_API_GRADER_URL}
+
 COPY package.json package-lock.json ./
 RUN npm ci
 

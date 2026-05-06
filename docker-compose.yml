@@ -4,8 +4,6 @@ services:
     pull_policy: always
     container_name: police-fe
     restart: unless-stopped
-    env_file:
-      - ./.env-fe
     ports:
       - "3007:80"
     depends_on:
