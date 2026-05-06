@@ -48,6 +48,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/tts/, ""),
       },
+      "/api/v1": {
+        target: "http://115.73.218.193:1608",
+        changeOrigin: true,
+      },
     },
   },
 });

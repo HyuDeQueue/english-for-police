@@ -1,13 +1,11 @@
 import type { Unit } from "@/types";
+import { API_BASE_URL } from "@/config/api";
 
 interface ApiResponse<T> {
   code: string;
   data: T;
   message: string;
 }
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.trim() || "http://localhost:1600";
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {

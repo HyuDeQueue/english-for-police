@@ -66,7 +66,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[320px_1fr_320px] gap-8 items-start">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,22vw)_minmax(0,1fr)_minmax(280px,22vw)] gap-6 xl:gap-8 items-start w-full">
       {/* Column 1: Profile & Progress */}
       <div className="xl:sticky xl:top-20 self-start">
         <div className="space-y-6">
