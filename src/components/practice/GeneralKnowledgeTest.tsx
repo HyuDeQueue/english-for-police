@@ -1,16 +1,22 @@
 import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import type { Unit, Question } from "@/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Shuffle } from "lucide-react";
-
-import { QuestionRenderer } from "./components/QuestionRenderer";
-import { PracticeSidebar } from "./layout/PracticeSidebar";
-import { PracticeHeader } from "./layout/PracticeHeader";
+import { ChevronLeft } from "lucide-react";
 import { PracticeResults } from "./results/PracticeResults";
 import { useProgress } from "@/hooks/use-progress";
+import { GeneralTestToolbar } from "./components/GeneralTestToolbar";
+import {
+  GeneralTestSectionSidebar,
+  type GeneralTestSectionSidebarActions,
+  type GeneralTestSectionSidebarViewModel,
+} from "./components/GeneralTestSectionSidebar";
+import {
+  GeneralTestQuestionPanel,
+  type GeneralTestQuestionPanelActions,
+  type GeneralTestQuestionPanelViewModel,
+} from "./components/GeneralTestQuestionPanel";
 
 import {
   type Section,
@@ -18,9 +24,10 @@ import {
   QUESTIONS_PER_PAGE,
   generateGeneralQuestions,
   buildSections,
+  extractQuestion,
+  serializeAnswerForApi,
 } from "./utils/testUtils";
 import { useGeneralTestState } from "./hooks/useGeneralTestState";
-import { SectionAccordionItem } from "./components/SectionAccordionItem";
 
 interface GeneralKnowledgeTestProps {
   lessons: Unit[];
@@ -170,14 +177,41 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       const submit = async () => {
         try {
           const combinedAnswers = getCombinedAnswers();
-          await submitAttempt({
-            unitNumber:
-              mode === "unit" && lessons.length === 1 ? lessons[0].id : 0,
-            answers: Object.entries(combinedAnswers).map(([id, answer]) => ({
-              questionId: id,
-              answer: String(answer),
-            })),
-          });
+          const backendAnswers = Object.entries(combinedAnswers)
+            .map(([id, answer]) => {
+              const parsed = extractQuestion(id);
+              if (!parsed) return null;
+              return {
+                unitNumber: parsed.unitNumber,
+                questionId: parsed.questionId,
+                answer: serializeAnswerForApi(answer),
+              };
+            })
+            .filter((item): item is NonNullable<typeof item> => !!item);
+
+          if (backendAnswers.length > 0) {
+            const answersByUnit = backendAnswers.reduce(
+              (acc, item) => {
+                if (!acc[item.unitNumber]) {
+                  acc[item.unitNumber] = [];
+                }
+                acc[item.unitNumber].push({
+                  questionId: item.questionId,
+                  answer: item.answer,
+                });
+                return acc;
+              },
+              {} as Record<number, { questionId: string; answer: string }[]>,
+            );
+
+            for (const [unitNumber, answers] of Object.entries(answersByUnit)) {
+              if (answers.length === 0) continue;
+              await submitAttempt({
+                unitNumber: Number(unitNumber),
+                answers,
+              });
+            }
+          }
         } catch (error) {
           console.error("Failed to submit general test results", error);
         } finally {
@@ -196,6 +230,117 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     }
     if (showResults && onComplete) onComplete(overallScore);
     onBack();
+  };
+
+  const sectionSidebarVm: GeneralTestSectionSidebarViewModel = {
+    sections,
+    currentSectionIndex,
+    expandedSectionIndex,
+    sectionProgress,
+    sectionResults,
+    questions,
+    currentIndexInSection,
+    currentPageIndex,
+    questionsPerPage: QUESTIONS_PER_PAGE,
+    isQuestionAnswered,
+    isSubmitting,
+    isReviewMode,
+  };
+
+  const sectionSidebarActions: GeneralTestSectionSidebarActions = {
+    onToggleSection: (i) =>
+      setExpandedSectionIndex(expandedSectionIndex === i ? null : i),
+    onSelectSection: (i, page = 0, qIdx = 0) => {
+      setCurrentSectionIndex(i);
+      setExpandedSectionIndex(i);
+      setCurrentPageIndex(page);
+      setCurrentIndexInSection(qIdx);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    onSelectQuestion: (qIdx) => setCurrentIndexInSection(qIdx),
+    onPageChange: (dir) => {
+      setCurrentPageIndex((prev) =>
+        dir === "prev" ? Math.max(0, prev - 1) : prev + 1,
+      );
+      setCurrentIndexInSection(0);
+    },
+    onSubmitSection: handleSubmitSection,
+    onExitReview: () => setIsReviewMode(false),
+  };
+
+  const questionPanelVm: GeneralTestQuestionPanelViewModel = {
+    currentSectionTitle: currentSection?.title,
+    currentQuestion,
+    currentPageIndex,
+    currentIndexInSection,
+    questionsPerPage: QUESTIONS_PER_PAGE,
+    sectionQuestionsLength: sectionQuestions.length,
+    pagedSectionQuestionsLength: pagedSectionQuestions.length,
+    answers,
+    matchingAnswers,
+    arrangementAnswers,
+    selectedLeft,
+    matchingRightOptionsByQuestionId,
+    showResults: isReviewMode || sectionResults[currentSectionIndex]?.submitted,
+  };
+
+  const questionPanelActions: GeneralTestQuestionPanelActions = {
+    onAnswerChange: (qid, val) =>
+      setAnswers((prev) => ({ ...prev, [qid]: val })),
+    onMatchingSelectLeft: (qid, left) =>
+      setSelectedLeft((prev) => ({ ...prev, [qid]: left })),
+    onMatchingMatch: (qid, left, right) => {
+      const newMatches = {
+        ...(matchingAnswers[qid] || {}),
+        [left]: right,
+      };
+      setMatchingAnswers((prev) => ({
+        ...prev,
+        [qid]: newMatches,
+      }));
+      setSelectedLeft((prev) => ({ ...prev, [qid]: null }));
+    },
+    onArrangementAdd: (qid, w) =>
+      setArrangementAnswers((prev) => ({
+        ...prev,
+        [qid]: [...(prev[qid] || []), w],
+      })),
+    onArrangementRemove: (qid, idx) => {
+      const nextArr = [...(arrangementAnswers[qid] || [])];
+      nextArr.splice(idx, 1);
+      setArrangementAnswers((prev) => ({
+        ...prev,
+        [qid]: nextArr,
+      }));
+    },
+    onArrangementReset: (qid) =>
+      setArrangementAnswers((prev) => ({
+        ...prev,
+        [qid]: [],
+      })),
+    onPrevQuestion: () => {
+      if (currentIndexInSection > 0) {
+        setCurrentIndexInSection(currentIndexInSection - 1);
+      } else if (currentPageIndex > 0) {
+        const prevPage = currentPageIndex - 1;
+        setCurrentPageIndex(prevPage);
+        const prevPageStart = prevPage * QUESTIONS_PER_PAGE;
+        const prevPageQuestions = sectionQuestions.slice(
+          prevPageStart,
+          prevPageStart + QUESTIONS_PER_PAGE,
+        );
+        setCurrentIndexInSection(prevPageQuestions.length - 1);
+      }
+    },
+    onNextQuestion: () => {
+      const lastIndexOnPage = pagedSectionQuestions.length - 1;
+      if (currentIndexInSection < lastIndexOnPage) {
+        setCurrentIndexInSection(currentIndexInSection + 1);
+      } else {
+        setCurrentPageIndex(currentPageIndex + 1);
+        setCurrentIndexInSection(0);
+      }
+    },
   };
 
   // 6. Render Logic
@@ -230,244 +375,30 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
 
   return (
     <div className="w-full space-y-2 animate-fade-in pb-20">
-      <PracticeHeader onBack={handleBack}>
-        {sections.map((_, i) => (
-          <div
-            key={i}
-            className={`h-2 w-12 rounded-full transition-all ${i === currentSectionIndex ? "bg-primary w-20" : i < currentSectionIndex ? "bg-green-500" : "bg-muted"}`}
-          />
-        ))}
-      </PracticeHeader>
-
-      <div className="flex flex-wrap items-center gap-4 px-4">
-        {testMode === "bank" && (
-          <div className="flex items-center gap-2 animate-fade-in">
-            <div className="flex bg-muted/30 p-1 rounded-lg">
-              <Button
-                variant={bankLimit === 40 ? "secondary" : "ghost"}
-                size="sm"
-                className={`text-xs font-bold px-3 h-8 rounded-md ${bankLimit === 40 ? "shadow-sm" : ""}`}
-                onClick={() => {
-                  setBankLimit(40);
-                  resetTestState();
-                }}
-              >
-                40 Câu
-              </Button>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 font-bold text-primary border-primary/20 hover:bg-primary/10 gap-2"
-              onClick={() => {
-                setShuffleTrigger((prev) => prev + 1);
-                resetTestState();
-              }}
-            >
-              <Shuffle className="h-3 w-3" />
-              Trộn câu hỏi
-            </Button>
-          </div>
-        )}
-      </div>
+      <GeneralTestToolbar
+        onBack={handleBack}
+        sectionsCount={sections.length}
+        currentSectionIndex={currentSectionIndex}
+        testMode={testMode}
+        bankLimit={bankLimit}
+        onSetBankLimit={(limit) => {
+          setBankLimit(limit);
+          resetTestState();
+        }}
+        onShuffle={() => {
+          setShuffleTrigger((prev) => prev + 1);
+          resetTestState();
+        }}
+      />
 
       <div className="flex flex-col lg:flex-row gap-8 items-start px-4">
-        <PracticeSidebar
-          title="DANH SÁCH CÂU HỎI"
-          description="Chọn từng phần để bắt đầu làm bài. Bạn có thể nộp bài riêng cho từng phần."
-        >
-          <div className="space-y-3">
-            {sections.map((section, idx) => (
-              <SectionAccordionItem
-                key={section.title}
-                idx={idx}
-                section={section}
-                isActive={idx === currentSectionIndex}
-                isExpanded={expandedSectionIndex === idx}
-                progress={sectionProgress[idx]}
-                result={sectionResults[idx]}
-                allQuestions={questions}
-                currentIndexInSection={currentIndexInSection}
-                currentPageIndex={currentPageIndex}
-                questionsPerPage={QUESTIONS_PER_PAGE}
-                isQuestionAnswered={isQuestionAnswered}
-                onToggle={(i) =>
-                  setExpandedSectionIndex(expandedSectionIndex === i ? null : i)
-                }
-                onSelectSection={(i, page = 0, qIdx = 0) => {
-                  setCurrentSectionIndex(i);
-                  setExpandedSectionIndex(i);
-                  setCurrentPageIndex(page);
-                  setCurrentIndexInSection(qIdx);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                onSelectQuestion={(qIdx) => setCurrentIndexInSection(qIdx)}
-                onPageChange={(dir) => {
-                  setCurrentPageIndex((prev) =>
-                    dir === "prev" ? Math.max(0, prev - 1) : prev + 1,
-                  );
-                  setCurrentIndexInSection(0);
-                }}
-                onSubmit={handleSubmitSection}
-                isSubmitting={isSubmitting}
-                isReviewMode={isReviewMode}
-                onExitReview={() => setIsReviewMode(false)}
-              />
-            ))}
-          </div>
-        </PracticeSidebar>
+        <GeneralTestSectionSidebar
+          vm={sectionSidebarVm}
+          actions={sectionSidebarActions}
+        />
 
         <div className="flex-1 w-full space-y-6">
-          <Card className="police-shadow border-none min-h-360px flex flex-col">
-            <CardHeader className="border-b bg-muted/20 py-2.5 px-4 sm:px-5 flex flex-row justify-between items-center">
-              <Badge className="bg-primary/10 text-primary border-none px-2.5 py-0.5 font-bold text-[9px] uppercase tracking-wider">
-                {currentSection?.title}
-              </Badge>
-              <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-                Câu{" "}
-                {currentPageIndex * QUESTIONS_PER_PAGE +
-                  currentIndexInSection +
-                  1}{" "}
-                / {sectionQuestions.length}
-              </span>
-            </CardHeader>
-
-            <CardContent className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
-              <div className="space-y-6 max-w-3xl mx-auto w-full">
-                {currentQuestion && (
-                  <>
-                    <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">
-                      {currentQuestion.prompt}
-                    </h3>
-                    {currentQuestion.vnPrompt && (
-                      <div className="p-3 bg-secondary/5 border-l-4 border-secondary rounded-r-xl italic text-secondary text-sm font-medium">
-                        {currentQuestion.vnPrompt}
-                      </div>
-                    )}
-
-                    <div className="space-y-3 py-1">
-                      <QuestionRenderer
-                        question={currentQuestion}
-                        answers={answers}
-                        matchingAnswers={matchingAnswers}
-                        arrangementAnswers={arrangementAnswers}
-                        selectedLeft={selectedLeft}
-                        matchingRightOptions={
-                          matchingRightOptionsByQuestionId[
-                            currentQuestion.id
-                          ] || []
-                        }
-                        onAnswerChange={(qid, val) =>
-                          setAnswers((prev) => ({ ...prev, [qid]: val }))
-                        }
-                        onMatchingSelectLeft={(qid, left) =>
-                          setSelectedLeft((prev) => ({ ...prev, [qid]: left }))
-                        }
-                        onMatchingMatch={(qid, left, right) => {
-                          const newMatches = {
-                            ...(matchingAnswers[qid] || {}),
-                            [left]: right,
-                          };
-                          setMatchingAnswers((prev) => ({
-                            ...prev,
-                            [qid]: newMatches,
-                          }));
-                          setSelectedLeft((prev) => ({ ...prev, [qid]: null }));
-                        }}
-                        onArrangementAdd={(qid, w) =>
-                          setArrangementAnswers((prev) => ({
-                            ...prev,
-                            [qid]: [...(prev[qid] || []), w],
-                          }))
-                        }
-                        onArrangementRemove={(qid, idx) => {
-                          const nextArr = [...(arrangementAnswers[qid] || [])];
-                          nextArr.splice(idx, 1);
-                          setArrangementAnswers((prev) => ({
-                            ...prev,
-                            [qid]: nextArr,
-                          }));
-                        }}
-                        onArrangementReset={(qid) =>
-                          setArrangementAnswers((prev) => ({
-                            ...prev,
-                            [qid]: [],
-                          }))
-                        }
-                        showResults={
-                          isReviewMode ||
-                          sectionResults[currentSectionIndex]?.submitted
-                        }
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </CardContent>
-
-            {/* In-card prev/next navigation for mobile-friendly UX */}
-            {currentQuestion && (
-              <div className="border-t bg-muted/10 px-5 py-3 flex items-center justify-between gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1.5 font-bold text-xs border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-30"
-                  disabled={
-                    currentIndexInSection === 0 && currentPageIndex === 0
-                  }
-                  onClick={() => {
-                    if (currentIndexInSection > 0) {
-                      setCurrentIndexInSection(currentIndexInSection - 1);
-                    } else if (currentPageIndex > 0) {
-                      const prevPage = currentPageIndex - 1;
-                      setCurrentPageIndex(prevPage);
-                      const prevPageStart = prevPage * QUESTIONS_PER_PAGE;
-                      const prevPageQuestions = sectionQuestions.slice(
-                        prevPageStart,
-                        prevPageStart + QUESTIONS_PER_PAGE,
-                      );
-                      setCurrentIndexInSection(prevPageQuestions.length - 1);
-                    }
-                  }}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  Câu Trước
-                </Button>
-
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                  {currentPageIndex * QUESTIONS_PER_PAGE +
-                    currentIndexInSection +
-                    1}
-                  {" / "}
-                  {sectionQuestions.length}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1.5 font-bold text-xs border-primary/20 text-primary hover:bg-primary/5 disabled:opacity-30"
-                  disabled={
-                    currentPageIndex * QUESTIONS_PER_PAGE +
-                      currentIndexInSection >=
-                    sectionQuestions.length - 1
-                  }
-                  onClick={() => {
-                    const lastIndexOnPage = pagedSectionQuestions.length - 1;
-                    if (currentIndexInSection < lastIndexOnPage) {
-                      setCurrentIndexInSection(currentIndexInSection + 1);
-                    } else {
-                      setCurrentPageIndex(currentPageIndex + 1);
-                      setCurrentIndexInSection(0);
-                    }
-                  }}
-                >
-                  Câu Sau
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            )}
-          </Card>
+          <GeneralTestQuestionPanel vm={questionPanelVm} actions={questionPanelActions} />
         </div>
       </div>
     </div>

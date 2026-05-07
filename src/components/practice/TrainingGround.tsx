@@ -7,7 +7,11 @@ import { Timer, ChevronLeft, CheckCircle2, Loader2 } from "lucide-react";
 
 import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
-import { shuffleArray } from "./utils/testUtils";
+import {
+  extractQuestion,
+  serializeAnswerForApi,
+  shuffleArray,
+} from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeResults } from "./results/PracticeResults";
 import { useProgress } from "@/hooks/use-progress";
@@ -176,13 +180,27 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
 
     const submit = async () => {
       try {
-        await submitAttempt({
-          unitNumber: unit.id,
-          answers: Object.entries(combinedAnswers).map(([id, answer]) => ({
-            questionId: id,
-            answer: String(answer),
-          })),
-        });
+        const backendAnswers = Object.entries(combinedAnswers)
+          .map(([id, answer]) => {
+            const parsed = extractQuestion(id, unit.id);
+            if (!parsed) return null;
+            return {
+              unitNumber: parsed.unitNumber,
+              questionId: parsed.questionId,
+              answer: serializeAnswerForApi(answer),
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => !!item);
+
+        if (backendAnswers.length > 0) {
+          await submitAttempt({
+            unitNumber: unit.id,
+            answers: backendAnswers.map(({ questionId, answer }) => ({
+              questionId,
+              answer,
+            })),
+          });
+        }
       } catch (error) {
         console.error("Failed to submit training results", error);
       }

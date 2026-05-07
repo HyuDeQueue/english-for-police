@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
 import { initialLessons } from "@/data/lesson/lessons";
-import { fetchLessons, importLessons } from "@/lib/lessonApi";
+import { fetchLessons, seedFullMockLessons } from "@/lib/lessonApi";
 
 export function useAppState() {
   const [lessons, setLessons] = useState<Unit[]>(() => {
@@ -95,17 +95,24 @@ export function useAppState() {
   // Persist to localStorage
   useEffect(() => {
     const syncLessonsFromBackend = async () => {
+      let hasRemoteData = false;
       try {
         let remoteLessons = await fetchLessons();
         if (!remoteLessons.length) {
-          await importLessons(initialLessons);
+          await seedFullMockLessons();
           remoteLessons = await fetchLessons();
         }
         if (remoteLessons.length) {
+          hasRemoteData = true;
           setLessons(remoteLessons);
         }
       } catch (error) {
         console.error("Failed to sync lessons from backend", error);
+      } finally {
+        // Offline-safe fallback: keep app usable when backend is unreachable.
+        if (!hasRemoteData) {
+          setLessons((prev) => (prev.length > 0 ? prev : initialLessons));
+        }
       }
     };
 

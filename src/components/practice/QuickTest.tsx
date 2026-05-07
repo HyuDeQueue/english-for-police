@@ -13,7 +13,11 @@ import {
 
 import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
-import { shuffleArray } from "./utils/testUtils";
+import {
+  extractQuestion,
+  serializeAnswerForApi,
+  shuffleArray,
+} from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeHeader } from "./layout/PracticeHeader";
 import { PracticeResults } from "./results/PracticeResults";
@@ -211,15 +215,45 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                   );
 
                   try {
-                    await submitAttempt({
-                      unitNumber: 0, // Quick test uses 0
-                      answers: Object.entries(combinedAnswers).map(
-                        ([id, answer]) => ({
-                          questionId: id,
-                          answer: String(answer),
-                        }),
-                      ),
-                    });
+                    const backendAnswers = Object.entries(combinedAnswers)
+                      .map(([id, answer]) => {
+                        const parsed = extractQuestion(id);
+                        if (!parsed) return null;
+                        return {
+                          unitNumber: parsed.unitNumber,
+                          questionId: parsed.questionId,
+                          answer: serializeAnswerForApi(answer),
+                        };
+                      })
+                      .filter(
+                        (item): item is NonNullable<typeof item> => !!item,
+                      );
+
+                    if (backendAnswers.length > 0) {
+                      const answersByUnit = backendAnswers.reduce(
+                        (acc, item) => {
+                          if (!acc[item.unitNumber]) {
+                            acc[item.unitNumber] = [];
+                          }
+                          acc[item.unitNumber].push({
+                            questionId: item.questionId,
+                            answer: item.answer,
+                          });
+                          return acc;
+                        },
+                        {} as Record<number, { questionId: string; answer: string }[]>,
+                      );
+
+                      for (const [unitNumber, answers] of Object.entries(
+                        answersByUnit,
+                      )) {
+                        if (answers.length === 0) continue;
+                        await submitAttempt({
+                          unitNumber: Number(unitNumber),
+                          answers,
+                        });
+                      }
+                    }
 
                     setSubmitted(true);
                     if (onComplete) onComplete(percent);

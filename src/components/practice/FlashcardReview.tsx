@@ -90,6 +90,10 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
   const markCard = useCallback(
     (status: FlashcardStatus) => {
+      if (!currentCard || cards.length === 0) {
+        return;
+      }
+
       setCardStatuses((prev) => {
         const newStatuses = {
           ...prev,
@@ -141,6 +145,8 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
   };
 
   useEffect(() => {
+    if (!currentCard) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         e.preventDefault();
@@ -153,7 +159,7 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [markCard]);
+  }, [markCard, currentCard]);
 
   const stats = useMemo(() => {
     const currentCardIds = new Set(cards.map((c) => c.id));

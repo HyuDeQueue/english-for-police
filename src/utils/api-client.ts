@@ -28,10 +28,15 @@ export async function request<T>(
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      const message =
+        data.message ||
+        data.detail ||
+        data.title ||
+        "An unexpected error occurred";
       const error: ApiError = {
-        message: data.message || "An unexpected error occurred",
+        message,
         status: response.status,
-        code: data.code,
+        code: data.code || data.errorCode,
       };
       throw error;
     }

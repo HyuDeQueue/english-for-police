@@ -186,3 +186,77 @@ export function buildSections(
 
   return sections;
 }
+
+export function extractQuestion(
+  questionId: string,
+  fallbackUnitNumber?: number,
+) {
+  const mappedPatterns: Array<{
+    regex: RegExp;
+    toQuestionId: (match: RegExpMatchArray) => string;
+  }> = [
+    {
+      regex: /^gk-practice-(\d+)-\d+-(.+)$/,
+      toQuestionId: (m) => m[2],
+    },
+    {
+      regex: /^qt_extra_(\d+)_\d+_(.+)$/,
+      toQuestionId: (m) => m[2],
+    },
+    {
+      regex: /^tg-extra-(\d+)-\d+-(.+)$/,
+      toQuestionId: (m) => m[2],
+    },
+    {
+      regex: /^qt_(vocab|phrase_recog|phrase_write)_(\d+)_(.+)$/,
+      toQuestionId: () => questionId,
+    },
+    {
+      regex: /^qt_match_(\d+)$/,
+      toQuestionId: () => questionId,
+    },
+    {
+      regex: /^gk-(vocab|phrase-mcq|phrase-dictation|match)-(\d+)-\d+$/,
+      toQuestionId: () => questionId,
+    },
+  ];
+
+  for (const { regex, toQuestionId } of mappedPatterns) {
+    const match = questionId.match(regex);
+    if (!match) continue;
+
+    const unitCandidate =
+      match[1] && /^\d+$/.test(match[1])
+        ? Number(match[1])
+        : match[2] && /^\d+$/.test(match[2])
+          ? Number(match[2])
+          : fallbackUnitNumber;
+
+    if (unitCandidate === undefined || Number.isNaN(unitCandidate)) {
+      return null;
+    }
+
+    return {
+      unitNumber: unitCandidate,
+      questionId: toQuestionId(match),
+    };
+  }
+
+  // Training-ground generated IDs (e.g. vocab-0, phrase-recog-0) don't include unit.
+  if (fallbackUnitNumber !== undefined) {
+    return {
+      unitNumber: fallbackUnitNumber,
+      questionId,
+    };
+  }
+
+  return null;
+}
+
+export function serializeAnswerForApi(answer: unknown): string {
+  // Keep legacy transport format for backend compatibility.
+  // This preserves previous behavior used before refactor:
+  // - arrays => comma-joined by JS String()
+  // - objects => "[object Object]"
+  return String(answer ?? "");
+}
