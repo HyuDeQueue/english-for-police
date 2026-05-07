@@ -22,6 +22,7 @@ interface SectionAccordionItemProps {
   onSelectQuestion: (qIdx: number) => void;
   onPageChange: (dir: "prev" | "next") => void;
   onSubmit: () => void;
+  isSubmitting?: boolean;
   isReviewMode?: boolean;
   onExitReview?: () => void;
 }
@@ -43,6 +44,7 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
   onSelectQuestion,
   onPageChange,
   onSubmit,
+  isSubmitting,
   isReviewMode,
   onExitReview,
 }) => {
@@ -180,13 +182,21 @@ export const SectionAccordionItem: React.FC<SectionAccordionItemProps> = ({
             <Button
               size="sm"
               className={`w-full h-10 text-[11px] font-black rounded-xl transition-all ${isActive ? "primary-gradient police-shadow" : "bg-muted text-muted-foreground opacity-60"}`}
-              disabled={!isActive}
+              disabled={!isActive || isSubmitting}
               onClick={(e) => {
                 e.stopPropagation();
                 onSubmit();
               }}
             >
-              {result?.submitted ? "NỘP LẠI PHẦN NÀY" : "NỘP PHẦN NÀY"}
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  ĐANG NỘP...
+                </span>
+              ) : result?.submitted ? (
+                "NỘP LẠI PHẦN NÀY"
+              ) : (
+                "NỘP PHẦN NÀY"
+              )}
             </Button>
           ) : (
             <Button

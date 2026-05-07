@@ -22,6 +22,9 @@ import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useProgress } from "@/hooks/use-progress";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 interface HomeViewProps {
   lessons: Unit[];
@@ -40,11 +43,22 @@ export const HomeView: React.FC<HomeViewProps> = ({
   onSelectUnit,
   onNavigate,
 }) => {
+  const {
+    dashboardData,
+    fetchDashboard,
+    isLoading: isDashboardLoading,
+  } = useProgress();
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
+
   const completedCount = dailyTasks.tasks.filter((t) => t.completed).length;
   const overallProgress =
-    lessons.length > 0
+    dashboardData?.completionPercent ??
+    (lessons.length > 0
       ? Math.round((progress.completedUnits.length / lessons.length) * 100)
-      : 0;
+      : 0);
 
   const displayedTasks = [...dailyTasks.tasks].sort((a, b) => {
     const hash = (value: string) => {
@@ -99,8 +113,11 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                   Tiến độ chung
                 </p>
-                <p className="text-xl font-black text-slate-800">
+                <p className="text-xl font-black text-slate-800 flex items-center gap-2">
                   {overallProgress}%
+                  {isDashboardLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/30" />
+                  )}
                 </p>
               </div>
             </div>

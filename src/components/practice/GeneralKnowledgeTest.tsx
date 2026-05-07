@@ -10,8 +10,8 @@ import { QuestionRenderer } from "./components/QuestionRenderer";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeHeader } from "./layout/PracticeHeader";
 import { PracticeResults } from "./results/PracticeResults";
+import { useProgress } from "@/hooks/use-progress";
 
-// Modularized imports
 import {
   type Section,
   type TestMode,
@@ -80,6 +80,8 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     getCombinedAnswers,
     resetBaseState,
   } = useGeneralTestState(questions);
+
+  const { submitAttempt, isLoading: isSubmitting } = useProgress();
 
   const sections: Section[] = useMemo(
     () => buildSections(questions, testMode, bankLimit),
@@ -164,7 +166,26 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       sections.every((_, idx) => nextResults[idx]?.submitted)
     ) {
       setOverallScore(calculatedOverallScore);
-      setShowResults(true);
+
+      const submit = async () => {
+        try {
+          const combinedAnswers = getCombinedAnswers();
+          await submitAttempt({
+            unitNumber:
+              mode === "unit" && lessons.length === 1 ? lessons[0].id : 0,
+            answers: Object.entries(combinedAnswers).map(([id, answer]) => ({
+              questionId: id,
+              answer: String(answer),
+            })),
+          });
+        } catch (error) {
+          console.error("Failed to submit general test results", error);
+        } finally {
+          setShowResults(true);
+        }
+      };
+
+      void submit();
     }
   };
 
@@ -289,6 +310,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
                   setCurrentIndexInSection(0);
                 }}
                 onSubmit={handleSubmitSection}
+                isSubmitting={isSubmitting}
                 isReviewMode={isReviewMode}
                 onExitReview={() => setIsReviewMode(false)}
               />

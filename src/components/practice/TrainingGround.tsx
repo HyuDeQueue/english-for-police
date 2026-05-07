@@ -3,13 +3,14 @@ import type { Unit, Question } from "@/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Timer, ChevronLeft, CheckCircle2 } from "lucide-react";
+import { Timer, ChevronLeft, CheckCircle2, Loader2 } from "lucide-react";
 
 import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
 import { shuffleArray } from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeResults } from "./results/PracticeResults";
+import { useProgress } from "@/hooks/use-progress";
 
 interface TrainingGroundProps {
   unit: Unit;
@@ -140,6 +141,7 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   const [questions] = useState<Question[]>(() =>
     generateTrainingGroundQuestions(unit),
   );
+  const { submitAttempt, isLoading: isSubmitting } = useProgress();
   const {
     answers,
     setAnswers,
@@ -170,8 +172,31 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
 
     const correctCount = calculateCorrectCount(questions);
     const finalScore = Math.round((correctCount / questions.length) * 100);
+    const combinedAnswers = getCombinedAnswers();
+
+    const submit = async () => {
+      try {
+        await submitAttempt({
+          unitNumber: unit.id,
+          answers: Object.entries(combinedAnswers).map(([id, answer]) => ({
+            questionId: id,
+            answer: String(answer),
+          })),
+        });
+      } catch (error) {
+        console.error("Failed to submit training results", error);
+      }
+    };
+
+    void submit();
     setCurrentScore(finalScore);
-  }, [calculateCorrectCount, questions]);
+  }, [
+    calculateCorrectCount,
+    questions,
+    getCombinedAnswers,
+    submitAttempt,
+    unit.id,
+  ]);
 
   const handleBackToHome = () => {
     if (!hasReportedCompletion && currentScore !== null) {
@@ -262,9 +287,12 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                 }
               }}
             >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
               {isReviewMode
                 ? "QUAY LẠI KẾT QUẢ"
-                : isFinished
+                : isSubmitting
                   ? "ĐANG NỘP..."
                   : "NỘP BÀI"}
             </Button>

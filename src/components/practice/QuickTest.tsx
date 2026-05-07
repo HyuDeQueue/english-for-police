@@ -17,6 +17,8 @@ import { shuffleArray } from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeHeader } from "./layout/PracticeHeader";
 import { PracticeResults } from "./results/PracticeResults";
+import { useProgress } from "@/hooks/use-progress";
+import { Loader2 } from "lucide-react";
 
 export interface QuickTestProps {
   lessons: Unit[];
@@ -123,6 +125,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
     getCombinedAnswers,
   } = useQuestionAnswers(questions);
 
+  const { submitAttempt, isLoading: isSubmitting } = useProgress();
   const [submitted, setSubmitted] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
 
@@ -197,23 +200,48 @@ export const QuickTest: React.FC<QuickTestProps> = ({
               disabled={
                 !isReviewMode && !questions.every((q) => isQuestionAnswered(q))
               }
-              onClick={() => {
+              onClick={async () => {
                 if (isReviewMode) {
                   setIsReviewMode(false);
                 } else {
-                  setSubmitted(true);
-                  if (onComplete)
-                    onComplete(
-                      Math.round(
-                        (calculateCorrectCount(questions) / questions.length) *
-                          100,
+                  const combinedAnswers = getCombinedAnswers();
+                  const scoreValue = calculateCorrectCount(questions);
+                  const percent = Math.round(
+                    (scoreValue / questions.length) * 100,
+                  );
+
+                  try {
+                    await submitAttempt({
+                      unitNumber: 0, // Quick test uses 0
+                      answers: Object.entries(combinedAnswers).map(
+                        ([id, answer]) => ({
+                          questionId: id,
+                          answer: String(answer),
+                        }),
                       ),
-                    );
+                    });
+
+                    setSubmitted(true);
+                    if (onComplete) onComplete(percent);
+                  } catch (error) {
+                    console.error("Failed to submit test results", error);
+                    // Still set submitted to true to show local results if API fails
+                    setSubmitted(true);
+                    if (onComplete) onComplete(percent);
+                  }
                 }
               }}
             >
-              <Send className="mr-3 h-6 w-6" />
-              {isReviewMode ? "XEM LẠI KẾT QUẢ" : "NỘP BÀI"}
+              {isSubmitting ? (
+                <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+              ) : (
+                <Send className="mr-3 h-6 w-6" />
+              )}
+              {isReviewMode
+                ? "XEM LẠI KẾT QUẢ"
+                : isSubmitting
+                  ? "ĐANG NỘP..."
+                  : "NỘP BÀI"}
             </Button>
           }
         >
