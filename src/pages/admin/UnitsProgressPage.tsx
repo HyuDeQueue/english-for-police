@@ -13,6 +13,7 @@ import {
   UnitCardsList,
   UnitDetailsDialog,
 } from "@/components/admin/units-progress/UnitsProgressSections";
+import { userService } from "@/services/user.service";
 
 const STUDENT_PAGE_SIZE = 10;
 
@@ -24,38 +25,69 @@ export default function UnitsProgressPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeUnit, setActiveUnit] = useState<UnitGroupedData | null>(null);
   const [studentPage, setStudentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+      setStudentPage(1);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       try {
-        const studentList = await reportsService.getStudents();
-        setStudents(studentList);
+        const users = await userService.getUsers({
+          page: 0,
+          size: 200,
+          searchName: debouncedSearchQuery || undefined,
+        });
+        const studentUsers = users.items.filter((u) => u.role === "STUDENT");
 
         const detailsMap = new Map<number, StudentDashboardApi>();
-        for (const student of studentList) {
+        for (const user of studentUsers) {
           try {
             const dashboard = await reportsService.getStudentDashboard(
-              student.userId,
+              user.userId,
             );
-            detailsMap.set(student.userId, dashboard);
+            detailsMap.set(user.userId, dashboard);
           } catch (error) {
             console.error(
-              `Failed to load dashboard for student ${student.userId}`,
+              `Failed to load dashboard for student ${user.userId}`,
               error,
             );
           }
         }
         setStudentDetails(detailsMap);
+        setStudents(
+          studentUsers.map((user) => {
+            const dashboard = detailsMap.get(user.userId);
+            return {
+              userId: user.userId,
+              fullName: user.fullName,
+              email: user.email,
+              role: user.role,
+              overallProgressPercent: dashboard?.overallProgressPercent ?? 0,
+              overallScorePercent: dashboard?.overallScorePercent ?? 0,
+              lastActivityAt: dashboard?.lastActivityAt ?? null,
+              lastActiveLabel: dashboard?.lastActivityAt ?? "",
+            } satisfies StudentProgressSummaryApi;
+          }),
+        );
       } catch (error) {
         console.error("Failed to load students", error);
+        setStudents([]);
+        setStudentDetails(new Map());
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadData();
-  }, []);
+  }, [debouncedSearchQuery]);
 
   const unitsGrouped = useMemo(() => {
     const unitMap = new Map<number, UnitGroupedData>();
@@ -244,6 +276,8 @@ export default function UnitsProgressPage() {
               onNextPage={() =>
                 setStudentPage((prev) => Math.min(totalStudentPages, prev + 1))
               }
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
             />
           </div>
 

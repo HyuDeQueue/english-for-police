@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import {
   Activity,
   BarChart3,
@@ -162,6 +162,8 @@ interface ChartsAndStudentsCardProps {
   totalStudentPages: number;
   onPrevPage: () => void;
   onNextPage: () => void;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
 }
 
 export function ChartsAndStudentsCard({
@@ -173,21 +175,12 @@ export function ChartsAndStudentsCard({
   totalStudentPages,
   onPrevPage,
   onNextPage,
+  searchQuery,
+  onSearchQueryChange,
 }: ChartsAndStudentsCardProps) {
   const [expandedStudents, setExpandedStudents] = useState<
     Record<number, boolean>
   >({});
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredStudents = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return paginatedStudents;
-    return paginatedStudents.filter(
-      (student) =>
-        student.fullName.toLowerCase().includes(query) ||
-        student.email.toLowerCase().includes(query),
-    );
-  }, [paginatedStudents, searchQuery]);
 
   const toggleStudentDetails = (userId: number) => {
     setExpandedStudents((prev) => ({
@@ -291,14 +284,14 @@ export function ChartsAndStudentsCard({
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
               placeholder="Tìm theo tên hoặc email..."
               className="pl-9 border-slate-300 focus-visible:ring-slate-400"
             />
           </div>
 
           {studentsCount > 0 ? (
-            filteredStudents.length > 0 ? (
+            paginatedStudents.length > 0 ? (
               <>
                 <div className="overflow-x-auto rounded-md border border-slate-200">
                   <table className="w-full text-sm">
@@ -322,7 +315,7 @@ export function ChartsAndStudentsCard({
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredStudents.map((student) => {
+                      {paginatedStudents.map((student) => {
                         const unitProgressList =
                           studentUnitProgressMap[student.userId] ?? [];
                         const isExpanded =
@@ -429,7 +422,7 @@ export function ChartsAndStudentsCard({
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs text-slate-500">
                     Trang {currentStudentPage}/{totalStudentPages} - Hiển thị{" "}
-                    {filteredStudents.length} mục
+                    {paginatedStudents.length} mục
                   </span>
                   <div className="flex items-center gap-2">
                     <Button
