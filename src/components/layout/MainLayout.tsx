@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Shield,
-  ArrowUp,
-  ChevronDown,
-  LogOut,
-  BarChart3,
-} from "lucide-react";
+import { Shield, ArrowUp, ChevronDown, LogOut, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -87,7 +81,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               onClick={onLogoClick}
             >
               <h1 className="text-lg font-heading font-bold tracking-tight text-white group-hover:text-secondary transition-colors flex items-center gap-2">
-                TIẾNG ANH
+                Tiếng Anh chuyên biệt cho cảnh sát
                 <div className="bg-white/20 p-1.5 rounded-lg">
                   <Shield className="h-5 w-5 text-secondary fill-secondary" />
                 </div>

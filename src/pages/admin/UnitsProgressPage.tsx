@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, AlertTriangle, CheckCircle2, Lock } from "lucide-react";
+import { Activity, AlertTriangle } from "lucide-react";
 import { AdminPageLayout } from "@/components/admin/AdminPageLayout";
 import { reportsService } from "@/services/reports.service";
 import type {
@@ -7,6 +7,7 @@ import type {
   StudentProgressSummaryApi,
 } from "@/models/reports.model";
 import type { UnitGroupedData } from "@/components/admin/units-progress/types";
+import { usePagination } from "@/hooks/app/use-pagination";
 import {
   ChartsAndStudentsCard,
   OverviewStatsCard,
@@ -24,17 +25,24 @@ export default function UnitsProgressPage() {
   >(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [activeUnit, setActiveUnit] = useState<UnitGroupedData | null>(null);
-  const [studentPage, setStudentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const {
+    currentPage: currentStudentPage,
+    totalPages: totalStudentPages,
+    pagedItems: paginatedStudents,
+    goPrev: goPrevStudentPage,
+    goNext: goNextStudentPage,
+    resetPage: resetStudentPage,
+  } = usePagination(students, { pageSize: STUDENT_PAGE_SIZE });
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setDebouncedSearchQuery(searchQuery.trim());
-      setStudentPage(1);
+      resetStudentPage();
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, resetStudentPage]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -143,12 +151,6 @@ export default function UnitsProgressPage() {
     return "text-slate-600 bg-slate-50";
   };
 
-  const getStatusIcon = (status: string) => {
-    if (status === "completed") return <CheckCircle2 className="h-4 w-4" />;
-    if (status === "locked") return <Lock className="h-4 w-4" />;
-    return <Activity className="h-4 w-4" />;
-  };
-
   const aggregateStats = useMemo(() => {
     let completedChapters = 0;
     let totalProgress = 0;
@@ -198,17 +200,6 @@ export default function UnitsProgressPage() {
     [unitsGrouped],
   );
 
-  const totalStudentPages = Math.max(
-    1,
-    Math.ceil(students.length / STUDENT_PAGE_SIZE),
-  );
-  const currentStudentPage = Math.min(studentPage, totalStudentPages);
-
-  const paginatedStudents = useMemo(() => {
-    const start = (currentStudentPage - 1) * STUDENT_PAGE_SIZE;
-    return students.slice(start, start + STUDENT_PAGE_SIZE);
-  }, [students, currentStudentPage]);
-
   const studentUnitProgressMap = useMemo(() => {
     const progressMap: Record<
       number,
@@ -256,7 +247,7 @@ export default function UnitsProgressPage() {
           <p className="text-sm mt-2">Chưa có học viên hoặc chương nào.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-[0.8fr_1.8fr_0.8fr] gap-6 items-start">
+        <div className="grid grid-cols-1 xl:grid-cols-[0.9fr_1.7fr] 2xl:grid-cols-[0.8fr_1.8fr_0.8fr] gap-6 items-start">
           <div className="space-y-4 xl:sticky xl:top-20 self-start">
             <OverviewStatsCard
               stats={aggregateStats}
@@ -272,27 +263,27 @@ export default function UnitsProgressPage() {
               studentUnitProgressMap={studentUnitProgressMap}
               currentStudentPage={currentStudentPage}
               totalStudentPages={totalStudentPages}
-              onPrevPage={() => setStudentPage((prev) => Math.max(1, prev - 1))}
-              onNextPage={() =>
-                setStudentPage((prev) => Math.min(totalStudentPages, prev + 1))
-              }
+              onPrevPage={goPrevStudentPage}
+              onNextPage={goNextStudentPage}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
             />
           </div>
 
-          <UnitCardsList
-            unitsGrouped={unitsGrouped}
-            onOpenUnit={(unit) => setActiveUnit(unit)}
-          />
+          <div className="xl:col-span-2 2xl:col-span-1">
+            <UnitCardsList
+              unitsGrouped={unitsGrouped}
+              onOpenUnit={(unit) => setActiveUnit(unit)}
+            />
+          </div>
 
           <UnitDetailsDialog
+            key={activeUnit?.unitNumber ?? "no-unit"}
             activeUnit={activeUnit}
             onOpenChange={(open) => {
               if (!open) setActiveUnit(null);
             }}
             getStatusColor={getStatusColor}
-            getStatusIcon={getStatusIcon}
           />
         </div>
       )}
