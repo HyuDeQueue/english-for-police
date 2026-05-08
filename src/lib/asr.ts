@@ -1,4 +1,4 @@
-import { ASR_API_BASE_URL } from "./config";
+import { ASR_API_BASE_URL } from "@/config/api";
 
 export async function transcribeAudio(audioBlob: Blob): Promise<string> {
   const formData = new FormData();

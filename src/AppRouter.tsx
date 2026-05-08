@@ -1,5 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import { initSpeech, unlockSpeech } from "@/lib/speech";
 import type { Unit } from "@/types";
 
@@ -15,10 +21,7 @@ import {
   FlashcardReviewPage,
   FlashcardResultsPage,
   GeneralTestPage,
-  AccountManagementPage,
-  StudentDossierPage,
-  DashboardOverviewPage,
-  CompareDashboardPage,
+  UnitsProgressPage,
 } from "@/pages";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@/models/user.model";
@@ -124,7 +127,7 @@ export function AppRouter() {
               path="/"
               element={
                 user?.role === UserRole.ADMIN ? (
-                  <Navigate to="/admin/dashboard" replace />
+                  <Navigate to="/admin/units" replace />
                 ) : (
                   <HomeView
                     lessons={lessons}
@@ -249,13 +252,7 @@ export function AppRouter() {
                 />
               }
             />
-            <Route path="/admin/accounts" element={<AccountManagementPage />} />
-            <Route path="/admin/dashboard" element={<DashboardOverviewPage />} />
-            <Route path="/admin/compare" element={<CompareDashboardPage />} />
-            <Route
-              path="/admin/accounts/:userId"
-              element={<StudentDossierPage />}
-            />
+            <Route path="/admin/units" element={<UnitsProgressPage />} />
           </Routes>
         </Suspense>
       </MainLayout>

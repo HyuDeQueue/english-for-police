@@ -1,4 +1,4 @@
-import { TTS_API_BASE_URL, DEFAULT_TTS_VOICE } from "./config";
+import { TTS_API_BASE_URL, DEFAULT_TTS_VOICE } from "@/config/api";
 
 let preferredVoice: SpeechSynthesisVoice | null = null;
 let currentAudio: HTMLAudioElement | null = null;

@@ -4,8 +4,6 @@ import {
   ArrowUp,
   ChevronDown,
   LogOut,
-  Users,
-  LayoutDashboard,
   BarChart3,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -144,29 +142,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                       </div>
                       <DropdownMenuItem
                         className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
-                        onClick={() => navigate("/admin/dashboard")}
-                      >
-                        <LayoutDashboard className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-sm font-medium text-foreground">
-                          Dashboard tổng quan
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
-                        onClick={() => navigate("/admin/accounts")}
-                      >
-                        <Users className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-sm font-medium text-foreground">
-                          Danh sách học viên
-                        </span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
-                        onClick={() => navigate("/admin/compare")}
+                        onClick={() => navigate("/admin/units")}
                       >
                         <BarChart3 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         <span className="text-sm font-medium text-foreground">
-                          So sánh học viên
+                          Tiến độ chương trình
                         </span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="my-1.5" />
