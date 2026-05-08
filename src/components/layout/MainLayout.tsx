@@ -5,7 +5,8 @@ import {
   ChevronDown,
   LogOut,
   Users,
-  FileUser,
+  LayoutDashboard,
+  BarChart3,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
@@ -143,20 +144,29 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                       </div>
                       <DropdownMenuItem
                         className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
-                        onClick={() => navigate("/admin/accounts")}
+                        onClick={() => navigate("/admin/dashboard")}
                       >
-                        <Users className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         <span className="text-sm font-medium text-foreground">
-                          Danh sách tài khoản
+                          Dashboard tổng quan
                         </span>
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
-                        onClick={() => navigate("/admin/accounts/1")}
+                        onClick={() => navigate("/admin/accounts")}
                       >
-                        <FileUser className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <Users className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         <span className="text-sm font-medium text-foreground">
-                          Tiến trình học tập
+                          Danh sách học viên
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
+                        onClick={() => navigate("/admin/compare")}
+                      >
+                        <BarChart3 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-sm font-medium text-foreground">
+                          So sánh học viên
                         </span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="my-1.5" />

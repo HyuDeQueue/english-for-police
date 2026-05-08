@@ -4,7 +4,6 @@ import type {
   QuizAttemptRequest,
   QuizAttemptResponse,
   ProgressData,
-  DashboardSummary,
   ProgressResponse,
 } from "@/models/progress.model";
 
@@ -44,10 +43,4 @@ export const progressService = {
     return response.data;
   },
 
-  getDashboard: async (userId: number): Promise<DashboardSummary> => {
-    const endpoint = `${API_ROUTES.PROGRESS.GET_DASHBOARD}?userId=${userId}`;
-    const response =
-      await api.get<ProgressResponse<DashboardSummary>>(endpoint);
-    return response.data;
-  },
 };

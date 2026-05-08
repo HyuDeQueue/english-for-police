@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
 import { initialLessons } from "@/data/lesson/lessons";
-import { fetchLessons, seedFullMockLessons } from "@/lib/lessonApi";
+import { fetchLessons } from "@/lib/lessonApi";
 
 export function useAppState() {
   const [lessons, setLessons] = useState<Unit[]>(() => {
@@ -97,11 +97,7 @@ export function useAppState() {
     const syncLessonsFromBackend = async () => {
       let hasRemoteData = false;
       try {
-        let remoteLessons = await fetchLessons();
-        if (!remoteLessons.length) {
-          await seedFullMockLessons();
-          remoteLessons = await fetchLessons();
-        }
+        const remoteLessons = await fetchLessons();
         if (remoteLessons.length) {
           hasRemoteData = true;
           setLessons(remoteLessons);

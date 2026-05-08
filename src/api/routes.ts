@@ -10,7 +10,6 @@ export const API_ROUTES = {
   PROGRESS: {
     SUBMIT_ATTEMPT: "/api/v1/progress/attempts",
     GET_PROGRESS: "/api/v1/progress",
-    GET_DASHBOARD: "/api/v1/progress/dashboard",
   },
   REPORTS: {
     DASHBOARD_OVERVIEW: "/api/v1/reports/dashboard/overview",

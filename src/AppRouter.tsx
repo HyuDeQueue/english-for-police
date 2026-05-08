@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { initSpeech, unlockSpeech } from "@/lib/speech";
 import type { Unit } from "@/types";
 
@@ -20,6 +20,8 @@ import {
   DashboardOverviewPage,
   CompareDashboardPage,
 } from "@/pages";
+import { useAuth } from "@/hooks/use-auth";
+import { UserRole } from "@/models/user.model";
 
 // Lazy-loaded route components
 const HomeView = lazy(() =>
@@ -44,6 +46,7 @@ function parseUnitIdFromPath(path: string) {
 export function AppRouter() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [flashcardRound, setFlashcardRound] = useState(1);
   const [flashcardSummary, setFlashcardSummary] =
     useState<FlashcardSessionSummary | null>(null);
@@ -120,16 +123,20 @@ export function AppRouter() {
             <Route
               path="/"
               element={
-                <HomeView
-                  lessons={lessons}
-                  progress={progress}
-                  flaggedItems={flaggedItems}
-                  dailyTasks={dailyTasks}
-                  onSelectUnit={navigateToLesson}
-                  onNavigate={(path) =>
-                    navigate(path.startsWith("#") ? path.slice(1) : path)
-                  }
-                />
+                user?.role === UserRole.ADMIN ? (
+                  <Navigate to="/admin/dashboard" replace />
+                ) : (
+                  <HomeView
+                    lessons={lessons}
+                    progress={progress}
+                    flaggedItems={flaggedItems}
+                    dailyTasks={dailyTasks}
+                    onSelectUnit={navigateToLesson}
+                    onNavigate={(path) =>
+                      navigate(path.startsWith("#") ? path.slice(1) : path)
+                    }
+                  />
+                )
               }
             />
             <Route

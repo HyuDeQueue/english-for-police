@@ -68,9 +68,13 @@ export function useProgress() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await progressService.getDashboard(user.userId);
-      setDashboardData(data);
-      return data;
+      const data = await progressService.getProgress({
+        userId: user.userId,
+        view: "overview",
+      });
+      const overview = data.overview;
+      setDashboardData(overview);
+      return overview;
     } catch (err) {
       const apiError = err as { message?: string };
       const message = apiError.message || "Không thể tải bảng điều khiển.";

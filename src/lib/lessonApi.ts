@@ -36,16 +36,6 @@ export async function fetchLessonById(unitNumber: number): Promise<Unit> {
   return parseResponse<Unit>(response);
 }
 
-export async function seedFullMockLessons(): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/v1/lessons/seed-full-mock-data`,
-    {
-      method: "POST",
-    },
-  );
-  await parseResponse<unknown>(response);
-}
-
 export async function importLessons(lessons: Unit[]): Promise<void> {
   const endpoint = `${API_BASE_URL}/api/v1/lessons/import`;
 
