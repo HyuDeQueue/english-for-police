@@ -14,14 +14,11 @@ export const API_ROUTES = {
   REPORTS: {
     DASHBOARD_OVERVIEW: "/api/v1/reports/dashboard/overview",
     STUDENTS: "/api/v1/reports/dashboard/students",
-    STUDENT_DETAIL: "/api/v1/reports/dashboard/students", // + /{userId}
+    STUDENT_DETAIL: "/api/v1/reports/dashboard/students",
     COMPARE: "/api/v1/reports/dashboard/compare",
-  },
-  REPORTS: {
     DASHBOARD_STUDENTS: "/api/v1/reports/dashboard/students",
     DASHBOARD_STUDENT_BY_ID: (userId: number) =>
       `/api/v1/reports/dashboard/students/${userId}`,
-    DASHBOARD_OVERVIEW: "/api/v1/reports/dashboard/overview",
     DASHBOARD_COMPARE: "/api/v1/reports/dashboard/compare",
   },
 } as const;
