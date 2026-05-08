@@ -8,13 +8,14 @@ import { Timer, ChevronLeft, CheckCircle2, Loader2 } from "lucide-react";
 import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
 import {
-  extractQuestion,
-  serializeAnswerForApi,
+  mapAnswersToBackendPayload,
   shuffleArray,
 } from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
 import { PracticeResults } from "./results/PracticeResults";
 import { useProgress } from "@/hooks/use-progress";
+import { useSonner } from "@/hooks/use-sonner";
+import { practiceQuestionService } from "@/services/practice-question.service";
 
 interface TrainingGroundProps {
   unit: Unit;
@@ -22,130 +23,15 @@ interface TrainingGroundProps {
   onComplete: (score: number) => void;
 }
 
-function generateTrainingGroundQuestions(unit: Unit): Question[] {
-  const pool: Question[] = [];
-
-  unit.vocabulary.forEach((v, i) => {
-    const options = shuffleArray([
-      v.meaning,
-      ...unit.vocabulary
-        .filter((_, idx) => idx !== i)
-        .slice(0, 3)
-        .map((item) => item.meaning),
-    ]);
-
-    pool.push({
-      id: `vocab-${i}`,
-      type: "MCQ",
-      prompt: `Nghĩa của từ chuyên ngành "${v.word}" là gì?`,
-      options,
-      answer: v.meaning,
-    });
-  });
-
-  unit.phrases.forEach((p, i) => {
-    const options = shuffleArray([
-      p.translation,
-      ...unit.phrases
-        .filter((_, idx) => idx !== i)
-        .slice(0, 3)
-        .map((item) => item.translation),
-    ]);
-
-    pool.push({
-      id: `phrase-recog-${i}`,
-      type: "MCQ",
-      prompt: `Chọn nghĩa đúng cho mẫu câu: "${p.text}"`,
-      options,
-      answer: p.translation,
-    });
-  });
-
-  unit.phrases.forEach((p, i) => {
-    if (p.context) {
-      const options = shuffleArray([
-        p.text,
-        ...unit.phrases
-          .filter((_, idx) => idx !== i)
-          .slice(0, 3)
-          .map((item) => item.text),
-      ]);
-
-      pool.push({
-        id: `phrase-context-${i}`,
-        type: "MCQ",
-        prompt: `Trong tình huống: "${p.context}", bạn nên nói câu nào?`,
-        options,
-        answer: p.text,
-      });
-    }
-  });
-
-  unit.phrases.slice(0, 3).forEach((p, i) => {
-    const isTrue = Math.random() > 0.5;
-    let promptText = p.text;
-
-    if (!isTrue) {
-      const words = p.text.split(" ");
-      if (words.length > 3) {
-        [words[1], words[2]] = [words[2], words[1]];
-        promptText = words.join(" ");
-      } else {
-        promptText = p.text + " (incorrect usage)";
-      }
-    }
-
-    pool.push({
-      id: `phrase-tf-${i}`,
-      type: "MCQ",
-      prompt: `Mẫu câu sau đây có cấu trúc ĐÚNG hay SAI: "${promptText}"`,
-      options: ["ĐÚNG", "SAI"],
-      answer: isTrue ? "ĐÚNG" : "SAI",
-    });
-  });
-
-  unit.phrases.slice(0, 3).forEach((p, i) => {
-    pool.push({
-      id: `phrase-write-${i}`,
-      type: "Dictation",
-      prompt: `Viết lại câu sau bằng tiếng Anh: "${p.translation}"`,
-      vnPrompt: p.translation,
-      answer: p.text,
-    });
-  });
-
-  const matchingItems = unit.vocabulary.slice(0, 4);
-  if (matchingItems.length >= 3) {
-    pool.push({
-      id: `vocab-match-${unit.id}`,
-      type: "Matching",
-      prompt: "Ghép các từ vựng sau với nghĩa tương ứng",
-      pairs: matchingItems.map((v) => ({
-        left: v.word,
-        right: v.meaning,
-      })),
-      answer: matchingItems.map((v) => `${v.word}:${v.meaning}`),
-    });
-  }
-
-  const extraPracticeQuestions = unit.practice
-    .filter((q) => ["Scenario", "FillInBlank", "Arrangement"].includes(q.type))
-    .slice(0, 5)
-    .map((q, idx) => ({ ...q, id: `tg-extra-${unit.id}-${idx}-${q.id}` }));
-  pool.push(...extraPracticeQuestions);
-
-  return shuffleArray(pool).slice(0, 15);
-}
-
 export const TrainingGround: React.FC<TrainingGroundProps> = ({
   unit,
   onBack,
   onComplete,
 }) => {
-  const [questions] = useState<Question[]>(() =>
-    generateTrainingGroundQuestions(unit),
-  );
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const { submitAttempt, isLoading: isSubmitting } = useProgress();
+  const { notifyError } = useSonner();
   const {
     answers,
     setAnswers,
@@ -169,50 +55,67 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   const [hasReportedCompletion, setHasReportedCompletion] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
 
-  const handleFinish = useCallback(() => {
-    setIsFinished(true);
-    setShowResults(true);
-    if (timerRef.current) clearInterval(timerRef.current);
+  useEffect(() => {
+    const loadQuestions = async () => {
+      setIsLoadingQuestions(true);
+      try {
+        const fetched = await practiceQuestionService.getQuestions({
+          unitNumbers: [unit.id],
+          sources: ["vocab", "phrase", "practice"],
+          limitPerUnit: 20,
+        });
+        setQuestions(shuffleArray(fetched).slice(0, 15));
+      } catch (error) {
+        console.error("Failed to load training questions", error);
+        notifyError("Không tải được bộ câu hỏi", "Vui lòng thử lại sau.");
+        setQuestions([]);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    void loadQuestions();
+  }, [notifyError, unit.id]);
 
+  const handleFinish = useCallback(async () => {
     const correctCount = calculateCorrectCount(questions);
     const finalScore = Math.round((correctCount / questions.length) * 100);
     const combinedAnswers = getCombinedAnswers();
 
-    const submit = async () => {
-      try {
-        const backendAnswers = Object.entries(combinedAnswers)
-          .map(([id, answer]) => {
-            const parsed = extractQuestion(id, unit.id);
-            if (!parsed) return null;
-            return {
-              unitNumber: parsed.unitNumber,
-              questionId: parsed.questionId,
-              answer: serializeAnswerForApi(answer),
-            };
-          })
-          .filter((item): item is NonNullable<typeof item> => !!item);
-
-        if (backendAnswers.length > 0) {
-          await submitAttempt({
-            unitNumber: unit.id,
-            answers: backendAnswers.map(({ questionId, answer }) => ({
-              questionId,
-              answer,
-            })),
-          });
-        }
-      } catch (error) {
-        console.error("Failed to submit training results", error);
+    try {
+      const backendAnswers = mapAnswersToBackendPayload(questions, combinedAnswers);
+      if (backendAnswers.length === 0) {
+        notifyError(
+          "Không thể nộp bài",
+          "Bài luyện này không có câu hỏi đồng bộ với hệ thống chấm điểm.",
+        );
+        return;
       }
-    };
 
-    void submit();
-    setCurrentScore(finalScore);
+      await submitAttempt({
+        unitNumber: unit.id,
+        answers: backendAnswers.map(({ questionId, answer }) => ({
+          questionId,
+          answer,
+        })),
+      });
+
+      setIsFinished(true);
+      setShowResults(true);
+      if (timerRef.current) clearInterval(timerRef.current);
+      setCurrentScore(finalScore);
+    } catch (error) {
+      console.error("Failed to submit training results", error);
+      notifyError(
+        "Nộp bài thất bại",
+        "Kết quả chưa được lưu. Vui lòng thử lại.",
+      );
+    }
   }, [
     calculateCorrectCount,
     questions,
     getCombinedAnswers,
     submitAttempt,
+    notifyError,
     unit.id,
   ]);
 
@@ -225,11 +128,14 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   };
 
   useEffect(() => {
+    if (isLoadingQuestions || questions.length === 0) {
+      return;
+    }
     timerRef.current = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           if (timerRef.current) clearInterval(timerRef.current);
-          handleFinish();
+          void handleFinish();
           return 0;
         }
         return prev - 1;
@@ -238,7 +144,7 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [handleFinish]);
+  }, [handleFinish, isLoadingQuestions, questions.length]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -248,6 +154,27 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
 
   const answeredCount = questions.filter((q) => isQuestionAnswered(q)).length;
   const allQuestionsAnswered = answeredCount === questions.length;
+
+  if (isLoadingQuestions) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in px-4">
+        <Card className="police-shadow border-none p-12 flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground mt-4">Đang tải câu hỏi từ hệ thống...</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in px-4">
+        <Card className="police-shadow border-none p-12 flex flex-col items-center">
+          <p className="text-muted-foreground">Không có câu hỏi khả dụng cho bài luyện này.</p>
+        </Card>
+      </div>
+    );
+  }
 
   if (showResults && !isReviewMode) {
     const combinedAnswers = getCombinedAnswers();
@@ -301,7 +228,7 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
                 if (isReviewMode) {
                   setIsReviewMode(false);
                 } else {
-                  handleFinish();
+                  void handleFinish();
                 }
               }}
             >

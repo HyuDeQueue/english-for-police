@@ -11,6 +11,9 @@ export const API_ROUTES = {
     SUBMIT_ATTEMPT: "/api/v1/progress/attempts",
     GET_PROGRESS: "/api/v1/progress",
   },
+  PRACTICE: {
+    QUESTIONS: "/api/v1/practice/questions",
+  },
   REPORTS: {
     DASHBOARD_OVERVIEW: "/api/v1/reports/dashboard/overview",
     STUDENTS: "/api/v1/reports/dashboard/students",

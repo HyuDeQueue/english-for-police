@@ -22,12 +22,12 @@ import {
   type Section,
   type TestMode,
   QUESTIONS_PER_PAGE,
-  generateGeneralQuestions,
   buildSections,
-  extractQuestion,
-  serializeAnswerForApi,
+  mapAnswersToBackendPayload,
 } from "./utils/testUtils";
 import { useGeneralTestState } from "./hooks/useGeneralTestState";
+import { useSonner } from "@/hooks/use-sonner";
+import { practiceQuestionService } from "@/services/practice-question.service";
 
 interface GeneralKnowledgeTestProps {
   lessons: Unit[];
@@ -43,9 +43,8 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   onComplete,
 }) => {
   // 1. Initial State & Questions
-  const [questions] = useState<Question[]>(() =>
-    generateGeneralQuestions(lessons),
-  );
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const location = useLocation();
   const locationState = location.state as {
     mode?: TestMode;
@@ -89,6 +88,28 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   } = useGeneralTestState(questions);
 
   const { submitAttempt, isLoading: isSubmitting } = useProgress();
+  const { notifyError } = useSonner();
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      setIsLoadingQuestions(true);
+      try {
+        const fetched = await practiceQuestionService.getQuestions({
+          unitNumbers: lessons.map((l) => l.id),
+          sources: ["vocab", "phrase", "practice"],
+          limitPerUnit: 20,
+        });
+        setQuestions(fetched);
+      } catch (error) {
+        console.error("Failed to load general test questions", error);
+        notifyError("Không tải được bộ câu hỏi", "Vui lòng thử lại sau.");
+        setQuestions([]);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    void loadQuestions();
+  }, [lessons, notifyError]);
 
   const sections: Section[] = useMemo(
     () => buildSections(questions, testMode, bankLimit),
@@ -177,45 +198,48 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       const submit = async () => {
         try {
           const combinedAnswers = getCombinedAnswers();
-          const backendAnswers = Object.entries(combinedAnswers)
-            .map(([id, answer]) => {
-              const parsed = extractQuestion(id);
-              if (!parsed) return null;
-              return {
-                unitNumber: parsed.unitNumber,
-                questionId: parsed.questionId,
-                answer: serializeAnswerForApi(answer),
-              };
-            })
-            .filter((item): item is NonNullable<typeof item> => !!item);
+          const backendAnswers = mapAnswersToBackendPayload(
+            questions,
+            combinedAnswers,
+          );
 
-          if (backendAnswers.length > 0) {
-            const answersByUnit = backendAnswers.reduce(
-              (acc, item) => {
-                if (!acc[item.unitNumber]) {
-                  acc[item.unitNumber] = [];
-                }
-                acc[item.unitNumber].push({
-                  questionId: item.questionId,
-                  answer: item.answer,
-                });
-                return acc;
-              },
-              {} as Record<number, { questionId: string; answer: string }[]>,
+          if (backendAnswers.length === 0) {
+            notifyError(
+              "Không thể nộp bài",
+              "Bài test này không có câu hỏi đồng bộ với hệ thống chấm điểm.",
             );
-
-            for (const [unitNumber, answers] of Object.entries(answersByUnit)) {
-              if (answers.length === 0) continue;
-              await submitAttempt({
-                unitNumber: Number(unitNumber),
-                answers,
-              });
-            }
+            return;
           }
+
+          const answersByUnit = backendAnswers.reduce(
+            (acc, item) => {
+              if (!acc[item.unitNumber]) {
+                acc[item.unitNumber] = [];
+              }
+              acc[item.unitNumber].push({
+                questionId: item.questionId,
+                answer: item.answer,
+              });
+              return acc;
+            },
+            {} as Record<number, { questionId: string; answer: string }[]>,
+          );
+
+          for (const [unitNumber, answers] of Object.entries(answersByUnit)) {
+            if (answers.length === 0) continue;
+            await submitAttempt({
+              unitNumber: Number(unitNumber),
+              answers,
+            });
+          }
+
+          setShowResults(true);
         } catch (error) {
           console.error("Failed to submit general test results", error);
-        } finally {
-          setShowResults(true);
+          notifyError(
+            "Nộp bài thất bại",
+            "Kết quả chưa được lưu. Vui lòng thử lại.",
+          );
         }
       };
 
@@ -344,6 +368,16 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   };
 
   // 6. Render Logic
+  if (isLoadingQuestions) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center px-4">
+        <Card className="police-shadow border-none p-10">
+          <CardTitle className="text-xl mb-3">Đang tải câu hỏi từ hệ thống...</CardTitle>
+        </Card>
+      </div>
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-20 text-center px-4">

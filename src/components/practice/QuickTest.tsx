@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { Unit, Question } from "@/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,7 @@ import {
 import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
 import {
-  extractQuestion,
-  serializeAnswerForApi,
+  mapAnswersToBackendPayload,
   shuffleArray,
 } from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
@@ -23,6 +22,8 @@ import { PracticeHeader } from "./layout/PracticeHeader";
 import { PracticeResults } from "./results/PracticeResults";
 import { useProgress } from "@/hooks/use-progress";
 import { Loader2 } from "lucide-react";
+import { useSonner } from "@/hooks/use-sonner";
+import { practiceQuestionService } from "@/services/practice-question.service";
 
 export interface QuickTestProps {
   lessons: Unit[];
@@ -31,88 +32,13 @@ export interface QuickTestProps {
   onComplete?: (score: number) => void;
 }
 
-function generateQuickTestQuestions(
-  lessons: Unit[],
-  completedUnitIds: number[],
-): Question[] {
-  const pool: Question[] = [];
-  for (const unit of lessons) {
-    if (!completedUnitIds.includes(unit.id)) continue;
-
-    for (const vocab of unit.vocabulary.slice(0, 3)) {
-      const wrongOptions = unit.vocabulary
-        .filter((v) => v.word !== vocab.word)
-        .slice(0, 2)
-        .map((v) => v.meaning);
-
-      pool.push({
-        id: `qt_vocab_${unit.id}_${vocab.word}`,
-        type: "MCQ",
-        prompt: `"${vocab.word}" nghĩa là gì?`,
-        options: shuffleArray([vocab.meaning, ...wrongOptions]),
-        answer: vocab.meaning,
-      });
-    }
-
-    for (const phrase of unit.phrases.slice(0, 2)) {
-      const otherPhrases = unit.phrases.filter((p) => p.text !== phrase.text);
-      const wrongOptions = shuffleArray(otherPhrases)
-        .slice(0, 2)
-        .map((p) => p.translation);
-
-      pool.push({
-        id: `qt_phrase_recog_${unit.id}_${phrase.text.slice(0, 20)}`,
-        type: "MCQ",
-        prompt: `Chọn nghĩa đúng cho câu: "${phrase.text}"`,
-        options: shuffleArray([phrase.translation, ...wrongOptions]),
-        answer: phrase.translation,
-      });
-    }
-
-    for (const phrase of unit.phrases.slice(0, 2)) {
-      pool.push({
-        id: `qt_phrase_write_${unit.id}_${phrase.text.slice(0, 20)}`,
-        type: "Dictation",
-        prompt: `Dịch sang tiếng Anh: "${phrase.translation}"`,
-        vnPrompt: phrase.translation,
-        answer: phrase.text,
-      });
-    }
-
-    const matchingItems = unit.vocabulary.slice(0, 4);
-    if (matchingItems.length >= 3) {
-      pool.push({
-        id: `qt_match_${unit.id}`,
-        type: "Matching",
-        prompt: `Ghép từ và nghĩa bài UNIT ${unit.id}`,
-        pairs: matchingItems.map((v) => ({
-          left: v.word,
-          right: v.meaning,
-        })),
-        answer: matchingItems.map((v) => `${v.word}:${v.meaning}`),
-      });
-    }
-
-    const extraPracticeQuestions = unit.practice
-      .filter((q) =>
-        ["Scenario", "FillInBlank", "Arrangement"].includes(q.type),
-      )
-      .slice(0, 3)
-      .map((q, idx) => ({ ...q, id: `qt_extra_${unit.id}_${idx}_${q.id}` }));
-    pool.push(...extraPracticeQuestions);
-  }
-  return shuffleArray(pool).slice(0, 10);
-}
-
 export const QuickTest: React.FC<QuickTestProps> = ({
-  lessons,
   completedUnitIds,
   onBack,
   onComplete,
 }) => {
-  const [questions] = useState<Question[]>(() =>
-    generateQuickTestQuestions(lessons, completedUnitIds),
-  );
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const {
     answers,
@@ -130,10 +56,51 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   } = useQuestionAnswers(questions);
 
   const { submitAttempt, isLoading: isSubmitting } = useProgress();
+  const { notifyError } = useSonner();
   const [submitted, setSubmitted] = useState(false);
   const [isReviewMode, setIsReviewMode] = useState(false);
 
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (completedUnitIds.length === 0) {
+        setQuestions([]);
+        setIsLoadingQuestions(false);
+        return;
+      }
+      setIsLoadingQuestions(true);
+      try {
+        const fetched = await practiceQuestionService.getQuestions({
+          unitNumbers: completedUnitIds,
+          sources: ["vocab", "phrase", "practice"],
+          limitPerUnit: 8,
+        });
+        setQuestions(shuffleArray(fetched).slice(0, 10));
+      } catch (error) {
+        console.error("Failed to load quick test questions", error);
+        notifyError(
+          "Không tải được bộ câu hỏi",
+          "Vui lòng thử lại sau ít phút.",
+        );
+        setQuestions([]);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    };
+    void loadQuestions();
+  }, [completedUnitIds, notifyError]);
+
   const currentQ = questions[currentIndex];
+
+  if (isLoadingQuestions) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in px-4">
+        <Card className="police-shadow border-none p-12 flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground mt-4">Đang tải câu hỏi từ hệ thống...</p>
+        </Card>
+      </div>
+    );
+  }
 
   if (questions.length === 0) {
     return (
@@ -215,53 +182,51 @@ export const QuickTest: React.FC<QuickTestProps> = ({
                   );
 
                   try {
-                    const backendAnswers = Object.entries(combinedAnswers)
-                      .map(([id, answer]) => {
-                        const parsed = extractQuestion(id);
-                        if (!parsed) return null;
-                        return {
-                          unitNumber: parsed.unitNumber,
-                          questionId: parsed.questionId,
-                          answer: serializeAnswerForApi(answer),
-                        };
-                      })
-                      .filter(
-                        (item): item is NonNullable<typeof item> => !!item,
-                      );
+                    const backendAnswers = mapAnswersToBackendPayload(
+                      questions,
+                      combinedAnswers,
+                    );
 
-                    if (backendAnswers.length > 0) {
-                      const answersByUnit = backendAnswers.reduce(
-                        (acc, item) => {
-                          if (!acc[item.unitNumber]) {
-                            acc[item.unitNumber] = [];
-                          }
-                          acc[item.unitNumber].push({
-                            questionId: item.questionId,
-                            answer: item.answer,
-                          });
-                          return acc;
-                        },
-                        {} as Record<number, { questionId: string; answer: string }[]>,
+                    if (backendAnswers.length === 0) {
+                      notifyError(
+                        "Không thể nộp bài",
+                        "Bài test này không có câu hỏi đồng bộ với hệ thống chấm điểm.",
                       );
+                      return;
+                    }
 
-                      for (const [unitNumber, answers] of Object.entries(
-                        answersByUnit,
-                      )) {
-                        if (answers.length === 0) continue;
-                        await submitAttempt({
-                          unitNumber: Number(unitNumber),
-                          answers,
+                    const answersByUnit = backendAnswers.reduce(
+                      (acc, item) => {
+                        if (!acc[item.unitNumber]) {
+                          acc[item.unitNumber] = [];
+                        }
+                        acc[item.unitNumber].push({
+                          questionId: item.questionId,
+                          answer: item.answer,
                         });
-                      }
+                        return acc;
+                      },
+                      {} as Record<number, { questionId: string; answer: string }[]>,
+                    );
+
+                    for (const [unitNumber, answers] of Object.entries(
+                      answersByUnit,
+                    )) {
+                      if (answers.length === 0) continue;
+                      await submitAttempt({
+                        unitNumber: Number(unitNumber),
+                        answers,
+                      });
                     }
 
                     setSubmitted(true);
                     if (onComplete) onComplete(percent);
                   } catch (error) {
                     console.error("Failed to submit test results", error);
-                    // Still set submitted to true to show local results if API fails
-                    setSubmitted(true);
-                    if (onComplete) onComplete(percent);
+                    notifyError(
+                      "Nộp bài thất bại",
+                      "Kết quả chưa được lưu. Vui lòng thử lại.",
+                    );
                   }
                 }
               }}

@@ -22,6 +22,9 @@ export interface Collocation {
 
 export interface Question {
   id: string;
+  backendQuestionId?: string;
+  backendUnitNumber?: number;
+  sourceCategory?: "vocab" | "phrase" | "practice";
   type:
     | "MCQ"
     | "Matching"

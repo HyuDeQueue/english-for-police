@@ -85,6 +85,8 @@ export function generateGeneralQuestions(lessons: Unit[]): Question[] {
       pool.push({
         ...question,
         id: `gk-practice-${unit.id}-${idx}-${question.id}`,
+        backendQuestionId: question.id,
+        backendUnitNumber: unit.id,
       });
     });
 
@@ -131,7 +133,7 @@ export function buildSections(
   const sections: Section[] = [];
 
   const vocabIds = questions
-    .filter((q) => q.id.includes("vocab"))
+    .filter((q) => q.sourceCategory === "vocab")
     .map((q) => q.id);
   if (vocabIds.length > 0) {
     sections.push({
@@ -145,10 +147,10 @@ export function buildSections(
   const patternIds = questions
     .filter(
       (q) =>
-        q.id.includes("phrase-mcq") ||
+        q.sourceCategory === "phrase" ||
         q.type === "Scenario" ||
-        (q.id.includes("practice") &&
-          !["Matching", "Dictation", "Arrangement"].includes(q.type)),
+        (q.sourceCategory === "practice" &&
+          !["Matching", "Dictation", "Arrangement", "Scenario"].includes(q.type)),
     )
     .map((q) => q.id);
   if (patternIds.length > 0) {
@@ -187,10 +189,7 @@ export function buildSections(
   return sections;
 }
 
-export function extractQuestion(
-  questionId: string,
-  fallbackUnitNumber?: number,
-) {
+export function extractQuestion(questionId: string, fallbackUnitNumber?: number) {
   const mappedPatterns: Array<{
     regex: RegExp;
     toQuestionId: (match: RegExpMatchArray) => string;
@@ -259,4 +258,24 @@ export function serializeAnswerForApi(answer: unknown): string {
   // - arrays => comma-joined by JS String()
   // - objects => "[object Object]"
   return String(answer ?? "");
+}
+
+export function mapAnswersToBackendPayload(
+  questions: Question[],
+  combinedAnswers: Record<string, unknown>,
+) {
+  const questionById = new Map(questions.map((q) => [q.id, q]));
+  return Object.entries(combinedAnswers)
+    .map(([clientQuestionId, answer]) => {
+      const question = questionById.get(clientQuestionId);
+      if (!question?.backendQuestionId || question.backendUnitNumber == null) {
+        return null;
+      }
+      return {
+        unitNumber: question.backendUnitNumber,
+        questionId: question.backendQuestionId,
+        answer: serializeAnswerForApi(answer),
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => !!item);
 }
