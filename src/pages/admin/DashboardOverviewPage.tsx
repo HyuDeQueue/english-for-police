@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Activity,
-  AlertTriangle,
-  BarChart3,
-  Users,
-} from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +8,15 @@ import { AdminHero, AdminKpiCard } from "@/components/admin/AdminPrimitives";
 import { reportsService } from "@/services/reports.service";
 import type { DashboardOverviewApi } from "@/models/reports.model";
 
-function BucketBar({ label, count, max }: { label: string; count: number; max: number }) {
+function BucketBar({
+  label,
+  count,
+  max,
+}: {
+  label: string;
+  count: number;
+  max: number;
+}) {
   const pct = max <= 0 ? 0 : Math.round((count / max) * 100);
   return (
     <div className="space-y-2">
@@ -24,7 +27,10 @@ function BucketBar({ label, count, max }: { label: string; count: number; max: n
         <span className="font-mono text-muted-foreground">{count}</span>
       </div>
       <div className="h-2.5 rounded-full bg-muted/50 overflow-hidden">
-        <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full bg-primary transition-all"
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );
@@ -45,7 +51,13 @@ function Sparkline({ points }: { points: number[] }) {
     .join(" ");
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="opacity-90">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="2" className="text-primary" />
+      <path
+        d={d}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="text-primary"
+      />
     </svg>
   );
 }
@@ -55,21 +67,22 @@ export default function DashboardOverviewPage() {
   const [data, setData] = useState<DashboardOverviewApi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const load = async () => {
-    setIsLoading(true);
-    try {
-      const overview = await reportsService.getOverview();
-      setData(overview);
-    } catch (e) {
-      console.error("Failed to load overview", e);
-      setData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    load();
+    let cancelled = false;
+    (async () => {
+      try {
+        const overview = await reportsService.getOverview();
+        if (!cancelled) setData(overview);
+      } catch (e) {
+        console.error("Failed to load overview", e);
+        if (!cancelled) setData(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const maxProgressBucket = useMemo(() => {
@@ -157,7 +170,12 @@ export default function DashboardOverviewPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 {data.progressDistributionBuckets.map((b) => (
-                  <BucketBar key={b.label} label={`${b.label}%`} count={b.count} max={maxProgressBucket} />
+                  <BucketBar
+                    key={b.label}
+                    label={`${b.label}%`}
+                    count={b.count}
+                    max={maxProgressBucket}
+                  />
                 ))}
               </CardContent>
             </Card>
@@ -170,7 +188,12 @@ export default function DashboardOverviewPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 {data.scoreDistributionBuckets.map((b) => (
-                  <BucketBar key={b.label} label={`${b.label}%`} count={b.count} max={maxScoreBucket} />
+                  <BucketBar
+                    key={b.label}
+                    label={`${b.label}%`}
+                    count={b.count}
+                    max={maxScoreBucket}
+                  />
                 ))}
               </CardContent>
             </Card>
@@ -183,7 +206,10 @@ export default function DashboardOverviewPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-[10px] uppercase tracking-widest font-black">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] uppercase tracking-widest font-black"
+                  >
                     30 ngày
                   </Badge>
                   <span className="text-xs text-muted-foreground font-mono">
@@ -211,4 +237,3 @@ export default function DashboardOverviewPage() {
     </div>
   );
 }
-

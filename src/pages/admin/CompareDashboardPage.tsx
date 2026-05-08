@@ -6,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminHero } from "@/components/admin/AdminPrimitives";
 import { reportsService } from "@/services/reports.service";
-import type { CompareDashboardApi, StudentProgressSummaryApi } from "@/models/reports.model";
+import type {
+  CompareDashboardApi,
+  StudentProgressSummaryApi,
+} from "@/models/reports.model";
 
 function LineChart({
   series,
@@ -15,16 +18,29 @@ function LineChart({
 }) {
   const w = 820;
   const h = 220;
-  const flat = series.flatMap((s) => s.points).filter((v): v is number => v !== null);
+  const flat = series
+    .flatMap((s) => s.points)
+    .filter((v): v is number => v !== null);
   const max = flat.length ? Math.max(...flat) : 100;
   const min = flat.length ? Math.min(...flat) : 0;
   const range = Math.max(1, max - min);
 
-  const colors = ["text-primary", "text-secondary", "text-destructive", "text-emerald-500", "text-sky-500"];
+  const colors = [
+    "text-primary",
+    "text-secondary",
+    "text-destructive",
+    "text-emerald-500",
+    "text-sky-500",
+  ];
 
   return (
     <div className="w-full overflow-x-auto">
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="min-w-[820px]">
+      <svg
+        width={w}
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        className="min-w-[820px]"
+      >
         <line x1="0" y1={h - 1} x2={w} y2={h - 1} stroke="hsl(var(--border))" />
         {series.map((s, idx) => {
           const d = s.points
@@ -36,7 +52,10 @@ function LineChart({
             })
             .filter(Boolean) as { x: number; y: number; i: number }[];
           const path = d
-            .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+            .map(
+              (p, i) =>
+                `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`,
+            )
             .join(" ");
           return (
             <path
@@ -83,20 +102,17 @@ export default function CompareDashboardPage() {
     return selected.map((id) => byId.get(id) ?? `#${id}`);
   }, [students, selected]);
 
-  const runCompare = async () => {
+  const runCompare = async (metricOverride?: "progress" | "score") => {
     if (selected.length < 2) return;
+    const metricToUse = metricOverride ?? metric;
     setIsComparing(true);
     try {
-      const data = await reportsService.compare(selected, metric, 30);
+      const data = await reportsService.compare(selected, metricToUse, 30);
       setCompare(data);
     } finally {
       setIsComparing(false);
     }
   };
-
-  useEffect(() => {
-    if (selected.length >= 2) runCompare();
-  }, [metric]);
 
   const chartSeries = useMemo(() => {
     if (!compare) return [];
@@ -124,10 +140,14 @@ export default function CompareDashboardPage() {
             </Button>
             <Button
               className="font-black uppercase tracking-widest text-[10px]"
-              onClick={runCompare}
+              onClick={() => {
+                void runCompare();
+              }}
               disabled={selected.length < 2 || isComparing}
             >
-              <ArrowLeftRight className={`h-4 w-4 mr-2 ${isComparing ? "animate-spin" : ""}`} />
+              <ArrowLeftRight
+                className={`h-4 w-4 mr-2 ${isComparing ? "animate-spin" : ""}`}
+              />
               So sánh
             </Button>
           </div>
@@ -154,14 +174,20 @@ export default function CompareDashboardPage() {
                 <Button
                   variant={metric === "progress" ? "default" : "outline"}
                   className="font-black uppercase tracking-widest text-[10px]"
-                  onClick={() => setMetric("progress")}
+                  onClick={() => {
+                    setMetric("progress");
+                    if (selected.length >= 2) void runCompare("progress");
+                  }}
                 >
                   Tiến độ
                 </Button>
                 <Button
                   variant={metric === "score" ? "default" : "outline"}
                   className="font-black uppercase tracking-widest text-[10px]"
-                  onClick={() => setMetric("score")}
+                  onClick={() => {
+                    setMetric("score");
+                    if (selected.length >= 2) void runCompare("score");
+                  }}
                 >
                   Điểm
                 </Button>
@@ -182,7 +208,8 @@ export default function CompareDashboardPage() {
                       key={s.userId}
                       onClick={() => {
                         setSelected((prev) => {
-                          if (prev.includes(s.userId)) return prev.filter((id) => id !== s.userId);
+                          if (prev.includes(s.userId))
+                            return prev.filter((id) => id !== s.userId);
                           if (prev.length >= 5) return prev;
                           return [...prev, s.userId];
                         });
@@ -203,7 +230,10 @@ export default function CompareDashboardPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-[10px] font-black uppercase">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] font-black uppercase"
+                          >
                             {Math.round(s.overallProgressPercent)}%
                           </Badge>
                           {isOn && <Check className="h-4 w-4 text-primary" />}
@@ -239,7 +269,11 @@ export default function CompareDashboardPage() {
                   <LineChart series={chartSeries} />
                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                     {compare.series.map((s) => (
-                      <Badge key={s.userId} variant="outline" className="text-[10px] font-black uppercase">
+                      <Badge
+                        key={s.userId}
+                        variant="outline"
+                        className="text-[10px] font-black uppercase"
+                      >
                         {s.fullName}
                       </Badge>
                     ))}
@@ -267,4 +301,3 @@ export default function CompareDashboardPage() {
     </div>
   );
 }
-
