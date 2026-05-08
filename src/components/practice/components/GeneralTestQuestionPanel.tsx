@@ -27,7 +27,7 @@ export interface GeneralTestQuestionPanelViewModel {
 
 export interface GeneralTestQuestionPanelActions {
   onAnswerChange: (qid: string, value: string) => void;
-  onMatchingSelectLeft: (qid: string, left: string) => void;
+  onMatchingSelectLeft: (qid: string, left: string | null) => void;
   onMatchingMatch: (qid: string, left: string, right: string) => void;
   onArrangementAdd: (qid: string, word: string) => void;
   onArrangementRemove: (qid: string, index: number) => void;

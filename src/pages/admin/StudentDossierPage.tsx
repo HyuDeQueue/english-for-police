@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Activity,
-  Award,
   BarChart3,
-  ChartLine,
   CheckCircle2,
   ChevronLeft,
   Clock,
@@ -16,8 +14,8 @@ import {
   Shield,
   Target,
 } from "lucide-react";
-import { adminService } from "@/services/admin.service";
-import type { StudentDossier } from "@/models/admin.model";
+import { reportsService } from "@/services/reports.service";
+import type { StudentDashboardApi } from "@/models/reports.model";
 import {
   AdminInsightRow,
   AdminMetricCard,
@@ -26,7 +24,7 @@ import {
 export default function StudentDossierPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const [dossier, setDossier] = useState<StudentDossier | null>(null);
+  const [dossier, setDossier] = useState<StudentDashboardApi | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +32,7 @@ export default function StudentDossierPage() {
       if (!userId) return;
       setIsLoading(true);
       try {
-        const data = await adminService.getStudentDossier(parseInt(userId, 10));
+        const data = await reportsService.getStudentDashboard(parseInt(userId, 10));
         setDossier(data);
       } catch (error) {
         console.error("Failed to fetch dossier", error);
@@ -104,13 +102,13 @@ export default function StudentDossierPage() {
                     {dossier.fullName}
                   </h1>
                   <Badge className="bg-secondary text-primary font-black tracking-widest text-[10px] border-none px-3 py-1 rounded-full">
-                    {dossier.rank}
+                    Top {dossier.rank?.percentileInCohort ?? 0}%
                   </Badge>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-xs">
                   <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
                     <Shield className="h-3.5 w-3.5 text-primary" />
-                    <span className="font-mono">{dossier.shownId}</span>
+                    <span className="font-mono">ID #{dossier.userId}</span>
                   </div>
                   <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
                     <Mail className="h-3.5 w-3.5 text-primary" />
@@ -122,15 +120,15 @@ export default function StudentDossierPage() {
 
             <div className="xl:text-right flex flex-col items-start xl:items-end gap-1.5">
               <p className="text-[10px] uppercase tracking-[0.3em] font-black text-muted-foreground">
-                Năng lực tổng quan
+                Điểm tổng (ước lượng)
               </p>
               <div className="text-6xl md:text-7xl font-black text-primary tabular-nums tracking-tighter leading-none">
-                {dossier.proficiencyScore}%
+                {Math.round(dossier.overallScorePercent)}%
               </div>
               <div className="h-1.5 w-full max-w-[220px] bg-muted rounded-full overflow-hidden mt-2">
                 <div
                   className="h-full bg-secondary transition-all duration-1000"
-                  style={{ width: `${dossier.proficiencyScore}%` }}
+                  style={{ width: `${Math.round(dossier.overallScorePercent)}%` }}
                 />
               </div>
             </div>
@@ -141,21 +139,19 @@ export default function StudentDossierPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <AdminMetricCard
           label="Tiến độ khóa học"
-          value={`${
-            dossier.unitProgress.filter((u) => u.status === "completed").length
-          }/${dossier.unitProgress.length}`}
+          value={`${dossier.chapters.filter((u) => u.status === "COMPLETED").length}/${dossier.chapters.length}`}
           icon={<CheckCircle2 className="h-6 w-6 text-primary" />}
           unit="CHƯƠNG"
         />
         <AdminMetricCard
           label="Tổng thời gian học"
-          value={dossier.totalStudyTime.toString()}
+          value={Math.round(dossier.activity.totalAttempts / 2).toString()}
           icon={<Clock className="h-6 w-6 text-primary" />}
           unit="GIỜ"
         />
         <AdminMetricCard
           label="Độ chính xác"
-          value={dossier.accuracyRate.toString()}
+          value={Math.round(dossier.overallScorePercent).toString()}
           icon={<Target className="h-6 w-6 text-primary" />}
           unit="PHẦN TRĂM"
         />
@@ -174,29 +170,29 @@ export default function StudentDossierPage() {
             </div>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            {dossier.unitProgress.map((unit) => (
+            {dossier.chapters.map((unit) => (
               <div
-                key={unit.unitId}
+                key={unit.unitNumber}
                 className="space-y-4 rounded-lg border border-border/60 bg-background p-4"
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-4">
                     <div
                       className={`h-8 w-8 rounded-md flex items-center justify-center border transition-all ${
-                        unit.status === "locked"
+                        unit.status === "NOT_STARTED"
                           ? "bg-muted border-border text-muted-foreground/30"
                           : "bg-primary/5 border-primary/20 text-primary"
                       }`}
                     >
-                      {unit.status === "locked" ? (
+                      {unit.status === "NOT_STARTED" ? (
                         <Lock className="h-4 w-4" />
                       ) : (
-                        <span className="text-xs font-black">{unit.unitId}</span>
+                        <span className="text-xs font-black">{unit.unitNumber}</span>
                       )}
                     </div>
                     <div
                       className={`font-bold text-sm tracking-tight ${
-                        unit.status === "locked"
+                        unit.status === "NOT_STARTED"
                           ? "text-muted-foreground/40"
                           : "text-foreground"
                       }`}
@@ -205,16 +201,11 @@ export default function StudentDossierPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {unit.hasBadge && (
-                      <div className="bg-secondary/10 p-2 rounded-full shadow-inner">
-                        <Award className="h-5 w-5 text-secondary fill-secondary/20" />
-                      </div>
-                    )}
                     <Badge
                       variant="outline"
                       className="text-[10px] uppercase tracking-wider font-bold"
                     >
-                      {unit.progress}%
+                      {Math.round(unit.progressPercent)}%
                     </Badge>
                   </div>
                 </div>
@@ -223,10 +214,18 @@ export default function StudentDossierPage() {
                     <div
                       key={i}
                       className={`flex-1 rounded-[1.5px] transition-all duration-700 ${
-                        i < (unit.progress / 100) * 20 ? "bg-primary" : "bg-muted/50"
+                        i < (unit.progressPercent / 100) * 20 ? "bg-primary" : "bg-muted/50"
                       }`}
                     />
                   ))}
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="font-black uppercase tracking-widest">
+                    Điểm tốt nhất: {Math.round(unit.scorePercent)}%
+                  </span>
+                  <span className="font-mono">
+                    Lần làm: {unit.attemptCount}
+                  </span>
                 </div>
               </div>
             ))}
@@ -234,54 +233,11 @@ export default function StudentDossierPage() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="bg-card border border-border police-shadow rounded-lg overflow-hidden">
-            <CardHeader className="border-b border-border bg-muted/20 px-6 py-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Activity className="h-5 w-5 text-primary" />
-                </div>
-                <CardTitle className="text-lg font-black uppercase tracking-widest text-primary">
-                  Kết quả kiểm tra
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-border">
-                {dossier.testHistory.map((test) => (
-                  <div
-                    key={test.testId}
-                    className="px-6 py-5 flex items-center justify-between hover:bg-muted/20 transition-all"
-                  >
-                    <div className="space-y-2">
-                      <p className="font-black text-foreground uppercase text-xs tracking-widest">
-                        {test.title}
-                      </p>
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] font-bold border-border/60 text-muted-foreground/80 px-2 uppercase"
-                      >
-                        {test.date}
-                      </Badge>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-black text-primary leading-none tracking-tighter">
-                        {test.percentage}%
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-tighter opacity-70">
-                        {test.score} / {test.total}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="bg-card border border-border rounded-lg overflow-hidden">
             <CardHeader className="border-b border-border bg-muted/20 px-6 py-5">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
-                  <ChartLine className="h-5 w-5 text-primary" />
+                  <Activity className="h-5 w-5 text-primary" />
                 </div>
                 <CardTitle className="text-lg font-black uppercase tracking-widest text-primary">
                   Gợi ý huấn luyện
@@ -290,19 +246,37 @@ export default function StudentDossierPage() {
             </CardHeader>
             <CardContent className="p-6 space-y-4 text-sm">
               <AdminInsightRow
-                label="Năng lực hiện tại"
-                value={`${dossier.proficiencyScore}%`}
+                label="Điểm tổng (trung bình best score)"
+                value={`${Math.round(dossier.overallScorePercent)}%`}
               />
               <AdminInsightRow
                 label="Độ chính xác"
-                value={`${dossier.accuracyRate}%`}
+                value={`${Math.round(dossier.overallScorePercent)}%`}
               />
               <AdminInsightRow
-                label="Tổng thời gian học"
-                value={`${dossier.totalStudyTime} giờ`}
+                label="Hoạt động 7 ngày"
+                value={`${dossier.activity.attemptsLast7Days} lượt làm`}
+              />
+              <AdminInsightRow
+                label="Tiến độ (7 ngày)"
+                value={`${Math.round(dossier.trend.last7Days.progressDeltaPercent)}%`}
+              />
+              <AdminInsightRow
+                label="Điểm (7 ngày)"
+                value={`${Math.round(dossier.trend.last7Days.scoreDeltaPercent)}%`}
               />
               <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-primary">
-                Gợi ý: ưu tiên kèm các chương chưa hoàn thành có tiến độ dưới 80%.
+                Gợi ý: ưu tiên kèm các chương chưa hoàn thành và có điểm {"<"} 80%.
+              </div>
+              <div className="rounded-md border border-border/60 bg-muted/10 p-3 text-xs text-muted-foreground space-y-2">
+                <p className="font-black uppercase tracking-widest text-[10px]">
+                  Cách tính (để admin dễ kiểm tra)
+                </p>
+                <ul className="list-disc pl-4 space-y-1">
+                  {dossier.explain.slice(0, 3).map((t) => (
+                    <li key={t}>{t}</li>
+                  ))}
+                </ul>
               </div>
             </CardContent>
           </Card>

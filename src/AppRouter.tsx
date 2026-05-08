@@ -17,6 +17,8 @@ import {
   GeneralTestPage,
   AccountManagementPage,
   StudentDossierPage,
+  DashboardOverviewPage,
+  CompareDashboardPage,
 } from "@/pages";
 
 // Lazy-loaded route components
@@ -241,6 +243,8 @@ export function AppRouter() {
               }
             />
             <Route path="/admin/accounts" element={<AccountManagementPage />} />
+            <Route path="/admin/dashboard" element={<DashboardOverviewPage />} />
+            <Route path="/admin/compare" element={<CompareDashboardPage />} />
             <Route
               path="/admin/accounts/:userId"
               element={<StudentDossierPage />}
