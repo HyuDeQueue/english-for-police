@@ -10,9 +10,11 @@ import type {
   ProgressData,
   DashboardSummary,
 } from "@/models/progress.model";
+import { useSonner } from "@/hooks/use-sonner";
 
 export function useProgress() {
   const { user } = useAuth();
+  const { notifySuccess, notifyError } = useSonner();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<ProgressData | null>(null);
@@ -27,11 +29,13 @@ export function useProgress() {
     setError(null);
     try {
       const result = await progressService.submitAttempt(data);
+      notifySuccess("Nộp bài thành công", "Kết quả đã được cập nhật.");
       return result;
     } catch (err) {
       const apiError = err as { message?: string };
       const message = apiError.message || "Không thể gửi kết quả làm bài.";
       setError(message);
+      notifyError("Nộp bài thất bại", message);
       throw err;
     } finally {
       setIsLoading(false);
@@ -55,11 +59,12 @@ export function useProgress() {
         const apiError = err as { message?: string };
         const message = apiError.message || "Không thể tải dữ liệu tiến độ.";
         setError(message);
+        notifyError("Tải tiến độ thất bại", message);
       } finally {
         setIsLoading(false);
       }
     },
-    [user],
+    [notifyError, user],
   );
 
   const fetchDashboard = useCallback(async () => {
@@ -75,10 +80,11 @@ export function useProgress() {
       const apiError = err as { message?: string };
       const message = apiError.message || "Không thể tải bảng điều khiển.";
       setError(message);
+      notifyError("Tải bảng điều khiển thất bại", message);
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [notifyError, user]);
 
   return {
     isLoading,

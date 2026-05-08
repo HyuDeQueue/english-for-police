@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, UserCircle, Activity, ShieldCheck, AlertTriangle } from "lucide-react";
-import { adminService } from "@/services/admin.service";
-import type { StudentProgressSummary } from "@/models/admin.model";
+import { useAdminReports } from "@/hooks/use-admin-reports";
 import { AdminHero, AdminKpiCard } from "@/components/admin/AdminPrimitives";
 import { StudentListCard } from "@/components/admin/StudentListCard";
 import { StudentDirectoryToolbar } from "@/components/admin/StudentDirectoryToolbar";
@@ -20,26 +19,22 @@ function getActivityScore(label: string) {
 
 export default function AccountManagementPage() {
   const navigate = useNavigate();
-  const [students, setStudents] = useState<StudentProgressSummary[]>([]);
+  const { studentList, isLoading, error, fetchStudentList } = useAdminReports();
   const [searchQuery, setSearchQuery] = useState("");
   const [readinessFilter, setReadinessFilter] = useState<ReadinessFilter>("all");
   const [sortMode, setSortMode] = useState<SortMode>("progress");
-  const [isLoading, setIsLoading] = useState(true);
+  const students = useMemo(() => studentList ?? [], [studentList]);
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true);
       try {
-        const data = await adminService.getStudentList();
-        setStudents(data);
+        await fetchStudentList();
       } catch (error) {
         console.error("Failed to fetch students", error);
-      } finally {
-        setIsLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    void fetchData();
+  }, [fetchStudentList]);
 
   const stats = useMemo(() => {
     const readyCount = students.filter((s) => s.completionPercentage >= 80).length;
@@ -131,10 +126,10 @@ export default function AccountManagementPage() {
           <div className="text-center py-24 border-2 border-dashed border-border rounded-lg text-muted-foreground bg-muted/5">
             <Search className="h-10 w-10 mx-auto mb-4 opacity-20" />
             <p className="font-bold text-sm uppercase tracking-widest">
-              Không có kết quả phù hợp
+              {error ? "Không thể tải danh sách học viên" : "Không có kết quả phù hợp"}
             </p>
             <p className="text-xs mt-1">
-              Hãy thử từ khóa hoặc bộ lọc khác.
+              {error ? error : "Hãy thử từ khóa hoặc bộ lọc khác."}
             </p>
           </div>
         )}

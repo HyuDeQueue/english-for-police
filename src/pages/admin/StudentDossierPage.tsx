@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
   Shield,
   Target,
 } from "lucide-react";
-import { adminService } from "@/services/admin.service";
+import { useAdminReports } from "@/hooks/use-admin-reports";
 import type { StudentDossier } from "@/models/admin.model";
 import {
   AdminInsightRow,
@@ -26,24 +26,21 @@ import {
 export default function StudentDossierPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const [dossier, setDossier] = useState<StudentDossier | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { studentDossier, isLoading, error, fetchStudentDossier } =
+    useAdminReports();
+  const dossier: StudentDossier | null = studentDossier;
 
   useEffect(() => {
     const fetchData = async () => {
       if (!userId) return;
-      setIsLoading(true);
       try {
-        const data = await adminService.getStudentDossier(parseInt(userId, 10));
-        setDossier(data);
+        await fetchStudentDossier(parseInt(userId, 10));
       } catch (error) {
         console.error("Failed to fetch dossier", error);
-      } finally {
-        setIsLoading(false);
       }
     };
-    fetchData();
-  }, [userId]);
+    void fetchData();
+  }, [userId, fetchStudentDossier]);
 
   if (isLoading) {
     return (
@@ -63,6 +60,9 @@ export default function StudentDossierPage() {
         <p className="text-destructive font-black uppercase tracking-widest">
           Không thể truy cập: không tìm thấy hồ sơ
         </p>
+        {error ? (
+          <p className="text-xs text-muted-foreground max-w-sm">{error}</p>
+        ) : null}
         <Button
           onClick={() => navigate("/admin/accounts")}
           variant="outline"
@@ -148,10 +148,10 @@ export default function StudentDossierPage() {
           unit="CHƯƠNG"
         />
         <AdminMetricCard
-          label="Tổng thời gian học"
+          label="Tổng lượt làm bài"
           value={dossier.totalStudyTime.toString()}
           icon={<Clock className="h-6 w-6 text-primary" />}
-          unit="GIỜ"
+          unit="LƯỢT"
         />
         <AdminMetricCard
           label="Độ chính xác"
@@ -191,7 +191,9 @@ export default function StudentDossierPage() {
                       {unit.status === "locked" ? (
                         <Lock className="h-4 w-4" />
                       ) : (
-                        <span className="text-xs font-black">{unit.unitId}</span>
+                        <span className="text-xs font-black">
+                          {unit.unitId}
+                        </span>
                       )}
                     </div>
                     <div
@@ -223,7 +225,9 @@ export default function StudentDossierPage() {
                     <div
                       key={i}
                       className={`flex-1 rounded-[1.5px] transition-all duration-700 ${
-                        i < (unit.progress / 100) * 20 ? "bg-primary" : "bg-muted/50"
+                        i < (unit.progress / 100) * 20
+                          ? "bg-primary"
+                          : "bg-muted/50"
                       }`}
                     />
                   ))}
@@ -298,11 +302,12 @@ export default function StudentDossierPage() {
                 value={`${dossier.accuracyRate}%`}
               />
               <AdminInsightRow
-                label="Tổng thời gian học"
-                value={`${dossier.totalStudyTime} giờ`}
+                label="Tổng lượt làm bài"
+                value={`${dossier.totalStudyTime} lượt`}
               />
               <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-primary">
-                Gợi ý: ưu tiên kèm các chương chưa hoàn thành có tiến độ dưới 80%.
+                Gợi ý: ưu tiên kèm các chương chưa hoàn thành có tiến độ dưới
+                80%.
               </div>
             </CardContent>
           </Card>

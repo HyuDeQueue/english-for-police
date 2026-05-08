@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Shield,
-  ArrowRight,
-  Lock,
-  Mail,
-  Loader2,
-  AlertCircle,
-} from "lucide-react";
+import { Shield, ArrowRight, Lock, Mail, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +24,7 @@ export function AuthDialogs({
   view,
   setView,
 }: AuthDialogsProps) {
-  const { login, register, isLoading, error, setError } = useAuth();
+  const { login, register, isLoading, setError } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,7 +45,7 @@ export function AuthDialogs({
       setEmail("");
       setPassword("");
     } catch {
-      // Error handled by hook
+      // Error notification is handled inside hook.
     }
   };
 
@@ -62,11 +55,10 @@ export function AuthDialogs({
       await register({ email, fullName, dateOfBirth: dob, password });
       setView("login");
       setError(null);
-      // Clear registration specific fields
       setFullName("");
       setDob("");
     } catch {
-      // Error handled by hook
+      // Error notification is handled inside hook.
     }
   };
 
@@ -90,13 +82,6 @@ export function AuthDialogs({
             </DialogHeader>
 
             <div className="p-8 space-y-6 bg-white/40">
-              {error && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-3 text-destructive text-xs font-bold animate-in fade-in slide-in-from-top-1">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-
               <div className="space-y-4">
                 <div className="space-y-2 group">
                   <Label
@@ -211,13 +196,6 @@ export function AuthDialogs({
             </DialogHeader>
 
             <div className="p-8 space-y-6 bg-white/40 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              {error && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 flex items-center gap-3 text-destructive text-xs font-bold animate-in fade-in slide-in-from-top-1">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              )}
-
               <div className="space-y-4">
                 <div className="space-y-2 group">
                   <Label

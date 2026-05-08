@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAudioRecorder } from "@/hooks/use-audio-recorder";
+import { useAudioRecorder } from "@/hooks/app/use-audio-recorder";
 import { cn } from "@/lib/utils";
 
 interface AudioRecorderButtonProps {

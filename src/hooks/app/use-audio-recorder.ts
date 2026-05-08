@@ -24,10 +24,7 @@ export function useAudioRecorder() {
         );
       }
 
-      if (
-        !navigator.mediaDevices ||
-        !navigator.mediaDevices.getUserMedia
-      ) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Your browser does not support microphone access.");
       }
 
@@ -46,6 +43,7 @@ export function useAudioRecorder() {
         const audioBlob = new Blob(audioChunksRef.current, {
           type: mediaRecorder.mimeType || "audio/webm",
         });
+        stream.getTracks().forEach((track) => track.stop());
         setStatus("transcribing");
         try {
           const text = await transcribeAudio(audioBlob);
@@ -54,9 +52,6 @@ export function useAudioRecorder() {
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to transcribe");
           setStatus("error");
-        } finally {
-          // Stop all tracks to release the microphone
-          stream.getTracks().forEach((track) => track.stop());
         }
       };
 

@@ -13,10 +13,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
     try {
       const payload = (await response.json()) as Partial<ApiResponse<T>> & {
         message?: string;
+        detail?: string;
+        title?: string;
       };
-      if (payload?.message) {
-        detail = `: ${payload.message}`;
-      }
+      const message = payload?.message || payload?.detail || payload?.title;
+      if (message) detail = `: ${message}`;
     } catch {
       // Ignore parsing errors and keep status-only message
     }

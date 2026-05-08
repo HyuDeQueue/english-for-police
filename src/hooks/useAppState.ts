@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
 import { initialLessons } from "@/data/lesson/lessons";
-import { fetchLessons, seedFullMockLessons } from "@/lib/lessonApi";
+import { fetchLessons, importLessons, seedFullMockLessons } from "@/lib/lessonApi";
+import { useSonner } from "@/hooks/use-sonner";
 
 export function useAppState() {
+  const { notifyError, notifyWarning } = useSonner();
   const [lessons, setLessons] = useState<Unit[]>(() => {
     const savedLessons = localStorage.getItem("police_english_lessons");
     if (savedLessons) {
@@ -99,7 +101,19 @@ export function useAppState() {
       try {
         let remoteLessons = await fetchLessons();
         if (!remoteLessons.length) {
-          await seedFullMockLessons();
+          try {
+            await seedFullMockLessons();
+          } catch (seedError) {
+            console.error(
+              "Seed-full endpoint failed, fallback to import endpoint",
+              seedError,
+            );
+            notifyWarning(
+              "Máy chủ seed lỗi",
+              "Đang chuyển sang import dữ liệu bài học dự phòng.",
+            );
+            await importLessons(initialLessons);
+          }
           remoteLessons = await fetchLessons();
         }
         if (remoteLessons.length) {
@@ -108,6 +122,10 @@ export function useAppState() {
         }
       } catch (error) {
         console.error("Failed to sync lessons from backend", error);
+        notifyError(
+          "Không đồng bộ được bài học",
+          "Ứng dụng đang dùng dữ liệu cục bộ tạm thời.",
+        );
       } finally {
         // Offline-safe fallback: keep app usable when backend is unreachable.
         if (!hasRemoteData) {
@@ -117,7 +135,7 @@ export function useAppState() {
     };
 
     void syncLessonsFromBackend();
-  }, []);
+  }, [notifyError, notifyWarning]);
 
   useEffect(() => {
     localStorage.setItem("police_english_progress", JSON.stringify(progress));
