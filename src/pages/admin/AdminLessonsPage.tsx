@@ -268,48 +268,50 @@ export function LessonEditorForm({
       </div>
 
       {showMeta ? (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-unit-id`}>Mã chương (số)</Label>
-          <Input
-            id={`${idPrefix}-unit-id`}
-            type="number"
-            disabled={mode === "edit"}
-            value={draft.id}
-            onChange={(e) =>
-              setDraft((d) => ({
-                ...d,
-                id: Number(e.target.value) || 0,
-              }))
-            }
-          />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor={`${idPrefix}-unit-id`}>Mã chương (số)</Label>
+              <Input
+                id={`${idPrefix}-unit-id`}
+                type="number"
+                disabled={mode === "edit"}
+                value={draft.id}
+                onChange={(e) =>
+                  setDraft((d) => ({
+                    ...d,
+                    id: Number(e.target.value) || 0,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`${idPrefix}-video`}>Video URL</Label>
+              <Input
+                id={`${idPrefix}-video`}
+                value={draft.videoUrl ?? ""}
+                onChange={(e) => setDraft((d) => ({ ...d, videoUrl: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${idPrefix}-title`}>Tiêu đề</Label>
+            <Input
+              id={`${idPrefix}-title`}
+              value={draft.title}
+              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${idPrefix}-desc`}>Mô tả</Label>
+            <Textarea
+              id={`${idPrefix}-desc`}
+              rows={3}
+              value={draft.description}
+              onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor={`${idPrefix}-video`}>Video URL</Label>
-          <Input
-            id={`${idPrefix}-video`}
-            value={draft.videoUrl ?? ""}
-            onChange={(e) => setDraft((d) => ({ ...d, videoUrl: e.target.value }))}
-          />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-title`}>Tiêu đề</Label>
-        <Input
-          id={`${idPrefix}-title`}
-          value={draft.title}
-          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${idPrefix}-desc`}>Mô tả</Label>
-        <Textarea
-          id={`${idPrefix}-desc`}
-          rows={3}
-          value={draft.description}
-          onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-        />
-      </div>
       ) : null}
 
       {(showVocab ||
@@ -488,6 +490,7 @@ export function LessonEditorForm({
         ) : null}
 
         {showMemoryTemplatesGrammar ? (
+        <>
         <AccordionItem value="memory" className="border-b px-1">
           <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
             Cố định (memory boost)
@@ -1018,6 +1021,7 @@ export function LessonEditorForm({
             )}
           </AccordionContent>
         </AccordionItem>
+        </>
         ) : null}
 
         {showPractice ? (
