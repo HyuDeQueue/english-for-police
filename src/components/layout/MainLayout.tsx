@@ -187,7 +187,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 <div className="mx-1.5 mb-1.5 rounded-md border border-border bg-background px-3 py-2">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <CalendarDays className="h-3.5 w-3.5" />
-                    <span>Ngay tham gia</span>
+                    <span>Ngày tham gia</span>
                   </div>
                   <p className="mt-1 text-sm font-semibold text-foreground">
                     {joinDateLabel}
