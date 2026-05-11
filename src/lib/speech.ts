@@ -2,6 +2,7 @@ import { TTS_API_BASE_URL, DEFAULT_TTS_VOICE } from "@/config/api";
 
 let preferredVoice: SpeechSynthesisVoice | null = null;
 let currentAudio: HTMLAudioElement | null = null;
+let browserTtsTimeout: number | null = null;
 
 export function initSpeech() {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -26,7 +27,6 @@ export function initSpeech() {
 export function unlockSpeech() {
   if (typeof window === "undefined") return;
 
-  // For SpeechSynthesis fallback
   if ("speechSynthesis" in window) {
     const u = new SpeechSynthesisUtterance("");
     u.volume = 0;
@@ -34,7 +34,6 @@ export function unlockSpeech() {
     window.speechSynthesis.speak(u);
   }
 
-  // Create a silent audio to unlock audio context
   const audio = new Audio();
   audio.play().catch(() => {});
 }
@@ -42,13 +41,19 @@ export function unlockSpeech() {
 export async function speak(text: string, opts?: { onend?: () => void }) {
   if (typeof window === "undefined") return;
 
-  // Stop current audio if playing
   if (currentAudio) {
     currentAudio.pause();
     currentAudio = null;
   }
 
-  // Try Remote TTS first
+  let fallbackTriggered = false;
+  const triggerFallback = () => {
+    if (!fallbackTriggered) {
+      fallbackTriggered = true;
+      speakWithBrowser(text, opts);
+    }
+  };
+
   try {
     const apiUrl = `${window.location.origin}${TTS_API_BASE_URL}/api/tts`;
     const url = new URL(apiUrl);
@@ -65,7 +70,7 @@ export async function speak(text: string, opts?: { onend?: () => void }) {
 
     audio.onerror = (e) => {
       console.warn("Audio element error, falling back to browser TTS", e);
-      speakWithBrowser(text, opts);
+      triggerFallback();
     };
 
     await audio.play();
@@ -75,7 +80,7 @@ export async function speak(text: string, opts?: { onend?: () => void }) {
       "Remote TTS execution failed, falling back to browser TTS",
       error,
     );
-    speakWithBrowser(text, opts);
+    triggerFallback();
   }
 }
 
@@ -86,8 +91,11 @@ function speakWithBrowser(text: string, opts?: { onend?: () => void }) {
   }
 
   window.speechSynthesis.cancel();
+  if (browserTtsTimeout) {
+    clearTimeout(browserTtsTimeout);
+  }
 
-  setTimeout(() => {
+  browserTtsTimeout = setTimeout(() => {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US";
     u.rate = 0.9;
@@ -114,6 +122,7 @@ function speakWithBrowser(text: string, opts?: { onend?: () => void }) {
     };
 
     window.speechSynthesis.speak(u);
+    browserTtsTimeout = null;
   }, 50);
 }
 

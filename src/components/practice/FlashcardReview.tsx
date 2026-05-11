@@ -191,17 +191,8 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
 
       <FlashcardStats learningCount={stats.learning} knownCount={stats.known} />
 
-      <div className="w-full flex items-center justify-center gap-2 md:gap-8 mt-6">
-        {/* Left Arrow Button */}
-        <button
-          onClick={() => markCard("review")}
-          className="h-12 w-12 md:h-16 md:w-16 rounded-full flex items-center justify-center transition-all bg-orange-500 text-white hover:scale-110 shadow-lg"
-          title="Học lại (Phím ←)"
-        >
-          <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
-        </button>
-
-        <div className="flex-1 max-w-3xl">
+      <div className="w-full flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 mt-4 md:mt-6">
+        <div className="w-full flex-1 max-w-3xl order-1 md:order-2">
           <Flashcard
             front={currentCard.front}
             back={currentCard.back}
@@ -216,14 +207,26 @@ export const FlashcardReview: React.FC<FlashcardReviewProps> = ({
           />
         </div>
 
-        {/* Right Arrow Button */}
-        <button
-          onClick={() => markCard("known")}
-          className="h-12 w-12 md:h-16 md:w-16 rounded-full flex items-center justify-center transition-all bg-emerald-500 text-white hover:scale-110 shadow-lg"
-          title="Đã thuộc (Phím →)"
-        >
-          <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
-        </button>
+        {/* Navigation Buttons Container */}
+        <div className="w-full flex items-center justify-center gap-6 order-2 md:contents">
+          {/* Left Arrow Button */}
+          <button
+            onClick={() => markCard("review")}
+            className="h-14 w-14 md:h-16 md:w-16 rounded-full flex items-center justify-center transition-all bg-orange-500 text-white hover:scale-110 active:scale-95 shadow-lg md:order-1"
+            title="Học lại (Phím ←)"
+          >
+            <ChevronLeft className="h-7 w-7 md:h-8 md:w-8" />
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            onClick={() => markCard("known")}
+            className="h-14 w-14 md:h-16 md:w-16 rounded-full flex items-center justify-center transition-all bg-emerald-500 text-white hover:scale-110 active:scale-95 shadow-lg md:order-3"
+            title="Đã thuộc (Phím →)"
+          >
+            <ChevronRight className="h-7 w-7 md:h-8 md:w-8" />
+          </button>
+        </div>
       </div>
 
       <style

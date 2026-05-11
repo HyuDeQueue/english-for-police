@@ -17,11 +17,12 @@ export const FlashcardHeader: React.FC<FlashcardHeaderProps> = ({
     <div className="w-full flex items-center justify-between mb-6">
       <Button
         variant="ghost"
-        className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 rounded-xl transition-all"
+        className="text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 rounded-xl transition-all px-2 md:px-4"
         onClick={onBack}
       >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        <span className="font-semibold">Quay lại bài học</span>
+        <ArrowLeft className="md:mr-2 h-4 w-4" />
+        <span className="font-semibold hidden md:inline">Quay lại bài học</span>
+        <span className="font-semibold md:hidden">Quay lại</span>
       </Button>
 
       <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200/60 shadow-inner">
