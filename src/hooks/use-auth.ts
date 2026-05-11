@@ -28,10 +28,11 @@ export function useAuth() {
   }, []);
 
   const login = async (data: LoginRequest) => {
+    const processedData = { ...data, email: data.email.toLowerCase() };
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.login(data);
+      const response = await authService.login(processedData);
       setUser(response.user);
       localStorage.setItem("auth_user", JSON.stringify(response.user));
       window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
@@ -51,10 +52,11 @@ export function useAuth() {
   };
 
   const register = async (data: RegisterRequest) => {
+    const processedData = { ...data, email: data.email.toLowerCase() };
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.register(data);
+      const response = await authService.register(processedData);
       notifySuccess(
         "Đăng ký thành công",
         "Tài khoản đã được tạo. Vui lòng đăng nhập để tiếp tục.",
