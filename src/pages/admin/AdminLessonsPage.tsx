@@ -117,7 +117,7 @@ function defaultCollocation(): Collocation {
 }
 
 const selectClass =
-  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm md:text-base ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 
 const TEST_LANE_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Chưa phân loại (tự suy)" },
@@ -218,6 +218,15 @@ export function LessonEditorForm({
   const showPhrases = eff === "full" || eff === "phrases";
   const showPractice = eff === "full" || eff === "practice";
   const showMemoryTemplatesGrammar = eff === "full";
+  const isScopedEditor = eff !== "full";
+  const lockedOpenSections = useMemo(() => {
+    if (!isScopedEditor) return undefined;
+    const sections: string[] = [];
+    if (showVocab) sections.push("vocab");
+    if (showPhrases) sections.push("phrases");
+    if (showPractice) sections.push("practice");
+    return sections;
+  }, [isScopedEditor, showPhrases, showPractice, showVocab]);
 
   const scopedTitle =
     eff === "meta"
@@ -244,9 +253,9 @@ export function LessonEditorForm({
   }, [draft.practice]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border pb-3">
-        <h3 className="text-base font-bold text-primary tracking-tight">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-xl border border-border/80 bg-card px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <h3 className="text-lg font-bold text-primary tracking-tight">
           {scopedTitle ??
             (mode === "create" ? "Thêm chương mới" : `Sửa chương ${draft.id}`)}
         </h3>
@@ -318,13 +327,22 @@ export function LessonEditorForm({
         showPhrases ||
         showMemoryTemplatesGrammar ||
         showPractice) ? (
-      <Accordion type="multiple" className="w-full border rounded-lg bg-background">
+      <Accordion
+        type="multiple"
+        value={lockedOpenSections}
+        className="w-full rounded-xl border border-border/80 bg-background px-2 md:px-3"
+      >
         {showVocab ? (
-        <AccordionItem value="vocab" className="border-b px-1">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
+        <AccordionItem value="vocab" className="border-b border-border/80 px-1">
+          <AccordionTrigger
+            className={cn(
+              "py-4 text-base font-semibold hover:no-underline",
+              isScopedEditor && "pointer-events-none cursor-default [&>svg]:hidden",
+            )}
+          >
             Từ vựng ({draft.vocabulary.length})
           </AccordionTrigger>
-          <AccordionContent className="space-y-3 px-1 pb-3">
+          <AccordionContent className="space-y-4 px-1 pb-5 pt-1">
             {draft.vocabulary.map((row, idx) => (
               <div
                 key={idx}
@@ -419,11 +437,16 @@ export function LessonEditorForm({
         ) : null}
 
         {showPhrases ? (
-        <AccordionItem value="phrases" className="border-b px-1">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
+        <AccordionItem value="phrases" className="border-b border-border/80 px-1">
+          <AccordionTrigger
+            className={cn(
+              "py-4 text-base font-semibold hover:no-underline",
+              isScopedEditor && "pointer-events-none cursor-default [&>svg]:hidden",
+            )}
+          >
             Mẫu câu ({draft.phrases.length})
           </AccordionTrigger>
-          <AccordionContent className="space-y-3 px-1 pb-3">
+          <AccordionContent className="space-y-4 px-1 pb-5 pt-1">
             {draft.phrases.map((row, idx) => (
               <div
                 key={idx}
@@ -491,11 +514,11 @@ export function LessonEditorForm({
 
         {showMemoryTemplatesGrammar ? (
         <>
-        <AccordionItem value="memory" className="border-b px-1">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
+        <AccordionItem value="memory" className="border-b border-border/80 px-1">
+          <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
             Cố định (memory boost)
           </AccordionTrigger>
-          <AccordionContent className="space-y-3 px-1 pb-3">
+          <AccordionContent className="space-y-4 px-1 pb-5 pt-1">
             <div className="space-y-2">
               <Label>Tóm tắt</Label>
               <Textarea
@@ -579,10 +602,10 @@ export function LessonEditorForm({
         </AccordionItem>
 
         <AccordionItem value="phrase-templates" className="px-1">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
+          <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
             Mẫu câu (template) ({phraseTemplates.length})
           </AccordionTrigger>
-          <AccordionContent className="space-y-3 px-1 pb-3 text-sm">
+          <AccordionContent className="space-y-4 px-1 pb-5 pt-1 text-sm">
             <p className="text-muted-foreground text-xs">
               Lớp soạn riêng với mục &quot;Mẫu câu&quot; trong bài học; dùng cho tài liệu / ngân hàng mở rộng sau này.
             </p>
@@ -804,10 +827,10 @@ export function LessonEditorForm({
         </AccordionItem>
 
         <AccordionItem value="grammar-structures" className="px-1">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
+          <AccordionTrigger className="py-4 text-base font-semibold hover:no-underline">
             Cấu trúc ngữ pháp ({grammarStructures.length})
           </AccordionTrigger>
-          <AccordionContent className="space-y-3 px-1 pb-3 text-sm">
+          <AccordionContent className="space-y-4 px-1 pb-5 pt-1 text-sm">
             {mode === "create" ? (
               <p className="text-muted-foreground">
                 Lưu chương mới trước, rồi mở &quot;Sửa&quot; để thêm cấu trúc qua API.
@@ -1026,10 +1049,15 @@ export function LessonEditorForm({
 
         {showPractice ? (
         <AccordionItem value="practice" className="px-1">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline py-3">
+          <AccordionTrigger
+            className={cn(
+              "py-4 text-base font-semibold hover:no-underline",
+              isScopedEditor && "pointer-events-none cursor-default [&>svg]:hidden",
+            )}
+          >
             Bài kiểm tra & câu hỏi luyện tập ({draft.practice.length})
           </AccordionTrigger>
-          <AccordionContent className="space-y-6 px-1 pb-3">
+          <AccordionContent className="space-y-6 px-1 pb-5 pt-1">
             {LANES_ORDER.map((lane) => {
               const laneIndices = practiceIndicesByLane[lane];
               const meta = SECTION_META[lane];
@@ -1080,7 +1108,7 @@ export function LessonEditorForm({
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">
-                      Lành kiểm tra (UI Luyện tập)
+                      Làn kiểm tra (UI luyện tập)
                     </Label>
                     <select
                       className={cn(selectClass, "min-w-[220px]")}

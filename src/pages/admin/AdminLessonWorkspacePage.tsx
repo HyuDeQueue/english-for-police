@@ -181,7 +181,7 @@ export default function AdminLessonWorkspacePage({
       description="Chọn mục bên dưới để soạn từng phần; chỉ có một nút Lưu trên header."
       actions={null}
     >
-      <div className="space-y-6 max-w-[1400px] mx-auto w-full">
+      <div className="mx-auto w-full max-w-[1400px] space-y-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2 min-w-0">
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -231,12 +231,13 @@ export default function AdminLessonWorkspacePage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 border-b border-border pb-2">
+        <div className="flex flex-wrap gap-2 rounded-xl border border-border/80 bg-card p-2">
           <button
             type="button"
             onClick={() => setView("overview")}
+            aria-current={activeView === "overview" ? "page" : undefined}
             className={cn(
-              "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors",
+              "inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               activeView === "overview"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -250,8 +251,9 @@ export default function AdminLessonWorkspacePage({
               key={key}
               type="button"
               onClick={() => setView(key)}
+              aria-current={activeView === key ? "page" : undefined}
               className={cn(
-                "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors",
+                "inline-flex min-h-11 items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 activeView === key
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -265,23 +267,23 @@ export default function AdminLessonWorkspacePage({
 
         {activeView === "overview" && (
           <div className="space-y-6 animate-in fade-in duration-200">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-5">
               <button
                 type="button"
                 onClick={() => setView("vocabulary")}
-                className="text-left rounded-lg transition hover:opacity-95"
+                className="rounded-lg text-left transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Card className="police-shadow border-border/80 h-full hover:border-primary/40">
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-3">
                     <CardDescription className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
                       <BookMarked className="h-4 w-4 text-primary" />
                       Từ vựng
                     </CardDescription>
-                    <CardTitle className="text-3xl tabular-nums">
+                    <CardTitle className="text-4xl tabular-nums">
                       {draft.vocabulary.length}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="text-xs text-muted-foreground leading-snug">
+                  <CardContent className="text-sm text-muted-foreground leading-relaxed">
                     <span className="text-primary font-semibold">Soạn →</span>{" "}
                     chỉnh sửa danh sách từ trong chương.
                   </CardContent>
@@ -290,19 +292,19 @@ export default function AdminLessonWorkspacePage({
               <button
                 type="button"
                 onClick={() => setView("phrases")}
-                className="text-left rounded-lg transition hover:opacity-95"
+                className="rounded-lg text-left transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Card className="police-shadow border-border/80 h-full hover:border-primary/40">
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-3">
                     <CardDescription className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
                       <Layers className="h-4 w-4 text-primary" />
                       Mẫu câu
                     </CardDescription>
-                    <CardTitle className="text-3xl tabular-nums">
+                    <CardTitle className="text-4xl tabular-nums">
                       {draft.phrases.length}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="text-xs text-muted-foreground leading-snug">
+                  <CardContent className="text-sm text-muted-foreground leading-relaxed">
                     <span className="text-primary font-semibold">Soạn →</span>{" "}
                     câu mẫu và bản dịch.
                   </CardContent>
@@ -311,19 +313,19 @@ export default function AdminLessonWorkspacePage({
               <button
                 type="button"
                 onClick={() => setView("practice")}
-                className="text-left rounded-lg transition hover:opacity-95"
+                className="rounded-lg text-left transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
                 <Card className="police-shadow border-border/80 h-full hover:border-primary/40">
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-3">
                     <CardDescription className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
                       <PencilLine className="h-4 w-4 text-primary" />
                       Bài kiểm tra (DB)
                     </CardDescription>
-                    <CardTitle className="text-3xl tabular-nums">
+                    <CardTitle className="text-4xl tabular-nums">
                       {draft.practice.length}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="text-xs text-muted-foreground leading-snug">
+                  <CardContent className="text-sm text-muted-foreground leading-relaxed">
                     <span className="text-primary font-semibold">Soạn →</span>{" "}
                     câu luyện theo từng dạng.
                   </CardContent>
@@ -398,8 +400,8 @@ export default function AdminLessonWorkspacePage({
         )}
 
         {editorScope != null && editorScope !== "full" && (
-          <div className="rounded-xl border border-border bg-card police-shadow overflow-hidden animate-in fade-in duration-200">
-            <div className="max-h-[min(85vh,1200px)] overflow-y-auto overscroll-contain p-4 md:p-6">
+          <div className="animate-in fade-in duration-200 overflow-hidden rounded-xl border border-border bg-card police-shadow">
+            <div className="max-h-[min(85vh,1200px)] overflow-y-auto overscroll-contain p-5 md:p-7">
               <LessonEditorForm
                 mode="edit"
                 draft={draft}
