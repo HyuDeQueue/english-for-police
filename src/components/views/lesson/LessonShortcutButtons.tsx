@@ -3,6 +3,9 @@ import { ChevronRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { requestOpenLoginDialog } from "@/lib/auth-ui-events";
+import { PRACTICE_MENU_LABEL_TO_LANE } from "@/components/practice/utils/testUtils";
+
+const PRACTICE_TYPES = Object.keys(PRACTICE_MENU_LABEL_TO_LANE);
 
 interface LessonShortcutButtonsProps {
   readonly testsLocked: boolean;
@@ -82,12 +85,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
 
             {isTypeExpanded && (
               <div className="pl-3 pr-1 space-y-1 animate-fade-in border-l-2 border-muted ml-2 mb-2">
-                {[
-                  "Trắc nghiệm từ vựng",
-                  "Ghép từ - nghĩa",
-                  "Mẫu câu & tình huống",
-                  "Điền từ & sắp xếp câu",
-                ].map((type) => (
+                {PRACTICE_TYPES.map((type) => (
                   <Button
                     key={type}
                     variant="ghost"
