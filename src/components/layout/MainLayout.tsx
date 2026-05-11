@@ -4,6 +4,7 @@ import {
   ChevronDown,
   LogOut,
   BarChart3,
+  BookOpen,
   CalendarDays,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -199,6 +200,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                         <BarChart3 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         <span className="text-sm font-medium text-foreground">
                           Tiến độ chương trình
+                        </span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer hover:bg-accent focus:bg-accent transition-colors group"
+                        onClick={() => navigate("/admin/lessons")}
+                      >
+                        <BookOpen className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-sm font-medium text-foreground">
+                          Quản lý bài học
                         </span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator className="my-1.5" />

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Navigate,
   Route,
@@ -21,9 +21,11 @@ import {
   FlashcardResultsPage,
   GeneralTestPage,
   UnitsProgressPage,
+  AdminLessonsPage,
 } from "@/pages";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@/models/user.model";
+import { fetchLessons } from "@/lib/lessonApi";
 
 // Lazy-loaded route components
 const HomeView = lazy(() =>
@@ -87,6 +89,17 @@ export function AppRouter() {
 
   const navigateToHome = () => navigate("/");
   const navigateToLesson = (unit: Unit) => navigate(`/lesson/${unit.id}`);
+
+  const reloadLessonsFromApi = useCallback(async () => {
+    try {
+      const next = await fetchLessons();
+      if (next.length) {
+        setLessons(next);
+      }
+    } catch {
+      /* keep existing lessons on failure */
+    }
+  }, [setLessons]);
 
   const activeUnitId = useMemo(() => {
     const match = location.pathname.match(
@@ -259,6 +272,16 @@ export function AppRouter() {
               }
             />
             <Route path="/admin/units" element={<UnitsProgressPage />} />
+            <Route
+              path="/admin/lessons"
+              element={
+                user?.role === UserRole.ADMIN ? (
+                  <AdminLessonsPage onLessonsUpdated={reloadLessonsFromApi} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
           </Routes>
         </Suspense>
       </MainLayout>

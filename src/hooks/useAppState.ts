@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
 import { initialLessons } from "@/data/lesson/lessons";
-import { fetchLessons, importLessons } from "@/lib/lessonApi";
+import { fetchLessons } from "@/lib/lessonApi";
 import { useSonner } from "@/hooks/use-sonner";
 
 export function useAppState() {
@@ -103,10 +103,8 @@ export function useAppState() {
         if (!remoteLessons.length) {
           notifyWarning(
             "Máy chủ chưa có dữ liệu bài học",
-            "Đang import dữ liệu bài học dự phòng.",
+            "Đăng nhập quản trị và dùng Quản lý bài học để nhập dữ liệu (API import yêu cầu quyền ADMIN). Đang dùng bản cục bộ tạm thời.",
           );
-          await importLessons(initialLessons);
-          remoteLessons = await fetchLessons();
         }
         if (remoteLessons.length) {
           hasRemoteData = true;

@@ -16,6 +16,8 @@ export const API_ROUTES = {
     IMPORT: "/api/v1/lessons/import",
     LIST: "/api/v1/lessons",
     DETAIL: (unitNumber: number) => `/api/v1/lessons/${unitNumber}`,
+    DETAIL_INCLUDE_ANSWERS: (unitNumber: number) =>
+      `/api/v1/lessons/${unitNumber}?includeAnswers=true`,
   },
   PROGRESS: {
     SUBMIT_ATTEMPT: "/api/v1/progress/attempts",
