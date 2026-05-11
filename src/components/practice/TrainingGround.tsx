@@ -9,6 +9,7 @@ import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
 import {
   mapAnswersToBackendPayload,
+  preparePracticeQuestions,
   shuffleArray,
 } from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
@@ -64,7 +65,9 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
           sources: ["vocab", "phrase", "practice"],
           limitPerUnit: 20,
         });
-        setQuestions(shuffleArray(fetched).slice(0, 15));
+        setQuestions(
+          preparePracticeQuestions(shuffleArray(fetched).slice(0, 15)),
+        );
       } catch (error) {
         console.error("Failed to load training questions", error);
         notifyError("Không tải được bộ câu hỏi", "Vui lòng thử lại sau.");

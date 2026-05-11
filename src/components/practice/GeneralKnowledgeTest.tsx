@@ -24,6 +24,8 @@ import {
   QUESTIONS_PER_PAGE,
   buildSections,
   mapAnswersToBackendPayload,
+  preparePracticeQuestionsForSections,
+  shuffleArray,
 } from "./utils/testUtils";
 import { useGeneralTestState } from "./hooks/useGeneralTestState";
 import { useSonner } from "@/hooks/use-sonner";
@@ -99,7 +101,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
           sources: ["vocab", "phrase", "practice"],
           limitPerUnit: 20,
         });
-        setQuestions(fetched);
+        const shuffled = shuffleArray(fetched);
+        const draftSections = buildSections(shuffled, testMode, bankLimit);
+        setQuestions(
+          preparePracticeQuestionsForSections(shuffled, draftSections),
+        );
       } catch (error) {
         console.error("Failed to load general test questions", error);
         notifyError("Không tải được bộ câu hỏi", "Vui lòng thử lại sau.");
@@ -109,7 +115,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
       }
     };
     void loadQuestions();
-  }, [lessons, notifyError]);
+  }, [lessons, notifyError, testMode, bankLimit]);
 
   const sections: Section[] = useMemo(
     () => buildSections(questions, testMode, bankLimit),
@@ -417,9 +423,18 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         bankLimit={bankLimit}
         onSetBankLimit={(limit) => {
           setBankLimit(limit);
+          setQuestions((prev) => {
+            const draftSections = buildSections(prev, testMode, limit);
+            return preparePracticeQuestionsForSections(prev, draftSections);
+          });
           resetTestState();
         }}
         onShuffle={() => {
+          setQuestions((prev) => {
+            const shuffled = shuffleArray([...prev]);
+            const draftSections = buildSections(shuffled, testMode, bankLimit);
+            return preparePracticeQuestionsForSections(shuffled, draftSections);
+          });
           setShuffleTrigger((prev) => prev + 1);
           resetTestState();
         }}

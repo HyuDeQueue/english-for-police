@@ -28,6 +28,83 @@ export function shuffleArray<T>(arr: T[]): T[] {
   return shuffled;
 }
 
+function isMcqOrScenario(q: Question): boolean {
+  return (
+    (q.type === "MCQ" || q.type === "Scenario") &&
+    Array.isArray(q.options) &&
+    q.options.length > 0
+  );
+}
+
+function diversifiedShuffleMcqOptions(
+  q: Question,
+  avoidCorrectIndex: number | null,
+): Question {
+  if (!isMcqOrScenario(q)) return q;
+  const correct = q.answer;
+  if (typeof correct !== "string") return q;
+  const opts = q.options!;
+  if (!opts.includes(correct)) return q;
+
+  for (let attempt = 0; attempt < 48; attempt++) {
+    const shuffled = shuffleArray([...opts]);
+    const idx = shuffled.indexOf(correct);
+    if (
+      avoidCorrectIndex === null ||
+      idx !== avoidCorrectIndex ||
+      opts.length <= 1
+    ) {
+      return { ...q, options: shuffled };
+    }
+  }
+  return { ...q, options: shuffleArray([...opts]) };
+}
+
+export function preparePracticeQuestions(questions: Question[]): Question[] {
+  let prevCorrectIndex: number | null = null;
+  return questions.map((q) => {
+    if (
+      isMcqOrScenario(q) &&
+      typeof q.answer === "string" &&
+      q.options!.includes(q.answer)
+    ) {
+      const next = diversifiedShuffleMcqOptions(q, prevCorrectIndex);
+      prevCorrectIndex = next.options!.indexOf(next.answer as string);
+      return next;
+    }
+    prevCorrectIndex = null;
+    return q;
+  });
+}
+
+export function preparePracticeQuestionsForSections(
+  questions: Question[],
+  sections: Section[],
+): Question[] {
+  const byId = new Map(questions.map((q) => [q.id, q]));
+  let prevCorrectIndex: number | null = null;
+
+  for (const section of sections) {
+    for (const id of section.questionIds) {
+      const q = byId.get(id);
+      if (!q) continue;
+      if (
+        isMcqOrScenario(q) &&
+        typeof q.answer === "string" &&
+        q.options!.includes(q.answer)
+      ) {
+        const next = diversifiedShuffleMcqOptions(q, prevCorrectIndex);
+        byId.set(id, next);
+        prevCorrectIndex = next.options!.indexOf(next.answer as string);
+      } else {
+        prevCorrectIndex = null;
+      }
+    }
+  }
+
+  return questions.map((q) => byId.get(q.id) ?? q);
+}
+
 export function extractUnitId(questionId: string): number | null {
   const match = questionId.match(/-(\d+)-/);
   return match ? Number(match[1]) : null;
@@ -140,7 +217,7 @@ export function buildSections(
       title: "Trắc nghiệm từ vựng",
       description:
         "Kiểm tra khả năng nhận diện và ghi nhớ từ vựng cảnh sát chuyên ngành.",
-      questionIds: vocabIds,
+      questionIds: shuffleArray([...vocabIds]),
     });
   }
 
@@ -150,7 +227,9 @@ export function buildSections(
         q.sourceCategory === "phrase" ||
         q.type === "Scenario" ||
         (q.sourceCategory === "practice" &&
-          !["Matching", "Dictation", "Arrangement", "Scenario"].includes(q.type)),
+          !["Matching", "Dictation", "Arrangement", "Scenario"].includes(
+            q.type,
+          )),
     )
     .map((q) => q.id);
   if (patternIds.length > 0) {
@@ -158,7 +237,7 @@ export function buildSections(
       title: "Mẫu câu & tình huống",
       description:
         "Ứng dụng các mẫu câu vào các tình huống thực tế của chiến sĩ cảnh sát.",
-      questionIds: patternIds,
+      questionIds: shuffleArray([...patternIds]),
     });
   }
 
@@ -170,7 +249,7 @@ export function buildSections(
       title: "Ghép từ - nghĩa",
       description:
         "Kết nối chính xác giữa thuật ngữ và ý nghĩa tiếng Việt tương ứng.",
-      questionIds: matchingIds,
+      questionIds: shuffleArray([...matchingIds]),
     });
   }
 
@@ -182,14 +261,17 @@ export function buildSections(
       title: "Điền từ & sắp xếp câu",
       description:
         "Thực hành viết lại và sắp xếp các câu tiếng Anh hoàn chỉnh.",
-      questionIds: writingIds,
+      questionIds: shuffleArray([...writingIds]),
     });
   }
 
   return sections;
 }
 
-export function extractQuestion(questionId: string, fallbackUnitNumber?: number) {
+export function extractQuestion(
+  questionId: string,
+  fallbackUnitNumber?: number,
+) {
   const mappedPatterns: Array<{
     regex: RegExp;
     toQuestionId: (match: RegExpMatchArray) => string;

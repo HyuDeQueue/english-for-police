@@ -15,6 +15,7 @@ import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
 import {
   mapAnswersToBackendPayload,
+  preparePracticeQuestions,
   shuffleArray,
 } from "./utils/testUtils";
 import { PracticeSidebar } from "./layout/PracticeSidebar";
@@ -74,7 +75,9 @@ export const QuickTest: React.FC<QuickTestProps> = ({
           sources: ["vocab", "phrase", "practice"],
           limitPerUnit: 8,
         });
-        setQuestions(shuffleArray(fetched).slice(0, 10));
+        setQuestions(
+          preparePracticeQuestions(shuffleArray(fetched).slice(0, 10)),
+        );
       } catch (error) {
         console.error("Failed to load quick test questions", error);
         notifyError(
