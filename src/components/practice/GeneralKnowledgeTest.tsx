@@ -43,33 +43,6 @@ interface GeneralKnowledgeTestProps {
   onComplete?: (score: number) => void;
 }
 
-function isAnswerCorrectForQuestion(
-  q: Question,
-  combined: Record<string, string | Record<string, string> | string[]>,
-): boolean {
-  const ans = combined[q.id];
-  if (ans === undefined || ans === null) return false;
-  if (q.type === "Matching") {
-    const userPairs = ans as Record<string, string>;
-    return (q.pairs || []).every((p) => userPairs[p.left] === p.right);
-  }
-  if (q.type === "Arrangement") {
-    const userArranged = ((ans as string[]) || []).join(" ").trim();
-    return (
-      userArranged.toLowerCase() === String(q.answer ?? "").trim().toLowerCase()
-    );
-  }
-  const normalizedUser = String(ans).trim().toLowerCase();
-  const normalizedCorrect = String(q.answer ?? "").trim().toLowerCase();
-  const acceptable = (q.acceptableAnswers || []).map((a) =>
-    a.trim().toLowerCase(),
-  );
-  return (
-    normalizedUser === normalizedCorrect ||
-    acceptable.includes(normalizedUser)
-  );
-}
-
 export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   lessons,
   mode = "all",
@@ -102,8 +75,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     return null;
   }, [searchParams, locationState?.sectionTitle]);
 
-  const effectiveLane =
-    testMode === "type" ? focusedLane : null;
+  const effectiveLane = testMode === "type" ? focusedLane : null;
 
   const scopedQuestions = useMemo(
     () => filterQuestionsByLane(questions, effectiveLane),
@@ -315,46 +287,6 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     setShowResults,
   ]);
 
-  const currentFlatQuestionIndex = useMemo(() => {
-    let flat = 0;
-    for (let sIdx = 0; sIdx < currentSectionIndex; sIdx++) {
-      flat += scopedQuestions.filter((q) =>
-        sections[sIdx]?.questionIds.includes(q.id),
-      ).length;
-    }
-    flat += currentPageIndex * QUESTIONS_PER_PAGE + currentIndexInSection;
-    return flat;
-  }, [
-    currentSectionIndex,
-    currentPageIndex,
-    currentIndexInSection,
-    scopedQuestions,
-    sections,
-  ]);
-
-  const goToFlatQuestionIndex = useCallback(
-    (flat: number) => {
-      let remaining = flat;
-      for (let sIdx = 0; sIdx < sections.length; sIdx++) {
-        const secQs = scopedQuestions.filter((q) =>
-          sections[sIdx].questionIds.includes(q.id),
-        );
-        if (remaining < secQs.length) {
-          const page = Math.floor(remaining / QUESTIONS_PER_PAGE);
-          const idx = remaining % QUESTIONS_PER_PAGE;
-          setCurrentSectionIndex(sIdx);
-          setExpandedSectionIndex(sIdx);
-          setCurrentPageIndex(page);
-          setCurrentIndexInSection(idx);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-          return;
-        }
-        remaining -= secQs.length;
-      }
-    },
-    [sections, scopedQuestions],
-  );
-
   const handleBack = () => {
     if (isReviewMode) {
       setIsReviewMode(false);
@@ -487,7 +419,9 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     return (
       <div className="max-w-2xl mx-auto py-20 text-center px-4">
         <Card className="police-shadow border-none p-10">
-          <CardTitle className="text-xl mb-3">Đang tải câu hỏi từ hệ thống...</CardTitle>
+          <CardTitle className="text-xl mb-3">
+            Đang tải câu hỏi từ hệ thống...
+          </CardTitle>
         </Card>
       </div>
     );
@@ -569,54 +503,14 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
         }}
       />
 
-      {isReviewMode ? (
-        <div className="px-4 pb-2 max-w-5xl mx-auto w-full animate-in fade-in duration-200">
-          <p className="text-[10px] font-bold text-center text-muted-foreground uppercase tracking-wider mb-2">
-            Chọn câu để xem đúng / sai (giống giao diện làm bài)
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {scopedQuestions.map((q, i) => {
-              const combined = getCombinedAnswers();
-              const ok = isAnswerCorrectForQuestion(q, combined);
-              const active = i === currentFlatQuestionIndex;
-              return (
-                <button
-                  key={q.id}
-                  type="button"
-                  title={ok ? "Đúng" : "Sai / chưa đạt"}
-                  className={`h-9 min-w-9 rounded-lg text-xs font-black border-2 transition-all ${
-                    active
-                      ? "border-primary bg-primary text-primary-foreground scale-110 shadow-md"
-                      : ok
-                        ? "border-green-500/60 bg-green-500/15 text-green-800 dark:text-green-300"
-                        : "border-red-500/50 bg-red-500/10 text-red-800 dark:text-red-300"
-                  }`}
-                  onClick={() => goToFlatQuestionIndex(i)}
-                >
-                  {i + 1}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      <div className="flex flex-col lg:flex-row gap-8 items-start px-4 w-full">
+        <GeneralTestSectionSidebar
+          vm={sectionSidebarVm}
+          actions={sectionSidebarActions}
+          hideSectionSubmit={isReviewMode}
+        />
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start px-4">
-        {!effectiveLane || isReviewMode ? (
-          <GeneralTestSectionSidebar
-            vm={sectionSidebarVm}
-            actions={sectionSidebarActions}
-            hideSectionSubmit
-          />
-        ) : null}
-
-        <div
-          className={
-            effectiveLane
-              ? "flex-1 w-full max-w-3xl mx-auto space-y-6"
-              : "flex-1 w-full space-y-6"
-          }
-        >
+        <div className="flex-1 w-full space-y-6">
           {effectiveLane ? (
             <div className="rounded-lg border border-primary/15 bg-primary/5 px-4 py-3">
               <p className="text-sm font-semibold text-foreground">
@@ -627,7 +521,11 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
               </p>
             </div>
           ) : null}
-          <GeneralTestQuestionPanel vm={questionPanelVm} actions={questionPanelActions} />
+
+          <GeneralTestQuestionPanel
+            vm={questionPanelVm}
+            actions={questionPanelActions}
+          />
         </div>
       </div>
     </div>

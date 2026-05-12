@@ -3,7 +3,8 @@ import type { Unit, Question } from "@/types";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Timer, ChevronLeft, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronLeft, Timer, CheckCircle2, Loader2 } from "lucide-react";
+import { PracticeHeader } from "./layout/PracticeHeader";
 
 import { QuestionRenderer } from "./components/QuestionRenderer";
 import { useQuestionAnswers } from "./hooks/useQuestionAnswers";
@@ -85,7 +86,10 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
     const combinedAnswers = getCombinedAnswers();
 
     try {
-      const backendAnswers = mapAnswersToBackendPayload(questions, combinedAnswers);
+      const backendAnswers = mapAnswersToBackendPayload(
+        questions,
+        combinedAnswers,
+      );
       if (backendAnswers.length === 0) {
         notifyError(
           "Không thể nộp bài",
@@ -163,7 +167,9 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
       <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in px-4">
         <Card className="police-shadow border-none p-12 flex flex-col items-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground mt-4">Đang tải câu hỏi từ hệ thống...</p>
+          <p className="text-muted-foreground mt-4">
+            Đang tải câu hỏi từ hệ thống...
+          </p>
         </Card>
       </div>
     );
@@ -173,7 +179,9 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
     return (
       <div className="max-w-2xl mx-auto py-20 text-center animate-fade-in px-4">
         <Card className="police-shadow border-none p-12 flex flex-col items-center">
-          <p className="text-muted-foreground">Không có câu hỏi khả dụng cho bài luyện này.</p>
+          <p className="text-muted-foreground">
+            Không có câu hỏi khả dụng cho bài luyện này.
+          </p>
         </Card>
       </div>
     );
@@ -196,158 +204,164 @@ export const TrainingGround: React.FC<TrainingGroundProps> = ({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 items-start max-w-6xl mx-auto px-4 pb-20">
-      <PracticeSidebar
-        title={showResults ? "KẾT QUẢ BÀI LÀM" : "THỜI GIAN CÒN LẠI"}
-        icon={
-          showResults ? (
-            <CheckCircle2 className="h-4 w-4 text-secondary" />
-          ) : (
-            <Timer className="h-4 w-4 text-secondary" />
-          )
-        }
-        progress={{
-          current: answeredCount,
-          total: questions.length,
-          label: "TIẾN ĐỘ LÀM BÀI",
-        }}
-        footer={
-          <>
-            <Button
-              variant="outline"
-              className="w-full h-11 font-bold group"
-              onClick={onBack}
-            >
-              <ChevronLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              HỦY BỎ
-            </Button>
-            <Button
-              className="w-full h-11 font-bold primary-gradient police-shadow group"
-              disabled={
-                (!isReviewMode && isFinished) ||
-                (!isReviewMode && !allQuestionsAnswered)
-              }
-              onClick={() => {
-                if (isReviewMode) {
-                  setIsReviewMode(false);
-                } else {
-                  void handleFinish();
+    <div className="w-full space-y-4 animate-fade-in pb-20">
+      <PracticeHeader onBack={onBack} />
+      <div className="flex flex-col lg:flex-row gap-8 items-start px-4 w-full">
+        <PracticeSidebar
+          title={showResults ? "KẾT QUẢ BÀI LÀM" : "THỜI GIAN CÒN LẠI"}
+          icon={
+            showResults ? (
+              <CheckCircle2 className="h-4 w-4 text-secondary" />
+            ) : (
+              <Timer className="h-4 w-4 text-secondary" />
+            )
+          }
+          progress={{
+            current: answeredCount,
+            total: questions.length,
+            label: "TIẾN ĐỘ LÀM BÀI",
+          }}
+          footer={
+            <>
+              <Button
+                variant="outline"
+                className="w-full h-11 font-bold group"
+                onClick={onBack}
+              >
+                <ChevronLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                HỦY BỎ
+              </Button>
+              <Button
+                className="w-full h-11 font-bold primary-gradient police-shadow group"
+                disabled={
+                  (!isReviewMode && isFinished) ||
+                  (!isReviewMode && !allQuestionsAnswered)
                 }
-              }}
-            >
-              {isSubmitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              {isReviewMode
-                ? "QUAY LẠI KẾT QUẢ"
-                : isSubmitting
-                  ? "ĐANG NỘP..."
-                  : "NỘP BÀI"}
-            </Button>
-          </>
-        }
-      >
-        <div className="text-3xl font-black text-primary mt-1 tabular-nums">
-          {showResults ? `${currentScore}%` : formatTime(timeLeft)}
-        </div>
-        <div className="grid grid-cols-5 gap-2">
-          {questions.map((q, i) => (
-            <div
-              key={q.id}
-              className={`h-8 w-8 rounded flex items-center justify-center text-[10px] font-bold border transition-colors ${
-                isQuestionAnswered(q)
-                  ? "bg-primary text-white border-primary"
-                  : "bg-muted text-muted-foreground border-transparent"
-              }`}
-            >
-              {i + 1}
-            </div>
-          ))}
-        </div>
-      </PracticeSidebar>
+                onClick={() => {
+                  if (isReviewMode) {
+                    setIsReviewMode(false);
+                  } else {
+                    void handleFinish();
+                  }
+                }}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                {isReviewMode
+                  ? "QUAY LẠI KẾT QUẢ"
+                  : isSubmitting
+                    ? "ĐANG NỘP..."
+                    : "NỘP BÀI"}
+              </Button>
+            </>
+          }
+        >
+          <div className="text-3xl font-black text-primary mt-1 tabular-nums">
+            {showResults ? `${currentScore}%` : formatTime(timeLeft)}
+          </div>
+          <div className="grid grid-cols-5 gap-2">
+            {questions.map((q, i) => (
+              <div
+                key={q.id}
+                className={`h-8 w-8 rounded flex items-center justify-center text-[10px] font-bold border transition-colors ${
+                  isQuestionAnswered(q)
+                    ? "bg-primary text-white border-primary"
+                    : "bg-muted text-muted-foreground border-transparent"
+                }`}
+              >
+                {i + 1}
+              </div>
+            ))}
+          </div>
+        </PracticeSidebar>
 
-      <div className="flex-1 space-y-4 order-1 lg:order-2">
-        <header className="mb-6">
-          <Badge variant="outline" className="mb-2 border-primary text-primary">
-            UNIT {unit.id}
-          </Badge>
-          <p className="text-muted-foreground mt-1">
-            Hoàn thành các câu hỏi trắc nghiệm, viết câu và ghép đôi.
-          </p>
-        </header>
-
-        <div className="space-y-6">
-          {questions.map((q, i) => (
-            <Card
-              key={q.id}
-              className={`police-shadow transition-all border-l-4 ${
-                isQuestionAnswered(q)
-                  ? "border-l-primary"
-                  : "border-l-transparent"
-              }`}
+        <div className="flex-1 space-y-4 order-1 lg:order-2">
+          <header className="mb-6">
+            <Badge
+              variant="outline"
+              className="mb-2 border-primary text-primary"
             >
-              <CardHeader>
-                <div className="flex gap-4">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0">
-                    {i + 1}
+              UNIT {unit.id}
+            </Badge>
+            <p className="text-muted-foreground mt-1">
+              Hoàn thành các câu hỏi trắc nghiệm, viết câu và ghép đôi.
+            </p>
+          </header>
+
+          <div className="space-y-6">
+            {questions.map((q, i) => (
+              <Card
+                key={q.id}
+                className={`police-shadow transition-all border-l-4 ${
+                  isQuestionAnswered(q)
+                    ? "border-l-primary"
+                    : "border-l-transparent"
+                }`}
+              >
+                <CardHeader>
+                  <div className="flex gap-4">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center shrink-0">
+                      {i + 1}
+                    </div>
+                    <CardTitle className="text-lg font-bold leading-tight pt-1">
+                      {q.prompt}
+                    </CardTitle>
                   </div>
-                  <CardTitle className="text-lg font-bold leading-tight pt-1">
-                    {q.prompt}
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="pl-16 pr-6 pb-8">
-                <div className="space-y-3">
-                  <QuestionRenderer
-                    question={q}
-                    answers={answers}
-                    matchingAnswers={matchingAnswers}
-                    arrangementAnswers={arrangementAnswers}
-                    selectedLeft={selectedLeft}
-                    matchingRightOptions={
-                      matchingRightOptionsByQuestionId[q.id] || []
-                    }
-                    onAnswerChange={(qid, val) =>
-                      setAnswers((prev) => ({ ...prev, [qid]: val }))
-                    }
-                    onMatchingSelectLeft={(qid, left) =>
-                      setSelectedLeft((prev) => ({ ...prev, [qid]: left }))
-                    }
-                    onMatchingMatch={(qid, left, right) => {
-                      const current = matchingAnswers[qid] || {};
-                      setMatchingAnswers((prev) => ({
-                        ...prev,
-                        [qid]: { ...current, [left]: right },
-                      }));
-                      setSelectedLeft((prev) => ({ ...prev, [qid]: null }));
-                    }}
-                    onArrangementAdd={(qid, word) => {
-                      const current = arrangementAnswers[qid] || [];
-                      setArrangementAnswers((prev) => ({
-                        ...prev,
-                        [qid]: [...current, word],
-                      }));
-                    }}
-                    onArrangementRemove={(qid, idx) => {
-                      const current = [...(arrangementAnswers[qid] || [])];
-                      current.splice(idx, 1);
-                      setArrangementAnswers((prev) => ({
-                        ...prev,
-                        [qid]: current,
-                      }));
-                    }}
-                    onArrangementReset={(qid) =>
-                      setArrangementAnswers((prev) => ({
-                        ...prev,
-                        [qid]: [],
-                      }))
-                    }
-                    showResults={isReviewMode}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="pl-16 pr-6 pb-8">
+                  <div className="space-y-3">
+                    <QuestionRenderer
+                      question={q}
+                      answers={answers}
+                      matchingAnswers={matchingAnswers}
+                      arrangementAnswers={arrangementAnswers}
+                      selectedLeft={selectedLeft}
+                      matchingRightOptions={
+                        matchingRightOptionsByQuestionId[q.id] || []
+                      }
+                      onAnswerChange={(qid, val) =>
+                        setAnswers((prev) => ({ ...prev, [qid]: val }))
+                      }
+                      onMatchingSelectLeft={(qid, left) =>
+                        setSelectedLeft((prev) => ({ ...prev, [qid]: left }))
+                      }
+                      onMatchingMatch={(qid, left, right) => {
+                        const current = matchingAnswers[qid] || {};
+                        setMatchingAnswers((prev) => ({
+                          ...prev,
+                          [qid]: { ...current, [left]: right },
+                        }));
+                        setSelectedLeft((prev) => ({ ...prev, [qid]: null }));
+                      }}
+                      onArrangementAdd={(qid, word) => {
+                        const current = arrangementAnswers[qid] || [];
+                        setArrangementAnswers((prev) => ({
+                          ...prev,
+                          [qid]: [...current, word],
+                        }));
+                      }}
+                      onArrangementRemove={(qid, idx) => {
+                        const current = [...(arrangementAnswers[qid] || [])];
+                        current.splice(idx, 1);
+                        setArrangementAnswers((prev) => ({
+                          ...prev,
+                          [qid]: current,
+                        }));
+                      }}
+                      onArrangementReset={(qid) =>
+                        setArrangementAnswers((prev) => ({
+                          ...prev,
+                          [qid]: [],
+                        }))
+                      }
+                      showResults={isReviewMode}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </div>

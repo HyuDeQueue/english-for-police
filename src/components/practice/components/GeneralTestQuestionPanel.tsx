@@ -46,10 +46,9 @@ interface GeneralTestQuestionPanelProps {
   actions: GeneralTestQuestionPanelActions;
 }
 
-export const GeneralTestQuestionPanel: React.FC<GeneralTestQuestionPanelProps> = ({
-  vm,
-  actions,
-}) => {
+export const GeneralTestQuestionPanel: React.FC<
+  GeneralTestQuestionPanelProps
+> = ({ vm, actions }) => {
   const {
     currentSectionTitle,
     currentQuestion,
@@ -95,7 +94,7 @@ export const GeneralTestQuestionPanel: React.FC<GeneralTestQuestionPanelProps> =
       </CardHeader>
 
       <CardContent className="flex-1 p-5 sm:p-6 flex flex-col justify-center">
-        <div className="space-y-6 max-w-3xl mx-auto w-full">
+        <div className="space-y-6 w-full">
           {currentQuestion && (
             <>
               <h3 className="text-xl sm:text-2xl font-heading font-black text-primary leading-tight">
@@ -164,7 +163,7 @@ export const GeneralTestQuestionPanel: React.FC<GeneralTestQuestionPanelProps> =
       )}
 
       {inlineSubmit && sectionQuestionsLength > 0 ? (
-        <div className="border-t bg-primary/[0.06] px-5 py-4">
+        <div className="border-t bg-primary/6 px-5 py-4">
           <Button
             type="button"
             size="lg"
