@@ -80,103 +80,101 @@ export const LessonVocabularySection: React.FC<
       ref={sectionRef}
       className="scroll-mt-24"
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Badge
-            variant="outline"
-            className="text-lg px-3 py-1 font-bold border-primary text-primary bg-primary/5"
-          >
-            01
-          </Badge>
-          <h2 className="text-2xl font-heading font-extrabold tracking-tight">
-            TỪ VỰNG
-          </h2>
-        </div>
+      <div className="mb-6 space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Badge
+              variant="outline"
+              className="border-primary bg-primary/5 px-3 py-1 text-lg font-bold text-primary"
+            >
+              01
+            </Badge>
+            <h2 className="font-heading text-2xl font-extrabold tracking-tight">
+              TỪ VỰNG
+            </h2>
+          </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto lg:max-w-xl">
-          {vocabSubIds.length > 0 ? (
-            <div className="flex-1 min-w-[180px] space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Lọc theo tiểu mục
-              </p>
-              <Select value={vocabSubFilter} onValueChange={setVocabSubFilter}>
-                <SelectTrigger className="h-9 font-bold text-xs">
-                  <SelectValue placeholder="Tất cả từ vựng" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả tiểu mục</SelectItem>
-                  {vocabSubIds.map((id) => (
-                    <SelectItem key={id} value={id}>
-                      Phần {id}
-                    </SelectItem>
+          {totalPages > 1 ? (
+            <div className="flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full transition-all duration-200 hover:bg-primary/10"
+                onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                aria-label="Previous page"
+              >
+                <ChevronLeft
+                  className={`h-4 w-4 transition-colors ${
+                    currentPage === 0 ? "text-slate-300" : "text-primary"
+                  }`}
+                />
+              </Button>
+
+              <div className="flex flex-col items-center gap-1 px-1">
+                <span className="min-w-8 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                  {currentPage + 1} / {totalPages}
+                </span>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCurrentPage(i)}
+                      className={`rounded-full transition-all duration-300 ${
+                        i === currentPage
+                          ? "h-2.5 w-5 bg-primary shadow-[0_0_0_3px_rgba(31,58,110,0.08)]"
+                          : "h-2 w-2 bg-slate-300 hover:bg-slate-400"
+                      }`}
+                      aria-label={`Go to page ${i + 1}`}
+                      aria-current={i === currentPage ? "page" : undefined}
+                    />
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-full transition-all duration-200 hover:bg-primary/10"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
+                }
+                disabled={currentPage === totalPages - 1}
+                aria-label="Next page"
+              >
+                <ChevronRight
+                  className={`h-4 w-4 transition-colors ${
+                    currentPage === totalPages - 1
+                      ? "text-slate-300"
+                      : "text-primary"
+                  }`}
+                />
+              </Button>
             </div>
           ) : null}
         </div>
-      </div>
 
-      <div className="flex justify-end mb-4">
-        {totalPages > 1 && (
-          <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-full hover:bg-primary/10 transition-all duration-200"
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-              aria-label="Previous page"
-            >
-              <ChevronLeft
-                className={`h-4 w-4 transition-colors ${
-                  currentPage === 0 ? "text-slate-300" : "text-primary"
-                }`}
-              />
-            </Button>
-
-            <div className="flex flex-col items-center gap-1 px-1">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 min-w-8 text-center">
-                {currentPage + 1} / {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCurrentPage(i)}
-                    className={`rounded-full transition-all duration-300 ${
-                      i === currentPage
-                        ? "h-2.5 w-5 bg-primary shadow-[0_0_0_3px_rgba(31,58,110,0.08)]"
-                        : "h-2 w-2 bg-slate-300 hover:bg-slate-400"
-                    }`}
-                    aria-label={`Go to page ${i + 1}`}
-                    aria-current={i === currentPage ? "page" : undefined}
-                  />
+        {vocabSubIds.length > 0 ? (
+          <div className="max-w-xs space-y-1 sm:max-w-sm">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Lọc theo tiểu mục
+            </p>
+            <Select value={vocabSubFilter} onValueChange={setVocabSubFilter}>
+              <SelectTrigger className="h-9 text-xs font-bold">
+                <SelectValue placeholder="Tất cả từ vựng" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả tiểu mục</SelectItem>
+                {vocabSubIds.map((id) => (
+                  <SelectItem key={id} value={id}>
+                    Phần {id}
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-full hover:bg-primary/10 transition-all duration-200"
-              onClick={() =>
-                setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
-              }
-              disabled={currentPage === totalPages - 1}
-              aria-label="Next page"
-            >
-              <ChevronRight
-                className={`h-4 w-4 transition-colors ${
-                  currentPage === totalPages - 1
-                    ? "text-slate-300"
-                    : "text-primary"
-                }`}
-              />
-            </Button>
+              </SelectContent>
+            </Select>
           </div>
-        )}
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-400px">

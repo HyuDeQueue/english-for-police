@@ -227,13 +227,13 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                   className="phrase-section-anchor scroll-mt-28 h-0 w-full"
                   aria-hidden
                 />
-                <AccordionTrigger className="px-6 py-4 hover:bg-muted/30 transition-all hover:no-underline group">
-                  <div className="flex items-center gap-4 text-left">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm group-data-[state=open]:bg-primary group-data-[state=open]:text-white transition-colors">
+                <AccordionTrigger className="group items-center gap-3 px-6 py-4 transition-all hover:bg-muted/30 hover:no-underline">
+                  <div className="flex min-w-0 flex-1 items-center gap-4 text-left">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary transition-colors group-data-[state=open]:bg-primary group-data-[state=open]:text-white">
                       {group.id}
                     </div>
-                    <div>
-                      <h3 className="font-heading font-bold text-lg text-primary uppercase tracking-tight">
+                    <div className="min-w-0">
+                      <h3 className="font-heading text-lg font-bold uppercase tracking-tight text-primary">
                         {group.title}
                       </h3>
                       <p className="text-xs text-muted-foreground font-medium">
@@ -241,9 +241,23 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                       </p>
                     </div>
                   </div>
+                  <Button
+                    size="sm"
+                    className="primary-gradient police-shadow group/practice h-9 shrink-0 rounded-lg px-3 text-[10px] font-black transition-all hover:scale-105 active:scale-95 sm:px-4 sm:text-xs"
+                    disabled={group.phrases.length === 0}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStartPractice("PHRASE_SCENARIO", group.id);
+                    }}
+                  >
+                    <Sparkles className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-pulse text-secondary" />
+                    LUYỆN TẬP PHẦN {group.id}
+                    <ArrowRight className="ml-1.5 h-3.5 w-3.5 shrink-0 transition-transform group-hover/practice:translate-x-0.5" />
+                  </Button>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pt-2 pb-6">
-                  <div className="space-y-4 mb-6">
+                  <div className="space-y-4">
                     {group.phrases.length > 0 ? (
                       group.phrases.map((phrase, idx) => {
                         const flagged = isFlagged(phrase.text);
@@ -321,21 +335,6 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                         Đang cập nhật nội dung cho phần này...
                       </div>
                     )}
-                  </div>
-
-                  <div className="flex justify-center pt-2">
-                    <Button
-                      size="lg"
-                      className="rounded-xl font-black px-8 h-14 primary-gradient police-shadow transition-all hover:scale-105 active:scale-95 group"
-                      onClick={() =>
-                        onStartPractice("PHRASE_SCENARIO", group.id)
-                      }
-                      disabled={group.phrases.length === 0}
-                    >
-                      <Sparkles className="mr-3 h-6 w-6 text-secondary animate-pulse" />
-                      LUYỆN TẬP PHẦN {group.id}
-                      <ArrowRight className="ml-3 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                    </Button>
                   </div>
                 </AccordionContent>
               </AccordionItem>
