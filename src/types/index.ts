@@ -5,6 +5,8 @@ export interface Vocabulary {
   example: string;
   type: "Noun" | "Verb" | "Expression" | "Adjective" | "Adverb";
   audioUrl?: string;
+  /** Tiểu mục (vd. 1.1, 1.2) — đồng bộ seed / API lesson. */
+  subLessonId?: string | null;
 }
 
 export interface Phrase {
@@ -13,12 +15,10 @@ export interface Phrase {
   context: string;
   audioUrl?: string;
   realWorldExamples?: string[];
+  /** Tiểu mục mẫu câu (vd. 2.1, 2.2) — dùng cho menu & lọc luyện tập. */
+  subLessonId?: string | null;
 }
 
-export interface Collocation {
-  verb: string;
-  noun: string;
-}
 
 export type LessonTestLane =
   | "VOCAB_MCQ"
@@ -61,6 +61,24 @@ export interface Question {
   explanation?: string;
   vnPrompt?: string;
   pairs?: { left: string; right: string }[];
+  /** Gắn câu luyện tập persisted với tiểu mục (vd. 2.1). */
+  subLessonId?: string | null;
+}
+
+export interface MemoryBoost {
+  summary: string;
+  /** Trường OpenAPI; FE có thể bỏ qua nếu không dùng UI collocation. */
+  collocations?: { verb: string; noun: string }[];
+}
+
+export interface PhraseTemplate {
+  id: number;
+  unitNumber: number;
+  patternEn: string;
+  patternVi: string;
+  contextNote?: string | null;
+  audioUrl?: string | null;
+  sortOrder: number;
 }
 
 export interface Unit {
@@ -69,10 +87,7 @@ export interface Unit {
   description: string;
   vocabulary: Vocabulary[];
   phrases: Phrase[];
-  memoryBoost: {
-    collocations: Collocation[];
-    summary: string;
-  };
+  memoryBoost: MemoryBoost;
   practice: Question[];
   videoUrl?: string;
 }
@@ -84,7 +99,7 @@ export interface UserProgress {
 
 export interface FlaggedItem {
   unitId: number;
-  type: "vocabulary" | "phrase" | "collocation";
+  type: "vocabulary" | "phrase";
   key: string;
   data?: unknown;
 }

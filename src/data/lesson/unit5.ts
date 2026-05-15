@@ -332,13 +332,6 @@ export const unit5: Unit = {
     },
   ],
   memoryBoost: {
-    collocations: [
-      { verb: "pull", noun: "over" },
-      { verb: "show", noun: "driving license" },
-      { verb: "commit", noun: "a violation" },
-      { verb: "run", noun: "a red light" },
-      { verb: "follow", noun: "traffic signals" },
-    ],
     summary:
       "Trong kiểm soát giao thông, quan trọng nhất là ra hiệu dừng xe an toàn (pull over), kiểm tra giấy tờ (license, registration) và giải thích rõ lỗi vi phạm (speed limit, red light) cùng các bước xử lý tiếp theo.",
   },

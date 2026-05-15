@@ -1,10 +1,20 @@
 import { API_ROUTES } from "@/api/routes";
-import type { GrammarStructure, Question, Unit } from "@/types";
+import type {
+  GrammarStructure,
+  LessonTestLane,
+  PhraseTemplate,
+  Question,
+  Unit,
+} from "@/types";
 import { api } from "@/utils/api-client";
 import {
   normalizeLessonFromApi,
   unitToLessonApiBody,
 } from "@/services/lesson-payload";
+import {
+  mapPracticeQuestionDto,
+  type PracticeQuestionApiDto,
+} from "@/services/practice-question.service";
 
 interface ApiResponse<T> {
   code: string;
@@ -17,14 +27,14 @@ export const lessonService = {
     const response = await api.get<ApiResponse<Unit[]>>(
       API_ROUTES.LESSONS.LIST,
     );
-    return response.data;
+    return response.data.map(normalizeLessonFromApi);
   },
 
   getLessonByUnitNumber: async (unitNumber: number): Promise<Unit> => {
     const response = await api.get<ApiResponse<Unit>>(
       API_ROUTES.LESSONS.DETAIL(unitNumber),
     );
-    return response.data;
+    return normalizeLessonFromApi(response.data);
   },
 
   /** ADMIN + JWT: practice answers included for edit forms. */
@@ -113,14 +123,72 @@ export const lessonService = {
   ): Promise<void> => {
     await api.delete(API_ROUTES.LESSONS.GRAMMAR_STRUCTURE(unitNumber, id));
   },
+  /**
+   * GET /api/v1/lessons/{unitNumber}/tests
+   * @param type — VOCAB_MCQ | MATCHING | PHRASE_SCENARIO | FILL_ARRANGE (để trống = tất cả)
+   */
   getLessonTests: async (
     unitNumber: number,
-    type?: string,
+    type?: LessonTestLane | string,
   ): Promise<Question[]> => {
     const url = API_ROUTES.LESSONS.TESTS(unitNumber);
-    const response = await api.get<ApiResponse<Question[]>>(
-      type ? `${url}?type=${type}` : url,
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
+    const qs = params.toString();
+    const response = await api.get<ApiResponse<PracticeQuestionApiDto[]>>(
+      `${url}${qs ? `?${qs}` : ""}`,
+    );
+    return response.data.map(mapPracticeQuestionDto);
+  },
+
+  listPhraseTemplates: async (
+    unitNumber: number,
+  ): Promise<PhraseTemplate[]> => {
+    const response = await api.get<ApiResponse<PhraseTemplate[]>>(
+      API_ROUTES.LESSONS.PHRASE_TEMPLATES(unitNumber),
     );
     return response.data;
+  },
+
+  createPhraseTemplate: async (
+    unitNumber: number,
+    body: {
+      patternEn: string;
+      patternVi: string;
+      contextNote?: string | null;
+      audioUrl?: string | null;
+      sortOrder?: number;
+    },
+  ): Promise<PhraseTemplate> => {
+    const response = await api.post<ApiResponse<PhraseTemplate>>(
+      API_ROUTES.LESSONS.PHRASE_TEMPLATES(unitNumber),
+      body,
+    );
+    return response.data;
+  },
+
+  updatePhraseTemplate: async (
+    unitNumber: number,
+    id: number,
+    body: {
+      patternEn: string;
+      patternVi: string;
+      contextNote?: string | null;
+      audioUrl?: string | null;
+      sortOrder?: number;
+    },
+  ): Promise<PhraseTemplate> => {
+    const response = await api.put<ApiResponse<PhraseTemplate>>(
+      API_ROUTES.LESSONS.PHRASE_TEMPLATE(unitNumber, id),
+      body,
+    );
+    return response.data;
+  },
+
+  deletePhraseTemplate: async (
+    unitNumber: number,
+    id: number,
+  ): Promise<void> => {
+    await api.delete(API_ROUTES.LESSONS.PHRASE_TEMPLATE(unitNumber, id));
   },
 };

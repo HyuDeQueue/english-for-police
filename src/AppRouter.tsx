@@ -1,4 +1,11 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   Navigate,
   Route,
@@ -58,7 +65,11 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 /** Guest attempting scored tests from URL → back to same lesson. */
-function RequireAuthForLessonTests({ children }: { children: React.ReactNode }) {
+function RequireAuthForLessonTests({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { isAuthenticated } = useAuth();
   const { unitId } = useParams<{ unitId: string }>();
   if (!isAuthenticated) {
@@ -174,8 +185,10 @@ export function AppRouter() {
                     flaggedItems={flaggedItems}
                     dailyTasks={dailyTasks}
                     onSelectUnit={navigateToLesson}
-                    onNavigate={(path) =>
-                      navigate(path.startsWith("#") ? path.slice(1) : path)
+                    onNavigate={(path: string, state?: unknown) =>
+                      navigate(path.startsWith("#") ? path.slice(1) : path, {
+                        state,
+                      })
                     }
                   />
                 )

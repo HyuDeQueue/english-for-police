@@ -337,13 +337,6 @@ export const unit4: Unit = {
     },
   ],
   memoryBoost: {
-    collocations: [
-      { verb: "follow", noun: "instructions" },
-      { verb: "comply with", noun: "regulations" },
-      { verb: "keep", noun: "a safe distance" },
-      { verb: "clear", noun: "the area" },
-      { verb: "ensure", noun: "public safety" },
-    ],
     summary:
       "Khi hướng dẫn và bảo đảm an toàn, cần đưa ra các mệnh lệnh rõ ràng (move to, step back), thiết lập các giới hạn (restricted area, do not enter) và ưu tiên cao nhất cho sự an toàn của người dân.",
   },

@@ -1,13 +1,7 @@
 import { useMemo, useState } from "react";
 import { speak } from "@/lib/speech";
 import { AudioRecorderButton } from "@/components/common/AudioRecorderButton";
-import type {
-  Collocation,
-  FlaggedItem,
-  Phrase,
-  Unit,
-  Vocabulary,
-} from "@/types";
+import type { FlaggedItem, Phrase, Unit, Vocabulary } from "@/types";
 import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,7 +15,6 @@ import {
   Search,
   Trash2,
   Volume2,
-  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +30,7 @@ interface AppSidebarProps {
 type SearchResult = {
   unit: Unit;
   unitId: number;
-  category: "unit" | "vocabulary" | "phrase" | "collocation" | "practice";
+  category: "unit" | "vocabulary" | "phrase" | "practice";
   title: string;
   subtitle: string;
 };
@@ -58,7 +51,6 @@ type GroupedItem = {
   unit: Unit;
   vocabulary: (Vocabulary & { rawItem: FlaggedItem })[];
   phrases: (Phrase & { rawItem: FlaggedItem })[];
-  collocations: (Collocation & { rawItem: FlaggedItem })[];
 };
 
 export function AppSidebar({
@@ -104,27 +96,6 @@ export function AppSidebar({
                 category: "phrase",
                 title: phrase.text,
                 subtitle: phrase.translation,
-              })),
-          },
-          {
-            key: "collocation",
-            label: "Công thức ghi nhớ",
-            items: unit.memoryBoost.collocations
-              .filter((collocation) => {
-                const combined =
-                  `${collocation.verb} ${collocation.noun}`.toLowerCase();
-                return (
-                  matchesChapter ||
-                  trimmed.length === 0 ||
-                  combined.includes(trimmed)
-                );
-              })
-              .map((collocation) => ({
-                unit,
-                unitId: unit.id,
-                category: "collocation",
-                title: `${collocation.verb} ${collocation.noun}`,
-                subtitle: "Công thức ghi nhớ",
               })),
           },
           {
@@ -179,7 +150,6 @@ export function AppSidebar({
           unit,
           vocabulary: [],
           phrases: [],
-          collocations: [],
         };
       }
 
@@ -190,13 +160,6 @@ export function AppSidebar({
       } else if (item.type === "phrase") {
         const phrase = unit.phrases.find((p) => p.text === item.key);
         if (phrase) acc[item.unitId].phrases.push({ ...phrase, rawItem: item });
-      } else if (item.type === "collocation") {
-        const collocation = unit.memoryBoost.collocations.find(
-          (c) => `${c.verb} ${c.noun}` === item.key,
-        );
-        if (collocation) {
-          acc[item.unitId].collocations.push({ ...collocation, rawItem: item });
-        }
       }
 
       return acc;
@@ -227,7 +190,7 @@ export function AppSidebar({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="left">
-      <DrawerContent className="bg-white/80 backdrop-blur-2xl border-none shadow-2xl h-full rounded-r-[3rem] w-[90vw] md:w-[400px]">
+      <DrawerContent className="bg-white/80 backdrop-blur-2xl border-none shadow-2xl h-full rounded-r-[3rem] w-[90vw] md:w-400px">
         <DrawerHeader className="h-16 border-b border-primary/10 flex flex-row items-center justify-between px-6">
           <div className="flex items-center gap-3 font-heading text-primary">
             <div className="bg-primary/5 p-2 rounded-xl">
@@ -472,46 +435,6 @@ export function AppSidebar({
                                   className="h-8 w-8 rounded-xl"
                                 />
                               </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {group.collocations.map((c, i) => (
-                          <div
-                            key={`c-${i}`}
-                            className="group p-3 rounded-2xl border border-primary/5 bg-white/60 hover:bg-white hover:border-primary/20 hover:shadow-sm transition-all duration-300 relative overflow-hidden"
-                          >
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                            <div className="flex justify-between items-start mb-2">
-                              <Badge className="bg-primary/10 text-primary border-none text-[8px] font-black h-4 px-1.5 rounded-md">
-                                CÔNG THỨC
-                              </Badge>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-muted-foreground/40 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all md:opacity-0 md:group-hover:opacity-100"
-                                onClick={() => onRemoveItem(c.rawItem)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="bg-secondary/10 p-1 rounded-md shrink-0">
-                                  <Zap className="h-3 w-3 text-secondary fill-secondary" />
-                                </div>
-                                <div className="font-black text-primary uppercase text-[10px] tracking-wider truncate">
-                                  {c.verb} + {c.noun}
-                                </div>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-8 w-8 rounded-xl shrink-0 border-border/50 hover:bg-primary hover:text-white transition-all shadow-sm"
-                                onClick={() => playAudio(`${c.verb} ${c.noun}`)}
-                              >
-                                <Volume2 className="h-3.5 w-3.5" />
-                              </Button>
                             </div>
                           </div>
                         ))}

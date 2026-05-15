@@ -37,6 +37,7 @@ export const API_ROUTES = {
   },
   PRACTICE: {
     QUESTIONS: "/api/v1/practice/questions",
+    QUICK_TEST: "/api/v1/practice/quick-test",
   },
   REPORTS: {
     DASHBOARD_OVERVIEW: "/api/v1/reports/dashboard/overview",

@@ -8,7 +8,9 @@ export const PRACTICE_MENU_LABEL_TO_LANE: Record<string, LessonTestLane> = {
   "Điền từ & sắp xếp câu": "FILL_ARRANGE",
 };
 
-export function isLessonTestLane(value: string | null): value is LessonTestLane {
+export function isLessonTestLane(
+  value: string | null,
+): value is LessonTestLane {
   return (
     value === "VOCAB_MCQ" ||
     value === "MATCHING" ||
@@ -45,8 +47,7 @@ export const SECTION_META: Record<
   },
   FILL_ARRANGE: {
     title: "Điền từ & sắp xếp câu",
-    description:
-      "Thực hành viết lại và sắp xếp các câu tiếng Anh hoàn chỉnh.",
+    description: "Thực hành viết lại và sắp xếp các câu tiếng Anh hoàn chỉnh.",
   },
 };
 
@@ -270,8 +271,48 @@ export function generateGeneralQuestions(lessons: Unit[]): Question[] {
         prompt: `"${vocab.word}" nghĩa là gì?`,
         options: shuffleArray([vocab.meaning, ...wrongOptions]),
         answer: vocab.meaning,
+        sourceCategory: "vocab",
+        testLane: "VOCAB_MCQ",
+      });
+
+      const wrongOptionsEn = shuffleArray(
+        unit.vocabulary
+          .filter((v) => v.word !== vocab.word)
+          .slice(0, 3)
+          .map((v) => v.word),
+      );
+
+      pool.push({
+        id: `gk-vocab-vi-en-${unit.id}-${idx}`,
+        type: "MCQ",
+        prompt: `Từ nào có nghĩa là "${vocab.meaning}"?`,
+        options: shuffleArray([vocab.word, ...wrongOptionsEn]),
+        answer: vocab.word,
+        sourceCategory: "practice",
+        testLane: "VOCAB_MCQ",
       });
     });
+
+    // Add Matching questions for vocabulary in groups of 4
+    for (let i = 0; i < unit.vocabulary.length; i += 4) {
+      const group = unit.vocabulary.slice(i, i + 4);
+      if (group.length < 2) continue;
+
+      const pairs = group.map((v) => ({
+        left: v.word,
+        right: v.meaning,
+      }));
+
+      pool.push({
+        id: `gk-vocab-match-${unit.id}-${i}`,
+        type: "Matching",
+        prompt: "Ghép từ vựng với nghĩa tương ứng",
+        pairs,
+        answer: pairs.map((p) => `${p.left}:${p.right}`),
+        testLane: "MATCHING",
+        sourceCategory: "practice",
+      });
+    }
 
     unit.phrases.forEach((phrase, idx) => {
       const wrongOptions = shuffleArray(
@@ -308,23 +349,6 @@ export function generateGeneralQuestions(lessons: Unit[]): Question[] {
         backendUnitNumber: unit.id,
       });
     });
-
-    const matchingChunkSize = 4;
-    for (let i = 0; i < unit.vocabulary.length; i += matchingChunkSize) {
-      const matchingItems = unit.vocabulary.slice(i, i + matchingChunkSize);
-      if (matchingItems.length >= 3) {
-        pool.push({
-          id: `gk-match-${unit.id}-${i}`,
-          type: "Matching",
-          prompt: `Ghép từ và nghĩa tương ứng`,
-          pairs: matchingItems.map((item) => ({
-            left: item.word,
-            right: item.meaning,
-          })),
-          answer: matchingItems.map((item) => `${item.word}:${item.meaning}`),
-        });
-      }
-    }
   });
 
   return shuffleArray(pool);
@@ -467,4 +491,95 @@ export function mapAnswersToBackendPayload(
       };
     })
     .filter((item): item is NonNullable<typeof item> => !!item);
+}
+
+export type VocabDrillMode = "en-vi" | "vi-en" | "matching";
+
+const VIETNAMESE_REGEX =
+  /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲÝỶỸỴĐ]/;
+
+function isViEnMcq(q: Question): boolean {
+  if (q.type !== "MCQ" || q.sourceCategory !== "practice") return false;
+  if (!Array.isArray(q.options) || q.options.length === 0) return false;
+  const promptHasVi =
+    VIETNAMESE_REGEX.test(q.prompt) ||
+    (q.vnPrompt != null && String(q.vnPrompt).length > 0);
+  const optsLookEnglish = q.options.every(
+    (o) => typeof o === "string" && !VIETNAMESE_REGEX.test(o),
+  );
+  return promptHasVi && optsLookEnglish;
+}
+
+/** Lọc 3 dạng luyện từ vựng theo spec API (vocab / practice + FE). */
+export function filterVocabDrillQuestions(
+  questions: Question[],
+  mode: VocabDrillMode,
+): Question[] {
+  if (mode === "en-vi") {
+    return questions.filter((q) => q.sourceCategory === "vocab");
+  }
+  if (mode === "vi-en") {
+    return questions.filter(isViEnMcq);
+  }
+  return questions.filter(
+    (q) =>
+      q.type === "Matching" &&
+      Array.isArray(q.pairs) &&
+      q.pairs.length > 0 &&
+      (q.sourceCategory === "practice" || q.sourceCategory === "vocab"),
+  );
+}
+
+export function sortSubLessonIds(ids: string[]): string[] {
+  return [...ids].sort((a, b) => {
+    const [am, as] = a.split(".").map(Number);
+    const [bm, bs] = b.split(".").map(Number);
+    if (Number.isNaN(am) || Number.isNaN(as)) return a.localeCompare(b);
+    if (Number.isNaN(bm) || Number.isNaN(bs)) return a.localeCompare(b);
+    if (am !== bm) return am - bm;
+    return as - bs;
+  });
+}
+
+/** Tiểu mục từ phrases[].subLessonId và practice[].subLessonId (đã seed). */
+export function collectSubLessonIdsFromUnit(unit: Unit): string[] {
+  const set = new Set<string>();
+  for (const p of unit.phrases) {
+    const id = p.subLessonId?.trim();
+    if (id) set.add(id);
+  }
+  for (const q of unit.practice) {
+    const id = q.subLessonId?.trim();
+    if (id) set.add(id);
+  }
+  return sortSubLessonIds([...set]);
+}
+
+export function filterQuestionsBySubLesson(
+  questions: Question[],
+  subLessonId: string | null,
+): Question[] {
+  if (!subLessonId?.trim()) return questions;
+  const want = subLessonId.trim();
+  return questions.filter((q) => (q.subLessonId ?? "").trim() === want);
+}
+
+export const SUB_LESSON_NAV_LABELS: Record<string, string> = {
+  "1.1": "Tiếp xúc ban đầu",
+  "1.2": "Giấy tờ & xác minh",
+  "1.3": "Thông tin cá nhân",
+  "2.1": "Tiếp cận & chào hỏi",
+  "2.2": "Thẩm quyền & pháp luật",
+  "2.3": "Hỗ trợ chung",
+  "2.4": "Trấn an & hướng dẫn",
+};
+
+export function phraseSubLessonLabel(
+  subId: string,
+  sample?: { context?: string },
+): string {
+  return (
+    SUB_LESSON_NAV_LABELS[subId] ??
+    (sample?.context ? `${subId} · ${sample.context}` : `Phần ${subId}`)
+  );
 }

@@ -3,6 +3,7 @@ import type { Question } from "@/types";
 export const unit1Questions: Question[] = [
   {
     id: "u1_q1",
+    subLessonId: "1.1",
     type: "MCQ",
     prompt: "What does 'identification' mean?",
     circumstance:
@@ -12,6 +13,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q2",
+    subLessonId: "1.1",
     type: "FillInBlank",
     prompt: "Please remain calm and ____ with us.",
     circumstance: "A foreign visitor looks nervous during first contact.",
@@ -19,6 +21,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q3",
+    subLessonId: "1.1",
     type: "Dictation",
     prompt: "Hộ chiếu của bạn ở đâu?",
     circumstance: "You need to confirm travel documents at a hotel lobby.",
@@ -27,6 +30,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q4",
+    subLessonId: "1.1",
     type: "Speaking",
     prompt: "Tôi là cảnh sát đang làm nhiệm vụ.",
     circumstance:
@@ -36,6 +40,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q5",
+    subLessonId: "1.1",
     type: "FillInBlank",
     prompt: "This information is required for ____ purposes.",
     circumstance:
@@ -44,6 +49,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q6",
+    subLessonId: "1.1",
     type: "Speaking",
     prompt: "Đề nghị ông/bà cho biết họ và tên đầy đủ.",
     circumstance: "You are recording identity details in an official form.",
@@ -52,6 +58,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q7",
+    subLessonId: "1.1",
     type: "MCQ",
     prompt: "What does 'passport' mean?",
     circumstance: "You are checking if the traveler carries valid documents.",
@@ -60,6 +67,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q8",
+    subLessonId: "1.1",
     type: "FillInBlank",
     prompt: "What is your ____?",
     circumstance:
@@ -68,6 +76,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q9",
+    subLessonId: "1.1",
     type: "Dictation",
     prompt: "Đề nghị ông/bà xuất trình giấy tờ tùy thân.",
     circumstance:
@@ -77,6 +86,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q10",
+    subLessonId: "1.1",
     type: "Speaking",
     prompt: "Đề nghị cho chúng tôi kiểm tra thị thực của ông/bà.",
     circumstance: "You verify immigration status after checking the passport.",
@@ -85,6 +95,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q11",
+    subLessonId: "1.2",
     type: "FillInBlank",
     prompt: "Please provide your ____ in Vietnam.",
     circumstance: "You update lodging records for a foreign resident.",
@@ -92,6 +103,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_q12",
+    subLessonId: "1.2",
     type: "MCQ",
     prompt: "Which word means 'xác minh'?",
     circumstance:
@@ -101,6 +113,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_scenario_1",
+    subLessonId: "1.2",
     type: "Scenario",
     prompt:
       "Bạn gặp một người nước ngoài đang đi bộ trong khu dân cư vào ban đêm. Câu nào phù hợp nhất để mở đầu cuộc tiếp xúc?",
@@ -122,6 +135,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_scenario_2",
+    subLessonId: "1.2",
     type: "Scenario",
     prompt:
       "Một du khách từ chối xuất trình giấy tờ và tỏ ra lo lắng. Bạn nên nói gì?",
@@ -143,6 +157,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_arrange_1",
+    subLessonId: "1.2",
     type: "Arrangement",
     prompt: "Sắp xếp thành câu đúng: Officer Nam is the local police.",
     options: ["I", "am", "Officer", "Nam,", "from", "the", "local", "police."],
@@ -150,6 +165,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_arrange_2",
+    subLessonId: "1.2",
     type: "Arrangement",
     prompt: "Sắp xếp thành câu đúng: We are on duty to ensure public safety.",
     options: ["We", "are", "on", "duty", "to", "ensure", "public", "safety."],
@@ -157,6 +173,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_arrange_3",
+    subLessonId: "1.2",
     type: "Arrangement",
     prompt: "Sắp xếp thành câu đúng: Please show your identification to me.",
     options: ["Please", "show", "me", "your", "identification."],
@@ -164,6 +181,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_arrange_4",
+    subLessonId: "1.2",
     type: "Arrangement",
     prompt: "Sắp xếp thành câu đúng: Do you have your passport with you?",
     options: ["Do", "you", "have", "your", "passport", "with", "you?"],
@@ -171,6 +189,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_arrange_5",
+    subLessonId: "1.2",
     type: "Arrangement",
     prompt:
       "Sắp xếp thành câu đúng: We will return your documents after verification.",
@@ -187,6 +206,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_matching_hd_1",
+    subLessonId: "1.2",
     type: "Matching",
     prompt: "Ghép các câu tiếng Anh với nội dung tương ứng",
     pairs: [
@@ -217,6 +237,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_gap_1",
+    subLessonId: "1.3",
     type: "FillInBlank",
     prompt: "We are here to ____ you.",
     circumstance: "Gợi ý: assist",
@@ -224,6 +245,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_gap_2",
+    subLessonId: "1.3",
     type: "FillInBlank",
     prompt: "Please remain calm and ____ with us.",
     circumstance: "Gợi ý: cooperate",
@@ -231,6 +253,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_gap_3",
+    subLessonId: "1.3",
     type: "FillInBlank",
     prompt: "Could you please ____ your full name?",
     circumstance: "Gợi ý: state",
@@ -238,6 +261,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_gap_4",
+    subLessonId: "1.3",
     type: "FillInBlank",
     prompt: "What is your ____ of birth?",
     circumstance: "Gợi ý: date",
@@ -245,6 +269,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_gap_5",
+    subLessonId: "1.3",
     type: "FillInBlank",
     prompt: "We need to ____ your identification documents.",
     circumstance: "Gợi ý: check hoặc verify",
@@ -253,6 +278,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_sit_1",
+    subLessonId: "1.3",
     type: "Scenario",
     prompt: "When first approaching a foreigner to start working, you say:",
     options: [
@@ -264,6 +290,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_sit_2",
+    subLessonId: "1.3",
     type: "Scenario",
     prompt:
       "When wanting to reassure a citizen that this is just a routine administrative check:",
@@ -276,6 +303,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_sit_3",
+    subLessonId: "1.3",
     type: "Scenario",
     prompt: "When needing to check a tourist's visa:",
     options: [
@@ -287,6 +315,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_sit_4",
+    subLessonId: "1.3",
     type: "Scenario",
     prompt:
       "When wanting to confirm whether the information a customer just provided is correct:",
@@ -299,6 +328,7 @@ export const unit1Questions: Question[] = [
   },
   {
     id: "u1_sit_5",
+    subLessonId: "1.3",
     type: "Scenario",
     prompt: "When asking about a guest's current residence in Vietnam:",
     options: [

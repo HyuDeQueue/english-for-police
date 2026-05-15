@@ -1,12 +1,6 @@
 import React from "react";
 import { speak } from "@/lib/speech";
-import type {
-  Unit,
-  FlaggedItem,
-  Vocabulary,
-  Phrase,
-  Collocation,
-} from "../../types";
+import type { Unit, FlaggedItem, Vocabulary, Phrase } from "../../types";
 import {
   Sheet,
   SheetContent,
@@ -15,7 +9,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { BookMarked, Trash2, Volume2, ExternalLink, Zap } from "lucide-react";
+import { BookMarked, Trash2, Volume2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NotebookSidebarProps {
@@ -31,7 +25,6 @@ interface GroupedItem {
   unit: Unit;
   vocabulary: (Vocabulary & { rawItem: FlaggedItem })[];
   phrases: (Phrase & { rawItem: FlaggedItem })[];
-  collocations: (Collocation & { rawItem: FlaggedItem })[];
 }
 
 export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
@@ -52,7 +45,6 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
           unit,
           vocabulary: [],
           phrases: [],
-          collocations: [],
         };
       }
 
@@ -63,12 +55,6 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
       } else if (item.type === "phrase") {
         const phrase = unit.phrases.find((p) => p.text === item.key);
         if (phrase) acc[item.unitId].phrases.push({ ...phrase, rawItem: item });
-      } else if (item.type === "collocation") {
-        const collocation = unit.memoryBoost.collocations.find(
-          (c) => `${c.verb} ${c.noun}` === item.key,
-        );
-        if (collocation)
-          acc[item.unitId].collocations.push({ ...collocation, rawItem: item });
       }
 
       return acc;
@@ -220,36 +206,6 @@ export const NotebookSidebar: React.FC<NotebookSidebarProps> = ({
                             >
                               <Volume2 className="h-3 w-3 text-muted-foreground" />
                             </Button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Collocations */}
-                      {group.collocations.map((c, i) => (
-                        <div
-                          key={`c-${i}`}
-                          className="group p-4 rounded-xl border bg-card hover:border-primary/30 hover:police-shadow transition-all relative border-l-4 border-l-primary/30"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <Badge className="bg-primary/10 text-primary border-none text-[9px] h-4 uppercase">
-                              Công thức
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => onRemoveItem(c.rawItem)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Zap className="h-3 w-3 text-secondary fill-current" />
-                            <div className="flex items-center gap-1.5 font-black text-primary uppercase text-sm">
-                              <span>{c.verb}</span>
-                              <span className="text-muted-foreground">+</span>
-                              <span>{c.noun}</span>
-                            </div>
                           </div>
                         </div>
                       ))}

@@ -360,13 +360,6 @@ export const unit3: Unit = {
     },
   ],
   memoryBoost: {
-    collocations: [
-      { verb: "report", noun: "an incident" },
-      { verb: "describe", noun: "the suspect" },
-      { verb: "record", noun: "a statement" },
-      { verb: "collect", noun: "evidence" },
-      { verb: "conduct", noun: "an investigation" },
-    ],
     summary:
       "Khi tiếp nhận thông tin vụ việc, cần hỏi rõ nhân chứng và nạn nhân, xác minh thời gian-địa điểm-hành vi, sau đó kết thúc bằng hướng dẫn rõ ràng về bước xử lý tiếp theo.",
   },

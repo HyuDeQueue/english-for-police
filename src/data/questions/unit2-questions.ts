@@ -3,6 +3,7 @@ import type { Question } from "@/types";
 export const unit2Questions: Question[] = [
   {
     id: "u2_q1",
+    subLessonId: "2.1",
     type: "MCQ",
     prompt: "What does 'civilian' mean?",
     circumstance: "You are briefing a new officer before public interaction.",
@@ -11,6 +12,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q2",
+    subLessonId: "2.1",
     type: "FillInBlank",
     prompt: "Please remain calm and ____. ",
     circumstance:
@@ -19,6 +21,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q3",
+    subLessonId: "2.1",
     type: "Dictation",
     prompt: "Chúng tôi đang tuần tra khu vực.",
     circumstance: "You explain your presence to local residents at night.",
@@ -27,6 +30,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q4",
+    subLessonId: "2.4",
     type: "Speaking",
     prompt: "Đề nghị anh/chị giữ bình tĩnh và làm theo hướng dẫn.",
     circumstance: "A bystander is anxious while officers secure a scene.",
@@ -35,6 +39,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q5",
+    subLessonId: "2.2",
     type: "MCQ",
     prompt: "What is the best translation of 'public order'?",
     circumstance:
@@ -49,6 +54,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q6",
+    subLessonId: "2.2",
     type: "Speaking",
     prompt: "Chúng tôi có thẩm quyền thực hiện nhiệm vụ này.",
     circumstance: "Someone questions your legal authority during a check.",
@@ -57,6 +63,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q7",
+    subLessonId: "2.2",
     type: "MCQ",
     prompt: "What does 'lawful duty' mean?",
     circumstance: "You explain legal terminology to a foreign resident.",
@@ -70,6 +77,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q8",
+    subLessonId: "2.2",
     type: "FillInBlank",
     prompt: "Our duty is to ____ public order.",
     circumstance: "You describe police responsibilities in a public speech.",
@@ -77,6 +85,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q9",
+    subLessonId: "2.1",
     type: "Dictation",
     prompt: "Việc này sẽ không mất nhiều thời gian.",
     circumstance: "A civilian worries that your questioning will delay them.",
@@ -85,6 +94,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q10",
+    subLessonId: "2.3",
     type: "Speaking",
     prompt: "Chúng tôi sẽ hướng dẫn anh/chị đến đúng cơ quan.",
     circumstance: "You help a citizen who came to the wrong office.",
@@ -93,6 +103,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q11",
+    subLessonId: "2.4",
     type: "FillInBlank",
     prompt: "Please wait for further ____.",
     circumstance: "You are controlling a small crowd at a restricted area.",
@@ -100,6 +111,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_q12",
+    subLessonId: "2.2",
     type: "MCQ",
     prompt: "What does 'preventive' mean?",
     circumstance:
@@ -109,6 +121,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_scenario_1",
+    subLessonId: "2.4",
     type: "Scenario",
     prompt:
       "Một nhóm du khách tụ tập chụp ảnh ở khu vực cấm. Bạn cần yêu cầu họ di chuyển. Câu nào phù hợp nhất?",
@@ -130,6 +143,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_scenario_2",
+    subLessonId: "2.3",
     type: "Scenario",
     prompt:
       "Một người dân đến hỏi về thủ tục khai báo mất đồ nhưng bạn không phụ trách. Bạn nên nói gì?",
@@ -153,6 +167,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_gap_1",
+    subLessonId: "2.2",
     type: "FillInBlank",
     prompt: "We are authorized to ____ out this task.",
     circumstance: "Gợi ý: carry",
@@ -160,6 +175,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_arrange_1",
+    subLessonId: "2.2",
     type: "Arrangement",
     prompt: "Sắp xếp thành câu đúng: Our duty is to maintain public order.",
     options: ["Our", "duty", "is", "to", "maintain", "public", "order."],
@@ -167,6 +183,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_matching_1",
+    subLessonId: "2.3",
     type: "Matching",
     prompt: "Ghép các câu tiếng Anh với nội dung tương ứng",
     pairs: [
@@ -196,6 +213,7 @@ export const unit2Questions: Question[] = [
   },
   {
     id: "u2_sit_1",
+    subLessonId: "2.4",
     type: "Scenario",
     prompt: "Khi muốn trấn an người dân rằng tình hình đang được kiểm soát:",
     options: [

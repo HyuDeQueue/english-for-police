@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QuickTestSetup } from "../practice/QuickTestSetup";
 import {
   Accordion,
   AccordionContent,
@@ -15,14 +16,14 @@ import {
   Zap,
   Check,
   Target,
+  Loader2,
 } from "lucide-react";
 import type { Unit, UserProgress, FlaggedItem, DailyTask } from "@/types";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useProgress } from "@/hooks/use-progress";
-import { useEffect, useMemo } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUsers } from "@/hooks/use-users";
 import { StreakLeaderboardCard } from "@/components/dashboard/StreakLeaderboardCard";
@@ -33,7 +34,7 @@ interface HomeViewProps {
   flaggedItems: FlaggedItem[];
   dailyTasks: DailyTask;
   onSelectUnit: (unit: Unit) => void;
-  onNavigate: (path: string) => void;
+  onNavigate: (path: string, state?: unknown) => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -52,6 +53,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
   const { user, isAuthenticated } = useAuth();
   const { contributions, fetchUserById, fetchUserContributions } = useUsers();
+  const [isQuickTestSetupOpen, setIsQuickTestSetupOpen] = useState(false);
 
   const calculatedStreak = useMemo(() => {
     if (contributions.length === 0) return 0;
@@ -121,10 +123,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
     return hash(a.id) - hash(b.id);
   });
 
-  const handleNavigate = (path: string | undefined) => {
-    if (path) {
+  const handleTaskClick = (path: string) => {
+    if (path === "/quicktest") {
+      setIsQuickTestSetupOpen(true);
+    } else {
       onNavigate(path);
     }
+  };
+
+  const startQuickTest = (selectedUnitIds: number[]) => {
+    setIsQuickTestSetupOpen(false);
+    onNavigate("/quicktest", { selectedUnitIds });
   };
 
   return (
@@ -266,6 +275,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Column 3: Main Content */}
       <div className="space-y-8">
+        {isAuthenticated ? (
+          <Card className="police-shadow border-none rounded-lg overflow-hidden border border-primary/10">
+            <CardHeader className="primary-gradient text-white py-4">
+              <CardTitle className="text-base flex items-center gap-2 font-black">
+                <Zap className="h-5 w-5 fill-current text-secondary" />
+                Kiểm tra nhanh
+              </CardTitle>
+              <p className="text-xs text-white/85 font-medium leading-snug mt-1">
+                Chọn một hoặc nhiều chương — hệ thống random tối đa 10 câu practice
+                đã lưu trên server.
+              </p>
+            </CardHeader>
+            <CardContent className="p-4">
+              <Button
+                type="button"
+                className="w-full h-11 font-black primary-gradient border-none police-shadow"
+                onClick={() => setIsQuickTestSetupOpen(true)}
+              >
+                Cấu hình & bắt đầu
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
         {/* Tasks and Review */}
         <div className="space-y-6 relative">
           <Card className="police-shadow border-none rounded-lg overflow-hidden">
@@ -335,7 +369,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
                           size="sm"
                           variant={task.completed ? "outline" : "default"}
                           className={`w-full text-xs font-bold h-10 rounded-md transition-all ${!task.completed ? "primary-gradient border-none shadow-lg shadow-primary/20" : ""}`}
-                          onClick={() => handleNavigate(task.navigatePath)}
+                          onClick={() =>
+                            task.navigatePath &&
+                            handleTaskClick(task.navigatePath)
+                          }
                         >
                           {task.completed
                             ? "Xem lại kết quả"
@@ -401,6 +438,18 @@ export const HomeView: React.FC<HomeViewProps> = ({
           )}
         </div>
       </div>
+
+      {isQuickTestSetupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="w-full max-w-lg">
+            <QuickTestSetup
+              lessons={lessons}
+              onStart={startQuickTest}
+              onCancel={() => setIsQuickTestSetupOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

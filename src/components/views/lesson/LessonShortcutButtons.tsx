@@ -23,7 +23,6 @@ interface LessonShortcutButtonsProps {
     mode?: "type" | "bank",
     sectionTitle?: string,
   ) => void;
-  readonly onStartQuickTest: () => void;
 }
 
 export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
@@ -32,7 +31,6 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
   onStartPractice,
   onStartFlashcards,
   onStartGeneralTest,
-  onStartQuickTest,
 }) => {
   const [isTypeExpanded, setIsTypeExpanded] = useState(false);
 
@@ -125,10 +123,10 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
                           </div>
                         </TooltipTrigger>
                         {!isAvailable && (
-                          <TooltipContent side="right" className="max-w-[200px]">
+                          <TooltipContent side="right" className="max-w-200px">
                             <p className="text-[10px] font-medium">
-                              Phần luyện tập này hiện chưa có nội dung cho chương
-                              này.
+                              Phần luyện tập này hiện chưa có nội dung cho
+                              chương này.
                             </p>
                           </TooltipContent>
                         )}
@@ -145,14 +143,6 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
               onClick={() => onStartGeneralTest("bank")}
             >
               Kiểm tra tổng quát
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full h-10 justify-between font-bold"
-              onClick={onStartQuickTest}
-            >
-              Kiểm tra nhanh
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

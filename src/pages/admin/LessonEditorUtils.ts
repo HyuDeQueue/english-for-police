@@ -1,5 +1,4 @@
 import type {
-  Collocation,
   LessonTestLane,
   Phrase,
   Question,
@@ -36,7 +35,7 @@ export function emptyUnit(suggestedId: number): Unit {
     description: "",
     vocabulary: [],
     phrases: [],
-    memoryBoost: { collocations: [], summary: "" },
+    memoryBoost: { summary: "" },
     practice: [],
     videoUrl: "",
   };
@@ -73,11 +72,8 @@ export function defaultPhrase(): Phrase {
     text: "",
     translation: "",
     context: "",
+    subLessonId: "",
   };
-}
-
-export function defaultCollocation(): Collocation {
-  return { verb: "", noun: "" };
 }
 
 export function defaultQuestionForLane(

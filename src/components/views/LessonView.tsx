@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { speak } from "@/lib/speech";
 import { useNavigate } from "react-router-dom";
 import type { Unit, FlaggedItem } from "../../types";
@@ -10,6 +10,8 @@ import { LessonPhrasesSection } from "./lesson/LessonPhrasesSection";
 import {
   PRACTICE_MENU_LABEL_TO_LANE,
   resolvedLane,
+  phraseSubLessonLabel,
+  sortSubLessonIds,
 } from "@/components/practice/utils/testUtils";
 import { lessonService } from "@/services/lesson.service";
 import type { LessonTestLane } from "@/types";
@@ -75,7 +77,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
     }
     navigate(`/generaltest/${unit.id}`);
   };
-  const startQuickTest = () => navigate(`/quicktest`);
 
   const playAudio = (
     text: string,
@@ -108,11 +109,28 @@ export const LessonView: React.FC<LessonViewProps> = ({
     window.scrollTo(0, 0);
   }, []);
 
+  const phraseSubNavItems = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of unit.phrases) {
+      const id = p.subLessonId?.trim();
+      if (id) set.add(id);
+    }
+    const ids = sortSubLessonIds([...set]);
+    if (ids.length === 0) return [];
+    return ids.map((id) => ({
+      id,
+      label: `${id} ${phraseSubLessonLabel(
+        id,
+        unit.phrases.find((p) => (p.subLessonId ?? "").trim() === id),
+      )}`,
+    }));
+  }, [unit]);
+
   const scrollToSection = (id: string) => {
-    const element = sectionRefs.current[id];
+    const element = document.getElementById(id);
     if (element) {
       setActiveSection(id);
-      const headerOffset = 120;
+      const headerOffset = 100;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition =
         elementPosition + window.pageYOffset - headerOffset;
@@ -129,7 +147,8 @@ export const LessonView: React.FC<LessonViewProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const id = entry.target.getAttribute("data-section");
+            const id =
+              entry.target.getAttribute("data-section") || entry.target.id;
             if (id) setActiveSection(id);
           }
         });
@@ -137,12 +156,19 @@ export const LessonView: React.FC<LessonViewProps> = ({
       { rootMargin: "-100px 0px -70% 0px" },
     );
 
-    Object.values(sectionRefs.current).forEach((ref) => {
-      if (ref) observer.observe(ref as Element);
-    });
+    const observeElements = () => {
+      Object.values(sectionRefs.current).forEach((ref) => {
+        if (ref) observer.observe(ref as Element);
+      });
 
+      document.querySelectorAll("[id^='phrases-']").forEach((el) => {
+        observer.observe(el);
+      });
+    };
+
+    observeElements();
     return () => observer.disconnect();
-  }, []);
+  }, [unit.id]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start">
@@ -153,6 +179,7 @@ export const LessonView: React.FC<LessonViewProps> = ({
           activeSection={activeSection}
           onBack={onBack}
           onScrollToSection={scrollToSection}
+          phraseSubNavItems={phraseSubNavItems}
         />
 
         {/* Shortcuts */}
@@ -164,7 +191,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
               onStartPractice={startPractice}
               onStartFlashcards={startFlashcards}
               onStartGeneralTest={startGeneralTest}
-              onStartQuickTest={startQuickTest}
             />
           </div>
         </div>
@@ -187,8 +213,14 @@ export const LessonView: React.FC<LessonViewProps> = ({
           flaggedItems={flaggedItems}
           onToggleFlag={toggleFlag}
           onPlayAudio={playAudio}
-          sectionRef={(el) => {
-            sectionRefs.current["phrases"] = el;
+          onStartPractice={(mode, group) => {
+            if (mode === "PHRASE_SCENARIO" && group) {
+              navigate(
+                `/generaltest/${unit.id}?lane=PHRASE_SCENARIO&subId=${group}`,
+              );
+            } else {
+              startGeneralTest();
+            }
           }}
         />
       </div>

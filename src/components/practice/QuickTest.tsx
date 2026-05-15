@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import type { Unit, Question } from "@/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,15 @@ export const QuickTest: React.FC<QuickTestProps> = ({
   onBack,
   onComplete,
 }) => {
+  const location = useLocation();
+  const stateUnitIds = location.state?.selectedUnitIds as number[] | undefined;
+  const effectiveUnitIds = useMemo(() => {
+    const raw = stateUnitIds?.length ? stateUnitIds : completedUnitIds;
+    return [...new Set(raw)].sort((a, b) => a - b);
+  }, [stateUnitIds, completedUnitIds]);
+
+  const chapterIdsKey = effectiveUnitIds.join(",");
+
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -63,20 +73,28 @@ export const QuickTest: React.FC<QuickTestProps> = ({
 
   useEffect(() => {
     const loadQuestions = async () => {
-      if (completedUnitIds.length === 0) {
+      if (effectiveUnitIds.length === 0) {
         setQuestions([]);
         setIsLoadingQuestions(false);
         return;
       }
       setIsLoadingQuestions(true);
       try {
-        const banks = await Promise.all(
-          completedUnitIds.map((unitId) =>
-            practiceQuestionService.getTestBank(unitId, "quick", 8),
-          ),
-        );
-        const merged = shuffleArray(banks.flat()).slice(0, 10);
-        setQuestions(preparePracticeQuestions(merged));
+        let merged: Question[] = [];
+        try {
+          merged = await practiceQuestionService.postQuickTest(
+            effectiveUnitIds,
+          );
+        } catch {
+          const banks = await Promise.all(
+            effectiveUnitIds.map((unitId) =>
+              practiceQuestionService.getTestBank(unitId, "quick", 12),
+            ),
+          );
+          merged = shuffleArray(banks.flat()).slice(0, 10);
+        }
+        const sliced = merged.slice(0, 10);
+        setQuestions(preparePracticeQuestions(sliced));
       } catch (error) {
         console.error("Failed to load quick test questions", error);
         notifyError(
@@ -89,7 +107,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
       }
     };
     void loadQuestions();
-  }, [completedUnitIds, notifyError]);
+  }, [chapterIdsKey, notifyError]);
 
   const currentQ = questions[currentIndex];
 

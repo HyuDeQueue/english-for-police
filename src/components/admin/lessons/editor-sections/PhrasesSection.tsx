@@ -99,6 +99,22 @@ export function PhrasesSection({
                     className="h-9 text-xs italic bg-muted/10 border-dashed border-border/60"
                   />
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground ml-1">
+                    Tiểu mục (subLessonId)
+                  </Label>
+                  <Input
+                    placeholder="VD: 2.1 hoặc 1.2"
+                    value={row.subLessonId ?? ""}
+                    onChange={(e) => {
+                      const p = [...draft.phrases];
+                      p[idx] = { ...p[idx], subLessonId: e.target.value };
+                      setDraft((d) => ({ ...d, phrases: p }));
+                    }}
+                    className="h-9 text-xs font-mono border-border/60"
+                  />
+                </div>
               </div>
             ))}
           </div>
