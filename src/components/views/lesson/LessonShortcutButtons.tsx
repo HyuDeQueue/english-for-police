@@ -3,7 +3,10 @@ import { ChevronRight, Lock, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { requestOpenLoginDialog } from "@/lib/auth-ui-events";
-import { PRACTICE_MENU_LABEL_TO_LANE } from "@/components/practice/utils/testUtils";
+import {
+  PRACTICE_MENU_LABEL_TO_LANE,
+  type VocabDrillMode,
+} from "@/components/practice/utils/testUtils";
 import type { LessonTestLane } from "@/types";
 import {
   Tooltip,
@@ -11,6 +14,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+const VOCAB_TOOL_ITEMS: {
+  id: VocabDrillMode;
+  label: string;
+  lane: LessonTestLane;
+}[] = [
+  { id: "en-vi", label: "Anh → Việt", lane: "VOCAB_MCQ" },
+  { id: "vi-en", label: "Việt → Anh", lane: "VOCAB_MCQ" },
+  { id: "matching", label: "Ghép cặp", lane: "MATCHING" },
+];
 
 const PRACTICE_TYPES = Object.keys(PRACTICE_MENU_LABEL_TO_LANE);
 
@@ -23,6 +36,7 @@ interface LessonShortcutButtonsProps {
     mode?: "type" | "bank",
     sectionTitle?: string,
   ) => void;
+  readonly onStartVocabDrill: (drill: VocabDrillMode) => void;
 }
 
 export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
@@ -31,8 +45,10 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
   onStartPractice,
   onStartFlashcards,
   onStartGeneralTest,
+  onStartVocabDrill,
 }) => {
   const [isTypeExpanded, setIsTypeExpanded] = useState(false);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
 
   return (
     <TooltipProvider>
@@ -45,6 +61,64 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
           Flashcard
           <ChevronRight className="h-4 w-4" />
         </Button>
+
+        <div className="space-y-2">
+          <Button
+            variant="outline"
+            className="h-10 w-full justify-between font-bold"
+            onClick={() => setIsToolsExpanded(!isToolsExpanded)}
+          >
+            Công cụ
+            <ChevronRight
+              className={cn(
+                "h-4 w-4 transition-transform",
+                isToolsExpanded && "rotate-180",
+              )}
+            />
+          </Button>
+
+          {isToolsExpanded ? (
+            <div className="mb-2 ml-2 animate-in space-y-1 border-l-2 border-muted pl-3 pr-1 fade-in">
+              {VOCAB_TOOL_ITEMS.map(({ id, label, lane }) => {
+                const isAvailable = availableLanes.has(lane);
+                return (
+                  <Tooltip key={id} delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <div className="w-full">
+                        <Button
+                          variant="ghost"
+                          disabled={!isAvailable}
+                          className={cn(
+                            "h-8 w-full justify-between px-2 text-[11px] font-medium transition-all",
+                            isAvailable
+                              ? "text-muted-foreground hover:text-primary"
+                              : "cursor-not-allowed text-muted-foreground/30 line-through",
+                          )}
+                          onClick={() =>
+                            isAvailable && onStartVocabDrill(id)
+                          }
+                        >
+                          <span className="truncate">• {label}</span>
+                          {!isAvailable && (
+                            <HelpCircle className="h-3 w-3 shrink-0 opacity-40" />
+                          )}
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {!isAvailable && (
+                      <TooltipContent side="right" className="max-w-[200px]">
+                        <p className="text-[10px] font-medium">
+                          Phần luyện tập này hiện chưa có nội dung cho chương
+                          này.
+                        </p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
 
         <div className="relative rounded-md">
           {testsLocked ? (
@@ -80,13 +154,14 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
               Kiểm tra
               <ChevronRight className="h-4 w-4" />
             </Button>
+
             <div className="space-y-2">
               <Button
                 variant="outline"
                 className="w-full h-10 justify-between font-bold"
                 onClick={() => setIsTypeExpanded(!isTypeExpanded)}
               >
-                Luyện tập
+                Luyện tập theo dạng
                 <ChevronRight
                   className={`h-4 w-4 transition-transform ${isTypeExpanded ? "rotate-180" : ""}`}
                 />

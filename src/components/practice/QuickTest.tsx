@@ -107,7 +107,7 @@ export const QuickTest: React.FC<QuickTestProps> = ({
       }
     };
     void loadQuestions();
-  }, [chapterIdsKey, notifyError]);
+  }, [chapterIdsKey, effectiveUnitIds, notifyError]);
 
   const currentQ = questions[currentIndex];
 

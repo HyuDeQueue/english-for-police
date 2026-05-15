@@ -583,3 +583,37 @@ export function phraseSubLessonLabel(
     (sample?.context ? `${subId} · ${sample.context}` : `Phần ${subId}`)
   );
 }
+
+export type PhraseSubNavItem = {
+  id: string;
+  title: string;
+  label: string;
+};
+
+/** Tiểu mục mẫu câu cho mục lục / dropdown (từ subLessonId hoặc legacy theo unit). */
+export function getPhraseSubNavItems(unit: Unit): PhraseSubNavItem[] {
+  const subIds = collectSubLessonIdsFromUnit(unit);
+  if (subIds.length > 0) {
+    return subIds.map((id) => {
+      const title = phraseSubLessonLabel(
+        id,
+        unit.phrases.find((p) => (p.subLessonId ?? "").trim() === id),
+      );
+      return { id, title, label: `${id} — ${title}` };
+    });
+  }
+
+  const legacyIds = sortSubLessonIds(
+    Object.keys(SUB_LESSON_NAV_LABELS).filter((k) =>
+      k.startsWith(`${unit.id}.`),
+    ),
+  );
+  if (legacyIds.length > 0 && unit.phrases.length > 0) {
+    return legacyIds.map((id) => {
+      const title = SUB_LESSON_NAV_LABELS[id] ?? id;
+      return { id, title, label: `${id} — ${title}` };
+    });
+  }
+
+  return [];
+}

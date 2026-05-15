@@ -16,7 +16,7 @@ export interface PracticeQuestionApiDto {
   acceptableAnswers?: string[];
   explanation?: string;
   vnPrompt?: string;
-  pairs?: { left: string; right: string }[];
+  pairs?: Array<{ left?: string; right?: string } | Record<string, string>>;
   testLane?: LessonTestLane | null | string;
   subLessonId?: string | null;
 }
@@ -56,8 +56,28 @@ function narrowTestLane(
   return undefined;
 }
 
+function normalizePair(
+  p: { left?: string; right?: string } | Record<string, string>,
+): { left: string; right: string } {
+  const left =
+    "left" in p && typeof p.left === "string"
+      ? p.left
+      : (Object.values(p)[0] ?? "");
+  const right =
+    "right" in p && typeof p.right === "string"
+      ? p.right
+      : (Object.values(p)[1] ?? "");
+  return { left, right };
+}
+
 /** Chuẩn hóa một dòng câu hỏi từ API lesson tests / practice / test bank. */
 export function mapPracticeQuestionDto(item: PracticeQuestionApiDto): Question {
+  const pairs = item.pairs?.map((p) =>
+    "left" in p && "right" in p && p.left != null && p.right != null
+      ? { left: String(p.left), right: String(p.right) }
+      : normalizePair(p as Record<string, string>),
+  );
+
   return {
     id: item.id,
     backendQuestionId: item.id,
@@ -74,7 +94,7 @@ export function mapPracticeQuestionDto(item: PracticeQuestionApiDto): Question {
     acceptableAnswers: item.acceptableAnswers,
     explanation: item.explanation,
     vnPrompt: item.vnPrompt,
-    pairs: item.pairs,
+    pairs,
     subLessonId: item.subLessonId ?? undefined,
   };
 }

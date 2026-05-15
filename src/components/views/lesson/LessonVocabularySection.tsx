@@ -1,13 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Volume2,
-  Star,
-  ChevronLeft,
-  ChevronRight,
-  Languages,
-  Link2,
-} from "lucide-react";
+import { Volume2, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -20,9 +12,7 @@ import {
 } from "@/components/ui/select";
 import { AudioRecorderButton } from "@/components/common/AudioRecorderButton";
 import type { Unit, FlaggedItem } from "@/types";
-import {
-  sortSubLessonIds,
-} from "@/components/practice/utils/testUtils";
+import { sortSubLessonIds } from "@/components/practice/utils/testUtils";
 
 interface LessonVocabularySectionProps {
   readonly unit: Unit;
@@ -35,8 +25,6 @@ interface LessonVocabularySectionProps {
 export const LessonVocabularySection: React.FC<
   LessonVocabularySectionProps
 > = ({ unit, flaggedItems, onToggleFlag, onPlayAudio, sectionRef }) => {
-  const navigate = useNavigate();
-
   const vocabSubIds = useMemo(() => {
     const fromVocab = unit.vocabulary
       .map((v) => v.subLessonId?.trim())
@@ -45,7 +33,9 @@ export const LessonVocabularySection: React.FC<
       .map((p) => p.subLessonId?.trim())
       .filter((x): x is string => !!x);
     const merged = new Set([...fromVocab, ...fromPhrases]);
-    return sortSubLessonIds([...merged]).filter((id) => id.startsWith(`${unit.id}.`));
+    return sortSubLessonIds([...merged]).filter((id) =>
+      id.startsWith(`${unit.id}.`),
+    );
   }, [unit]);
 
   const [vocabSubFilter, setVocabSubFilter] = useState<string>("all");
@@ -67,7 +57,9 @@ export const LessonVocabularySection: React.FC<
   );
 
   useEffect(() => {
-    setCurrentPage(0);
+    queueMicrotask(() => {
+      setCurrentPage(0);
+    });
   }, [vocabSubFilter, unit.id]);
 
   const isFlagged = (word: string) =>
@@ -81,15 +73,9 @@ export const LessonVocabularySection: React.FC<
     startIndex + itemsPerPage,
   );
 
-  const goVocabDrill = (drill: "en-vi" | "vi-en" | "matching") => {
-    const lane = drill === "matching" ? "MATCHING" : "VOCAB_MCQ";
-    navigate(
-      `/generaltest/${unit.id}?lane=${encodeURIComponent(lane)}&vocabDrill=${drill}`,
-    );
-  };
-
   return (
     <section
+      id="vocabulary"
       data-section="vocabulary"
       ref={sectionRef}
       className="scroll-mt-24"
@@ -128,35 +114,6 @@ export const LessonVocabularySection: React.FC<
               </Select>
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-2 justify-end">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 px-3 border-primary text-primary font-black text-[10px] shrink-0"
-              onClick={() => goVocabDrill("en-vi")}
-            >
-              <Languages className="mr-1.5 h-3.5 w-3.5" />
-              Anh → Việt
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 px-3 border-primary text-primary font-black text-[10px] shrink-0"
-              onClick={() => goVocabDrill("vi-en")}
-            >
-              <Languages className="mr-1.5 h-3.5 w-3.5" />
-              Việt → Anh
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-9 px-3 border-primary text-primary font-black text-[10px] shrink-0"
-              onClick={() => goVocabDrill("matching")}
-            >
-              <Link2 className="mr-1.5 h-3.5 w-3.5" />
-              Ghép cặp
-            </Button>
-          </div>
         </div>
       </div>
 
@@ -234,7 +191,9 @@ export const LessonVocabularySection: React.FC<
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-xl font-bold text-primary">{v.word}</h3>
+                      <h3 className="text-xl font-bold text-primary">
+                        {v.word}
+                      </h3>
                       <Badge variant="outline" className="text-[10px] py-0">
                         {v.type}
                       </Badge>

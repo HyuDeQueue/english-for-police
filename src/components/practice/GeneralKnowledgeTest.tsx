@@ -38,6 +38,7 @@ import {
 import { useGeneralTestState } from "./hooks/useGeneralTestState";
 import { useSonner } from "@/hooks/use-sonner";
 import { practiceQuestionService } from "@/services/practice-question.service";
+import { lessonService } from "@/services/lesson.service";
 
 interface GeneralKnowledgeTestProps {
   lessons: Unit[];
@@ -168,29 +169,59 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
           return;
         }
 
-        if (unit && subLessonIdParam && focusedLane === "PHRASE_SCENARIO") {
+        if (unit && effectiveLane && !vocabDrill) {
           let fetched: Question[] = [];
           try {
-            fetched = await practiceQuestionService.getQuestions({
-              unitNumbers: [unit.id],
-              sources: ["practice"],
-              subLessonId: subLessonIdParam,
-            });
+            fetched = await lessonService.getLessonTests(unit.id, effectiveLane);
           } catch {
             fetched = [];
           }
-          if (fetched.length === 0) {
-            fetched = filterQuestionsBySubLesson(
-              unit.practice,
-              subLessonIdParam,
-            );
+
+          if (subLessonIdParam) {
+            const bySub = filterQuestionsBySubLesson(fetched, subLessonIdParam);
+            if (bySub.length > 0) {
+              fetched = bySub;
+            } else {
+              try {
+                const fromPractice = await practiceQuestionService.getQuestions({
+                  unitNumbers: [unit.id],
+                  sources: ["practice"],
+                  subLessonId: subLessonIdParam,
+                });
+                const laneFiltered = filterQuestionsByLane(
+                  fromPractice,
+                  effectiveLane,
+                );
+                fetched =
+                  laneFiltered.length > 0 ? laneFiltered : fromPractice;
+              } catch {
+                fetched = [];
+              }
+            }
           }
-          const laneFiltered = filterQuestionsByLane(
-            fetched,
-            "PHRASE_SCENARIO",
-          );
-          const pool = laneFiltered.length > 0 ? laneFiltered : fetched;
-          const shuffled = shuffleArray(pool);
+
+          if (fetched.length === 0) {
+            let local = filterQuestionsByLane(unit.practice, effectiveLane);
+            if (subLessonIdParam) {
+              local = filterQuestionsBySubLesson(local, subLessonIdParam);
+            }
+            fetched = local;
+          }
+
+          if (fetched.length === 0 && testMode === "bank") {
+            try {
+              fetched = await practiceQuestionService.getTestBank(
+                unit.id,
+                "general",
+                bankLimit,
+              );
+              fetched = filterQuestionsByLane(fetched, effectiveLane);
+            } catch {
+              fetched = [];
+            }
+          }
+
+          const shuffled = shuffleArray(fetched);
           const draftSections = buildSections(shuffled, testMode, bankLimit);
           setQuestions(
             preparePracticeQuestionsForSections(shuffled, draftSections),
@@ -233,6 +264,7 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
     vocabDrill,
     subLessonIdParam,
     focusedLane,
+    effectiveLane,
   ]);
 
   const sections: Section[] = useMemo(
@@ -242,10 +274,12 @@ export const GeneralKnowledgeTest: React.FC<GeneralKnowledgeTestProps> = ({
   );
 
   useEffect(() => {
-    setCurrentSectionIndex(0);
-    setExpandedSectionIndex(0);
-    setCurrentPageIndex(0);
-    setCurrentIndexInSection(0);
+    queueMicrotask(() => {
+      setCurrentSectionIndex(0);
+      setExpandedSectionIndex(0);
+      setCurrentPageIndex(0);
+      setCurrentIndexInSection(0);
+    });
   }, [effectiveLane, testMode, vocabDrill, subLessonIdParam]);
 
   const currentSection = sections[currentSectionIndex];

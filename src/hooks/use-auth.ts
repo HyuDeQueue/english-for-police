@@ -3,8 +3,15 @@ import { authService } from "@/services/auth.service";
 import type { LoginRequest, RegisterRequest } from "@/models/auth.model";
 import type { User } from "@/models/user.model";
 import { useSonner } from "@/hooks/use-sonner";
+import {
+  AUTH_SESSION_CHANGED_EVENT,
+  assertValidAuthToken,
+  getAuthToken,
+  handleUnauthorizedSession,
+  isJwtExpired,
+} from "@/utils/auth-session";
 
-const AUTH_CHANGED_EVENT = "auth-changed";
+const AUTH_CHANGED_EVENT = AUTH_SESSION_CHANGED_EVENT;
 
 function getStoredUser() {
   const savedUser = localStorage.getItem("auth_user");
@@ -25,6 +32,25 @@ export function useAuth() {
       window.removeEventListener("storage", syncAuth);
       window.removeEventListener(AUTH_CHANGED_EVENT, syncAuth);
     };
+  }, []);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token && isJwtExpired(token)) {
+      handleUnauthorizedSession({ reason: "expired" });
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFocus = () => {
+      const token = getAuthToken();
+      if (token && isJwtExpired(token)) {
+        assertValidAuthToken();
+        setUser(getStoredUser());
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const login = async (data: LoginRequest) => {
@@ -77,7 +103,6 @@ export function useAuth() {
   const logout = () => {
     authService.logout();
     setUser(null);
-    localStorage.removeItem("auth_user");
     window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
     notifyInfo("Đăng xuất thành công");
   };

@@ -1,5 +1,11 @@
 import { API_BASE_URL } from "@/api/routes";
 import type { ApiError } from "@/models/auth.model";
+import {
+  assertValidAuthToken,
+  getAuthToken,
+  handleUnauthorizedSession,
+  shouldHandleUnauthorizedApi,
+} from "@/utils/auth-session";
 
 export async function request<T>(
   endpoint: string,
@@ -13,8 +19,16 @@ export async function request<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const token = localStorage.getItem("auth_token");
+  const token = getAuthToken();
   if (token) {
+    if (!assertValidAuthToken()) {
+      const error: ApiError = {
+        message: "Phiên đăng nhập đã hết hạn",
+        status: 401,
+        code: "SESSION_EXPIRED",
+      };
+      throw error;
+    }
     headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -28,6 +42,10 @@ export async function request<T>(
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      if (shouldHandleUnauthorizedApi(endpoint, response.status)) {
+        handleUnauthorizedSession({ reason: "api" });
+      }
+
       const message =
         data.message ||
         data.detail ||

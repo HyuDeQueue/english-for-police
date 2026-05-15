@@ -276,13 +276,13 @@ export const HomeView: React.FC<HomeViewProps> = ({
       {/* Column 3: Main Content */}
       <div className="space-y-8">
         {isAuthenticated ? (
-          <Card className="police-shadow border-none rounded-lg overflow-hidden border border-primary/10">
-            <CardHeader className="primary-gradient text-white py-4">
-              <CardTitle className="text-base flex items-center gap-2 font-black">
+          <Card className="police-shadow gap-0 overflow-hidden rounded-lg border border-primary/10 p-0">
+            <CardHeader className="primary-gradient rounded-none border-0 px-5 py-5 text-white">
+              <CardTitle className="flex items-center gap-2 text-base font-black text-white">
                 <Zap className="h-5 w-5 fill-current text-secondary" />
                 Kiểm tra nhanh
               </CardTitle>
-              <p className="text-xs text-white/85 font-medium leading-snug mt-1">
+              <p className="mt-1 text-xs font-medium leading-snug text-white/85">
                 Chọn một hoặc nhiều chương — hệ thống random tối đa 10 câu practice
                 đã lưu trên server.
               </p>
@@ -290,10 +290,10 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <CardContent className="p-4">
               <Button
                 type="button"
-                className="w-full h-11 font-black primary-gradient border-none police-shadow"
+                className="primary-gradient police-shadow h-11 w-full border-none font-black"
                 onClick={() => setIsQuickTestSetupOpen(true)}
               >
-                Cấu hình & bắt đầu
+                Bắt đầu ngay
                 <ArrowUpRight className="ml-2 h-4 w-4" />
               </Button>
             </CardContent>
@@ -439,17 +439,12 @@ export const HomeView: React.FC<HomeViewProps> = ({
         </div>
       </div>
 
-      {isQuickTestSetupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="w-full max-w-lg">
-            <QuickTestSetup
-              lessons={lessons}
-              onStart={startQuickTest}
-              onCancel={() => setIsQuickTestSetupOpen(false)}
-            />
-          </div>
-        </div>
-      )}
+      <QuickTestSetup
+        open={isQuickTestSetupOpen}
+        onOpenChange={setIsQuickTestSetupOpen}
+        lessons={lessons}
+        onStart={startQuickTest}
+      />
     </div>
   );
 };

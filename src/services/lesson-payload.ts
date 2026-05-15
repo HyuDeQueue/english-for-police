@@ -26,7 +26,7 @@ export function unitToLessonApiBody(unit: Unit) {
     videoUrl: unit.videoUrl ?? null,
     vocabulary: unit.vocabulary,
     phrases: unit.phrases,
-    memoryBoost: unit.memoryBoost,
+    memoryBoost: { summary: unit.memoryBoost.summary },
     practice: unit.practice.map(stripQuestionForApi),
   };
 }

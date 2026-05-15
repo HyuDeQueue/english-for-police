@@ -1,5 +1,6 @@
 import { API_ROUTES } from "@/api/routes";
 import { api } from "@/utils/api-client";
+import { clearAuthSession } from "@/utils/auth-session";
 import type {
   LoginRequest,
   LoginResponse,
@@ -25,6 +26,6 @@ export const authService = {
   },
 
   logout: () => {
-    localStorage.removeItem("auth_token");
+    clearAuthSession();
   },
 };
