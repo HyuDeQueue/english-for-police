@@ -1,31 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DailyTask, FlaggedItem, Unit, UserProgress } from "@/types";
-import { initialLessons } from "@/data/lesson/lessons";
 import { fetchLessons } from "@/lib/lessonApi";
+import { loadSeedLessons } from "@/lib/seed-lessons";
 import { useSonner } from "@/hooks/use-sonner";
+
+function readStoredLessons(): Unit[] {
+  const savedLessons = localStorage.getItem("police_english_lessons");
+  if (!savedLessons) return [];
+  try {
+    const parsed = JSON.parse(savedLessons) as Unit[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("Failed to parse saved lessons", e);
+    return [];
+  }
+}
 
 export function useAppState() {
   const { notifyError, notifyWarning } = useSonner();
-  const [lessons, setLessons] = useState<Unit[]>(() => {
-    const savedLessons = localStorage.getItem("police_english_lessons");
-    if (savedLessons) {
-      try {
-        const parsed = JSON.parse(savedLessons) as Unit[];
-        if (parsed.length < initialLessons.length) {
-          const combined = [...initialLessons];
-          parsed.forEach((savedUnit) => {
-            const index = combined.findIndex((u) => u.id === savedUnit.id);
-            if (index !== -1) combined[index] = savedUnit;
-          });
-          return combined;
-        }
-        return parsed;
-      } catch (e) {
-        console.error("Failed to parse saved lessons", e);
-      }
-    }
-    return initialLessons;
-  });
+  const [lessons, setLessons] = useState<Unit[]>(readStoredLessons);
 
   const [progress, setProgress] = useState<UserProgress>(() => {
     const saved = localStorage.getItem("police_english_progress");
@@ -117,7 +110,11 @@ export function useAppState() {
         );
       } finally {
         if (!hasRemoteData) {
-          setLessons((prev) => (prev.length > 0 ? prev : initialLessons));
+          setLessons((prev) => {
+            if (prev.length > 0) return prev;
+            void loadSeedLessons().then(setLessons);
+            return prev;
+          });
         }
       }
     };

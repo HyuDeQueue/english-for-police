@@ -28,7 +28,6 @@ export const API_ROUTES = {
       `/api/v1/lessons/${unitNumber}/structures/${id}`,
     TEST_BANK: (unitNumber: number) =>
       `/api/v1/lessons/${unitNumber}/tests/bank`,
-    TESTS: (unitNumber: number) => `/api/v1/lessons/${unitNumber}/tests`,
   },
   PROGRESS: {
     SUBMIT_ATTEMPT: "/api/v1/progress/attempts",

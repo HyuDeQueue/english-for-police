@@ -22,17 +22,6 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useAppState } from "@/hooks/useAppState";
 import { getFlashcardStatusStorageKey } from "@/components/practice/flashcardStorage";
 import type { FlashcardSessionSummary } from "@/components/practice/FlashcardReview";
-import {
-  LessonViewPage,
-  TrainingGroundPage,
-  FlashcardReviewPage,
-  FlashcardResultsPage,
-  GeneralTestPage,
-  UnitsProgressPage,
-  StudentEvaluationPage,
-  AdminLessonsPage,
-  AdminLessonWorkspacePage,
-} from "@/pages";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@/models/user.model";
 import { fetchLessons } from "@/lib/lessonApi";
@@ -50,6 +39,39 @@ const QuickTest = lazy(() =>
   import("@/components/practice/QuickTest").then((m) => ({
     default: m.QuickTest,
   })),
+);
+const LessonViewPage = lazy(() =>
+  import("@/pages/LessonViewPage").then((m) => ({ default: m.LessonViewPage })),
+);
+const TrainingGroundPage = lazy(() =>
+  import("@/pages/TrainingGroundPage").then((m) => ({
+    default: m.TrainingGroundPage,
+  })),
+);
+const FlashcardReviewPage = lazy(() =>
+  import("@/pages/FlashcardReviewPage").then((m) => ({
+    default: m.FlashcardReviewPage,
+  })),
+);
+const FlashcardResultsPage = lazy(() =>
+  import("@/pages/FlashcardResultsPage").then((m) => ({
+    default: m.FlashcardResultsPage,
+  })),
+);
+const GeneralTestPage = lazy(() =>
+  import("@/pages/GeneralTestPage").then((m) => ({
+    default: m.GeneralTestPage,
+  })),
+);
+const UnitsProgressPage = lazy(
+  () => import("@/pages/admin/UnitsProgressPage"),
+);
+const StudentEvaluationPage = lazy(
+  () => import("@/pages/admin/StudentEvaluationPage"),
+);
+const AdminLessonsPage = lazy(() => import("@/pages/admin/AdminLessonsPage"));
+const AdminLessonWorkspacePage = lazy(
+  () => import("@/pages/admin/AdminLessonWorkspacePage"),
 );
 
 function parseUnitIdFromPath(path: string) {

@@ -11,10 +11,11 @@ import {
   normalizeLessonFromApi,
   unitToLessonApiBody,
 } from "@/services/lesson-payload";
+import { practiceQuestionService } from "@/services/practice-question.service";
 import {
-  mapPracticeQuestionDto,
-  type PracticeQuestionApiDto,
-} from "@/services/practice-question.service";
+  filterQuestionsByLane,
+  isLessonTestLane,
+} from "@/components/practice/utils/testUtils";
 
 interface ApiResponse<T> {
   code: string;
@@ -123,22 +124,19 @@ export const lessonService = {
   ): Promise<void> => {
     await api.delete(API_ROUTES.LESSONS.GRAMMAR_STRUCTURE(unitNumber, id));
   },
-  /**
-   * GET /api/v1/lessons/{unitNumber}/tests
-   * @param type — VOCAB_MCQ | MATCHING | PHRASE_SCENARIO | FILL_ARRANGE (để trống = tất cả)
-   */
+
   getLessonTests: async (
     unitNumber: number,
-    type?: LessonTestLane | string,
+    lane?: LessonTestLane | string,
   ): Promise<Question[]> => {
-    const url = API_ROUTES.LESSONS.TESTS(unitNumber);
-    const params = new URLSearchParams();
-    if (type) params.set("type", type);
-    const qs = params.toString();
-    const response = await api.get<ApiResponse<PracticeQuestionApiDto[]>>(
-      `${url}${qs ? `?${qs}` : ""}`,
-    );
-    return response.data.map(mapPracticeQuestionDto);
+    const questions = await practiceQuestionService.getQuestions({
+      unitNumbers: [unitNumber],
+      sources: ["practice", "vocab", "phrase"],
+    });
+    if (lane && isLessonTestLane(lane)) {
+      return filterQuestionsByLane(questions, lane);
+    }
+    return questions;
   },
 
   listPhraseTemplates: async (

@@ -12,10 +12,21 @@ export default defineConfig({
     },
   },
   build: {
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
         manualChunks(id) {
-            if (id.includes("node_modules/react-dom") || id.includes("node_modules/react/")) {
+          if (id.includes("node_modules")) {
+            if (id.includes("recharts") || id.includes("d3-")) {
+              return "vendor-charts";
+            }
+            if (id.includes("@fontsource")) {
+              return "vendor-fonts";
+            }
+            if (
+              id.includes("node_modules/react-dom") ||
+              id.includes("node_modules/react/")
+            ) {
               return "vendor-react";
             }
             if (id.includes("node_modules/react-router")) {
@@ -23,6 +34,9 @@ export default defineConfig({
             }
             if (id.includes("node_modules/lucide-react")) {
               return "vendor-icons";
+            }
+            if (id.includes("node_modules/sonner")) {
+              return "vendor-sonner";
             }
             if (
               id.includes("node_modules/radix-ui") ||
@@ -32,7 +46,16 @@ export default defineConfig({
             ) {
               return "vendor-ui";
             }
-          },
+            return;
+          }
+
+          if (id.includes("/src/data/")) {
+            return "data-seed";
+          }
+          if (id.includes("/src/pages/admin/")) {
+            return "admin-pages";
+          }
+        },
       },
     },
   },

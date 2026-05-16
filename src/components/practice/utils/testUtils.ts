@@ -555,11 +555,16 @@ export function collectSubLessonIdsFromUnit(unit: Unit): string[] {
   return sortSubLessonIds([...set]);
 }
 
+export function bankHasSubLessonTags(questions: Question[]): boolean {
+  return questions.some((q) => (q.subLessonId ?? "").trim() !== "");
+}
+
 export function filterQuestionsBySubLesson(
   questions: Question[],
   subLessonId: string | null,
 ): Question[] {
   if (!subLessonId?.trim()) return questions;
+  if (!bankHasSubLessonTags(questions)) return questions;
   const want = subLessonId.trim();
   return questions.filter((q) => (q.subLessonId ?? "").trim() === want);
 }
@@ -624,8 +629,11 @@ export function lanesAvailableForSubLesson(
   questions: Question[],
   subLessonId: string,
 ): Set<LessonTestLane> {
+  const scoped = bankHasSubLessonTags(questions)
+    ? filterQuestionsBySubLesson(questions, subLessonId)
+    : questions;
   const lanes = new Set<LessonTestLane>();
-  for (const q of filterQuestionsBySubLesson(questions, subLessonId)) {
+  for (const q of scoped) {
     lanes.add(resolvedLane(q));
   }
   return lanes;
