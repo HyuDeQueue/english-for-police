@@ -200,7 +200,9 @@ export function ChartsAndStudentsCard({
                               </td>
                               <td className="py-3 px-4 text-center text-slate-600 tabular-nums">
                                 {student.createdAt
-                                  ? new Date(student.createdAt).toLocaleDateString("vi-VN")
+                                  ? new Date(
+                                      student.createdAt,
+                                    ).toLocaleDateString("vi-VN")
                                   : "-"}
                               </td>
                               <td className="py-3 px-4 text-center font-semibold text-slate-700 tabular-nums">
@@ -210,12 +212,12 @@ export function ChartsAndStudentsCard({
                                 {(student.overallScorePercent / 10).toFixed(1)}
                                 /10
                               </td>
-                              <td className="py-3 px-4 text-center">
-                                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                              <td className="whitespace-nowrap py-3 px-4 text-center">
+                                <div className="inline-flex items-center justify-center gap-1.5">
                                   <Button
                                     size="sm"
                                     variant="default"
-                                    className="h-8 text-[10px] font-bold"
+                                    className="h-8 shrink-0 px-3 text-[10px] font-bold"
                                     asChild
                                   >
                                     <Link
@@ -225,9 +227,10 @@ export function ChartsAndStudentsCard({
                                     </Link>
                                   </Button>
                                   <Button
-                                    size="sm"
+                                    type="button"
+                                    size="icon"
                                     variant="outline"
-                                    className="h-8 border-slate-300 text-slate-700 hover:bg-slate-50"
+                                    className="h-8 w-8 shrink-0 border-slate-300 text-slate-700 hover:bg-slate-50"
                                     onClick={() =>
                                       toggleStudentDetails(student.userId)
                                     }

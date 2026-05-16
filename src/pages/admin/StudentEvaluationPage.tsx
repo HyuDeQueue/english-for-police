@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { EvaluationPeriodFilter } from "@/components/admin/evaluation/EvaluationPeriodFilter";
 import { ParticipationPanel } from "@/components/admin/evaluation/ParticipationPanel";
 import { ImprovementSummaryPanel } from "@/components/admin/evaluation/ImprovementSummaryPanel";
-import { ExplainPanel } from "@/components/admin/evaluation/ExplainPanel";
 import { UnitImprovementDetail } from "@/components/admin/evaluation/UnitImprovementDetail";
 import { useStudentEvaluation } from "@/hooks/use-student-evaluation";
 
@@ -45,7 +44,7 @@ export default function StudentEvaluationPage() {
   return (
     <AdminPageLayout
       title={summary?.fullName ?? "Đánh giá học viên"}
-      description="Tham gia và cải thiện theo kỳ — dữ liệu từ API đánh giá (fallback API cũ khi cần)."
+      description="Tham gia và cải thiện theo kỳ — dữ liệu từ API đánh giá."
       actions={
         <Button variant="outline" size="sm" asChild>
           <Link to="/admin/units">
@@ -64,11 +63,17 @@ export default function StudentEvaluationPage() {
           />
           <div className="flex items-center gap-2">
             {meta?.source === "legacy-adapter" ? (
-              <Badge variant="outline" className="text-[10px] font-bold text-amber-800">
+              <Badge
+                variant="outline"
+                className="text-[10px] font-bold text-amber-800"
+              >
                 API cũ (ước lượng)
               </Badge>
             ) : meta?.source === "evaluation-api" ? (
-              <Badge variant="outline" className="text-[10px] font-bold text-emerald-800">
+              <Badge
+                variant="outline"
+                className="text-[10px] font-bold text-emerald-800"
+              >
                 API đánh giá
               </Badge>
             ) : null}
@@ -109,7 +114,6 @@ export default function StudentEvaluationPage() {
                 }}
               />
             </div>
-            <ExplainPanel explain={summary.explain} />
           </>
         ) : (
           <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
