@@ -1,19 +1,28 @@
 import React, { useMemo, useEffect, useRef, useState } from "react";
-import type { Unit, FlaggedItem } from "@/types";
+import type { Unit, FlaggedItem, Question } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlayCircle, ArrowRight, Sparkles, Volume2, Star } from "lucide-react";
+import { PlayCircle, ChevronRight, Sparkles, Volume2, Star } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AudioRecorderButton } from "@/components/common/AudioRecorderButton";
+import { requestOpenLoginDialog } from "@/lib/auth-ui-events";
 import {
   collectSubLessonIdsFromUnit,
   phraseSubLessonLabel,
+  practiceTypesForSubLesson,
 } from "@/components/practice/utils/testUtils";
 
 interface LessonPhrasesSectionProps {
@@ -25,7 +34,9 @@ interface LessonPhrasesSectionProps {
     element?: HTMLButtonElement,
     isPhrase?: boolean,
   ) => void;
-  onStartPractice: (mode?: string, group?: string) => void;
+  practiceQuestions: Question[];
+  testsLocked?: boolean;
+  onStartPracticeByType: (sectionTitle: string, subLessonId: string) => void;
   /** Đồng bộ với dropdown tiểu mục ở mục lục. */
   selectedSubId?: string;
 }
@@ -101,7 +112,9 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
   flaggedItems,
   onToggleFlag,
   onPlayAudio,
-  onStartPractice,
+  practiceQuestions,
+  testsLocked = false,
+  onStartPracticeByType,
   selectedSubId,
 }) => {
   const groupedPhrases = useMemo(() => {
@@ -135,7 +148,31 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
   const [accordionOpen, setAccordionOpen] = useState<string[]>(() =>
     groupedPhrases[0]?.id ? [groupedPhrases[0].id] : [],
   );
+  const [practiceDialogGroup, setPracticeDialogGroup] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
   const skipSubScrollRef = useRef(true);
+
+  const dialogPracticeTypes = useMemo(() => {
+    if (!practiceDialogGroup) return [];
+    return practiceTypesForSubLesson(
+      practiceQuestions,
+      practiceDialogGroup.id,
+    );
+  }, [practiceDialogGroup, practiceQuestions]);
+
+  const openPracticeDialog = (
+    group: { id: string; title: string },
+    e: React.MouseEvent | React.PointerEvent,
+  ) => {
+    e.stopPropagation();
+    if (testsLocked) {
+      requestOpenLoginDialog();
+      return;
+    }
+    setPracticeDialogGroup(group);
+  };
 
   useEffect(() => {
     skipSubScrollRef.current = true;
@@ -241,32 +278,25 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                       </p>
                     </div>
                   </div>
-                  <Button
+                    <Button
+                    type="button"
+                    variant="outline"
                     size="sm"
-                    className="primary-gradient police-shadow group/practice hidden h-9 max-w-full shrink-0 rounded-lg px-3 text-[10px] font-black sm:inline-flex sm:px-4 sm:text-xs"
+                    className="h-9 max-w-full shrink-0 rounded-lg px-3 text-[10px] font-bold sm:px-4 sm:text-xs"
                     disabled={group.phrases.length === 0}
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStartPractice("PHRASE_SCENARIO", group.id);
-                    }}
+                    onClick={(e) =>
+                      openPracticeDialog(
+                        { id: group.id, title: group.title },
+                        e,
+                      )
+                    }
                   >
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5 shrink-0 animate-pulse text-secondary" />
-                    <span className="truncate">LUYỆN TẬP PHẦN {group.id}</span>
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5 shrink-0 transition-transform group-hover/practice:translate-x-0.5" />
+                    <span className="truncate">Luyện tập</span>
+                    <ChevronRight className="ml-1.5 h-3.5 w-3.5 shrink-0" />
                   </Button>
                 </AccordionTrigger>
                 <AccordionContent className="px-4 pt-2 pb-6 sm:px-6">
-                  <Button
-                    size="sm"
-                    className="primary-gradient police-shadow mb-4 h-9 w-full rounded-lg text-[10px] font-black sm:hidden"
-                    disabled={group.phrases.length === 0}
-                    onClick={() => onStartPractice("PHRASE_SCENARIO", group.id)}
-                  >
-                    <Sparkles className="mr-1.5 h-3.5 w-3.5 animate-pulse text-secondary" />
-                    LUYỆN TẬP PHẦN {group.id}
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                  </Button>
                   <div className="space-y-4">
                     {group.phrases.length > 0 ? (
                       group.phrases.map((phrase, idx) => {
@@ -350,6 +380,66 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
           </Accordion>
         </CardContent>
       </Card>
+      <Dialog
+        open={practiceDialogGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) setPracticeDialogGroup(null);
+        }}
+      >
+        <DialogContent className="max-w-md gap-0 overflow-hidden rounded-xl border-none p-0 police-shadow sm:max-w-md">
+          <DialogHeader className="primary-gradient gap-2 rounded-none border-0 px-6 py-5 text-white">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1 text-left">
+                <DialogTitle className="text-xl font-heading font-black text-white">
+                  Luyện tập
+                </DialogTitle>
+                <DialogDescription className="text-sm text-white/85">
+                  {practiceDialogGroup ? (
+                    <>
+                      Phần{" "}
+                      <span className="font-bold text-white">
+                        {practiceDialogGroup.id}
+                      </span>
+                      {" — "}
+                      {practiceDialogGroup.title}
+                    </>
+                  ) : null}
+                </DialogDescription>
+              </div>
+              <Sparkles
+                className="h-10 w-10 shrink-0 text-white/25"
+                aria-hidden
+              />
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-1 p-4">
+            {dialogPracticeTypes.length > 0 ? (
+              dialogPracticeTypes.map((t) => (
+                <Button
+                  key={t.label}
+                  type="button"
+                  variant="ghost"
+                  className="h-11 w-full justify-between rounded-lg px-4 text-sm font-medium text-foreground hover:bg-primary/5 hover:text-primary"
+                  onClick={() => {
+                    if (!practiceDialogGroup) return;
+                    onStartPracticeByType(t.label, practiceDialogGroup.id);
+                    setPracticeDialogGroup(null);
+                  }}
+                >
+                  <span className="truncate text-left">• {t.label}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Button>
+              ))
+            ) : (
+              <p className="px-2 py-6 text-center text-sm italic text-muted-foreground">
+                Chưa có bài tập cho phần{" "}
+                {practiceDialogGroup?.id ?? "này"}.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

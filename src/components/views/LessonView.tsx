@@ -70,7 +70,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
 
   const testsLocked = !isAuthenticated;
 
-  const startPractice = () => navigate(`/practice/${unit.id}`);
   const startFlashcards = () => navigate(`/flashcards/${unit.id}`);
   const startGeneralTest = (
     mode?: "type" | "bank",
@@ -257,18 +256,14 @@ export const LessonView: React.FC<LessonViewProps> = ({
           flaggedItems={flaggedItems}
           onToggleFlag={toggleFlag}
           onPlayAudio={playAudio}
+          practiceQuestions={practiceQuestions}
+          testsLocked={testsLocked}
           selectedSubId={
             phraseSubNavItems.length > 1 ? selectedPhraseSubId : undefined
           }
-          onStartPractice={(mode, group) => {
-            if (mode === "PHRASE_SCENARIO" && group) {
-              navigate(
-                `/generaltest/${unit.id}?lane=PHRASE_SCENARIO&subId=${group}`,
-              );
-            } else {
-              startGeneralTest();
-            }
-          }}
+          onStartPracticeByType={(label, subId) =>
+            startGeneralTest("type", label, subId)
+          }
         />
       </div>
 
@@ -281,7 +276,6 @@ export const LessonView: React.FC<LessonViewProps> = ({
               practiceQuestions={practiceQuestions}
               testsLocked={testsLocked}
               availableLanes={availableLanes}
-              onStartPractice={startPractice}
               onStartFlashcards={startFlashcards}
               onStartGeneralTest={startGeneralTest}
               onStartVocabDrill={(drill) => {

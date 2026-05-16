@@ -33,7 +33,6 @@ interface LessonShortcutButtonsProps {
   readonly practiceQuestions: Question[];
   readonly testsLocked: boolean;
   readonly availableLanes: Set<LessonTestLane>;
-  readonly onStartPractice: () => void;
   readonly onStartFlashcards: () => void;
   readonly onStartGeneralTest: (
     mode?: "type" | "bank",
@@ -48,7 +47,6 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
   practiceQuestions,
   testsLocked,
   availableLanes,
-  onStartPractice,
   onStartFlashcards,
   onStartGeneralTest,
   onStartVocabDrill,
@@ -156,9 +154,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
                               ? "text-muted-foreground hover:text-primary"
                               : "cursor-not-allowed text-muted-foreground/30 line-through",
                           )}
-                          onClick={() =>
-                            isAvailable && onStartVocabDrill(id)
-                          }
+                          onClick={() => isAvailable && onStartVocabDrill(id)}
                         >
                           <span className="truncate">• {label}</span>
                           {!isAvailable && (
@@ -208,15 +204,6 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
               testsLocked && "pointer-events-none select-none opacity-[0.22]",
             )}
           >
-            <Button
-              variant="default"
-              className="h-10 w-full justify-between font-bold"
-              onClick={onStartPractice}
-            >
-              Kiểm tra
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-
             <div className="space-y-2">
               <Button
                 variant="outline"
@@ -226,7 +213,7 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
                   if (isTypeExpanded) setExpandedSubId(null);
                 }}
               >
-                Luyện tập theo dạng
+                Luyện tập
                 <ChevronRight
                   className={cn(
                     "h-4 w-4 transition-transform",
