@@ -137,14 +137,16 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               className="flex items-center gap-2 cursor-pointer group transition-transform active:scale-95"
               onClick={onLogoClick}
             >
-              <h1 className="text-lg font-heading font-bold tracking-tight text-white group-hover:text-secondary transition-colors flex items-center gap-2">
-                <div className="bg-white/20 p-1 rounded-lg">
+              <h1 className="flex items-center gap-2 text-sm font-heading font-bold tracking-tight text-white transition-colors group-hover:text-secondary sm:text-lg">
+                <span className="max-w-36 truncate leading-tight sm:max-w-none sm:whitespace-nowrap"></span>
+                <div className="shrink-0 rounded-lg bg-white/20 p-1">
                   <img
                     src="/police.png"
                     alt="Police"
                     className="h-6 w-6 rounded-sm object-cover"
                   />
                 </div>
+                Cao đẳng cảnh sát nhân dân II
               </h1>
             </div>
           </div>

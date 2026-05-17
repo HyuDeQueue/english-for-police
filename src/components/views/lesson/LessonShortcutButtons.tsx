@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 import { requestOpenLoginDialog } from "@/lib/auth-ui-events";
 import {
   PRACTICE_MENU_LABEL_TO_LANE,
-  PRACTICE_TYPE_LABELS,
   getPhraseSubNavItems,
   practiceTypesForSubLesson,
   type VocabDrillMode,
 } from "@/components/practice/utils/testUtils";
+import { PracticeGroupedTypeMenu } from "@/components/views/lesson/PracticeGroupedTypeMenu";
 import type { LessonTestLane, Question, Unit } from "@/types";
 import {
   Tooltip,
@@ -61,54 +61,40 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
     setExpandedSubId((prev) => (prev === subId ? null : subId));
   };
 
-  const renderPracticeTypeButton = (
-    typeLabel: string,
-    subLessonId?: string,
-  ) => {
-    const lane = PRACTICE_MENU_LABEL_TO_LANE[typeLabel];
-    const isAvailable = subLessonId
-      ? practiceTypesForSubLesson(practiceQuestions, subLessonId).some(
-          (t) => t.label === typeLabel,
-        )
-      : availableLanes.has(lane);
-
-    return (
-      <Tooltip key={`${subLessonId ?? "all"}-${typeLabel}`} delayDuration={300}>
-        <TooltipTrigger asChild>
-          <div className="w-full">
-            <Button
-              variant="ghost"
-              disabled={!isAvailable}
-              className={cn(
-                "h-8 w-full justify-between px-2 text-[11px] font-medium transition-all",
-                isAvailable
-                  ? "text-muted-foreground hover:text-primary"
-                  : "cursor-not-allowed text-muted-foreground/30 line-through",
-              )}
-              onClick={() =>
-                isAvailable &&
-                onStartGeneralTest("type", typeLabel, subLessonId)
-              }
-            >
-              <span className="truncate">• {typeLabel}</span>
-              {!isAvailable && (
-                <HelpCircle className="h-3 w-3 shrink-0 opacity-40" />
-              )}
-            </Button>
-          </div>
-        </TooltipTrigger>
-        {!isAvailable && (
-          <TooltipContent side="right" className="max-w-[200px]">
-            <p className="text-[10px] font-medium">
-              {subLessonId
-                ? `Phần ${subLessonId} chưa có bài tập dạng này.`
-                : "Phần luyện tập này hiện chưa có nội dung cho chương này."}
-            </p>
-          </TooltipContent>
-        )}
-      </Tooltip>
+  const labelsForSubLesson = (subLessonId?: string) => {
+    const types = subLessonId
+      ? practiceTypesForSubLesson(practiceQuestions, subLessonId)
+      : [];
+    if (subLessonId) {
+      return new Set(types.map((t) => t.label));
+    }
+    return new Set(
+      Object.entries(PRACTICE_MENU_LABEL_TO_LANE)
+        .filter(([, lane]) => availableLanes.has(lane))
+        .map(([label]) => label),
     );
   };
+
+  const renderGroupedPracticeMenu = (subLessonId?: string) => (
+    <PracticeGroupedTypeMenu
+      availableLabels={labelsForSubLesson(subLessonId)}
+      showUnavailable
+      variant="sidebar"
+      emptyMessage={
+        subLessonId
+          ? `Chưa có bài tập cho phần ${subLessonId}`
+          : "Phần luyện tập này hiện chưa có nội dung cho chương này."
+      }
+      unavailableHint={() =>
+        subLessonId
+          ? `Phần ${subLessonId} chưa có bài tập dạng này.`
+          : "Phần luyện tập này hiện chưa có nội dung cho chương này."
+      }
+      onSelectType={(typeLabel) =>
+        onStartGeneralTest("type", typeLabel, subLessonId)
+      }
+    />
+  );
 
   return (
     <TooltipProvider>
@@ -226,10 +212,6 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
                 <div className="mb-2 ml-2 animate-in space-y-1 border-l-2 border-muted pl-3 pr-1 fade-in">
                   {subNavItems.length > 0 ? (
                     subNavItems.map((item) => {
-                      const types = practiceTypesForSubLesson(
-                        practiceQuestions,
-                        item.id,
-                      );
                       const isSubOpen = expandedSubId === item.id;
 
                       return (
@@ -255,27 +237,15 @@ export const LessonShortcutButtons: React.FC<LessonShortcutButtonsProps> = ({
                           </Button>
 
                           {isSubOpen ? (
-                            <div className="ml-2 space-y-0.5 border-l-2 border-muted/80 pl-2">
-                              {types.length > 0 ? (
-                                types.map((t) =>
-                                  renderPracticeTypeButton(t.label, item.id),
-                                )
-                              ) : (
-                                <p className="px-2 py-1.5 text-[10px] italic text-muted-foreground">
-                                  Chưa có bài tập cho phần {item.id}
-                                </p>
-                              )}
+                            <div className="ml-2 border-l-2 border-muted/80 pl-2">
+                              {renderGroupedPracticeMenu(item.id)}
                             </div>
                           ) : null}
                         </div>
                       );
                     })
                   ) : (
-                    <div className="space-y-0.5">
-                      {PRACTICE_TYPE_LABELS.map((type) =>
-                        renderPracticeTypeButton(type),
-                      )}
-                    </div>
+                    renderGroupedPracticeMenu()
                   )}
                 </div>
               ) : null}

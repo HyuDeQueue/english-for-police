@@ -3,7 +3,13 @@ import type { Unit, FlaggedItem, Question } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlayCircle, ChevronRight, Sparkles, Volume2, Star } from "lucide-react";
+import {
+  PlayCircle,
+  ChevronRight,
+  Sparkles,
+  Volume2,
+  Star,
+} from "lucide-react";
 import {
   Accordion,
   AccordionContent,
@@ -24,6 +30,7 @@ import {
   phraseSubLessonLabel,
   practiceTypesForSubLesson,
 } from "@/components/practice/utils/testUtils";
+import { PracticeGroupedTypeMenu } from "@/components/views/lesson/PracticeGroupedTypeMenu";
 
 interface LessonPhrasesSectionProps {
   unit: Unit;
@@ -156,10 +163,7 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
 
   const dialogPracticeTypes = useMemo(() => {
     if (!practiceDialogGroup) return [];
-    return practiceTypesForSubLesson(
-      practiceQuestions,
-      practiceDialogGroup.id,
-    );
+    return practiceTypesForSubLesson(practiceQuestions, practiceDialogGroup.id);
   }, [practiceDialogGroup, practiceQuestions]);
 
   const openPracticeDialog = (
@@ -278,7 +282,7 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
                       </p>
                     </div>
                   </div>
-                    <Button
+                  <Button
                     type="button"
                     variant="outline"
                     size="sm"
@@ -413,30 +417,19 @@ export const LessonPhrasesSection: React.FC<LessonPhrasesSectionProps> = ({
             </div>
           </DialogHeader>
 
-          <div className="space-y-1 p-4">
-            {dialogPracticeTypes.length > 0 ? (
-              dialogPracticeTypes.map((t) => (
-                <Button
-                  key={t.label}
-                  type="button"
-                  variant="ghost"
-                  className="h-11 w-full justify-between rounded-lg px-4 text-sm font-medium text-foreground hover:bg-primary/5 hover:text-primary"
-                  onClick={() => {
-                    if (!practiceDialogGroup) return;
-                    onStartPracticeByType(t.label, practiceDialogGroup.id);
-                    setPracticeDialogGroup(null);
-                  }}
-                >
-                  <span className="truncate text-left">• {t.label}</span>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                </Button>
-              ))
-            ) : (
-              <p className="px-2 py-6 text-center text-sm italic text-muted-foreground">
-                Chưa có bài tập cho phần{" "}
-                {practiceDialogGroup?.id ?? "này"}.
-              </p>
-            )}
+          <div className="p-4">
+            <PracticeGroupedTypeMenu
+              variant="dialog"
+              availableLabels={
+                new Set(dialogPracticeTypes.map((t) => t.label))
+              }
+              emptyMessage={`Chưa có bài tập cho phần ${practiceDialogGroup?.id ?? "này"}.`}
+              onSelectType={(typeLabel) => {
+                if (!practiceDialogGroup) return;
+                onStartPracticeByType(typeLabel, practiceDialogGroup.id);
+                setPracticeDialogGroup(null);
+              }}
+            />
           </div>
         </DialogContent>
       </Dialog>
