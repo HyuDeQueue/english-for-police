@@ -5,7 +5,7 @@ import type {
   EvaluationResponse,
   ImprovementDetailResponse,
 } from "@/models/evaluation.model";
-import { evaluationFacade } from "@/services/evaluation-facade";
+import { evaluationFacade } from "@/lib/evaluation/evaluation-facade";
 import {
   defaultEvaluationPeriod,
   periodPresetDays,

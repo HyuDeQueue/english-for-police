@@ -10,7 +10,7 @@ import { api } from "@/utils/api-client";
 import {
   normalizeLessonFromApi,
   unitToLessonApiBody,
-} from "@/services/lesson-payload";
+} from "@/lib/lessons/lesson-payload";
 import { practiceQuestionService } from "@/services/practice-question.service";
 import {
   filterQuestionsByLane,

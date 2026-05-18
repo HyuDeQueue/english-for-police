@@ -10,7 +10,7 @@ import { evaluationService } from "@/services/evaluation.service";
 import {
   fetchLegacyEvaluationSummary,
   fetchLegacyImprovementDetail,
-} from "@/services/evaluation-legacy.adapter";
+} from "@/lib/evaluation/legacy.adapter";
 
 const FORCE_LEGACY =
   import.meta.env.VITE_EVALUATION_API_FALLBACK === "true";
