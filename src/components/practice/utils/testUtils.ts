@@ -579,14 +579,28 @@ export const SUB_LESSON_NAV_LABELS: Record<string, string> = {
   "2.4": "Trấn an & hướng dẫn",
 };
 
+function stripSubLessonIdPrefix(subId: string, text: string): string {
+  const trimmed = text.trim();
+  const prefixes = [`${subId} · `, `${subId} ·`, `${subId} - `, `${subId}-`];
+  for (const prefix of prefixes) {
+    if (trimmed.startsWith(prefix)) {
+      return trimmed.slice(prefix.length).trim();
+    }
+  }
+  return trimmed;
+}
+
 export function phraseSubLessonLabel(
   subId: string,
   sample?: { context?: string },
 ): string {
-  return (
-    SUB_LESSON_NAV_LABELS[subId] ??
-    (sample?.context ? `${subId} · ${sample.context}` : `Phần ${subId}`)
-  );
+  const mapped = SUB_LESSON_NAV_LABELS[subId];
+  if (mapped) return mapped;
+
+  const context = sample?.context?.trim();
+  if (context) return stripSubLessonIdPrefix(subId, context);
+
+  return `Phần ${subId}`;
 }
 
 export type PhraseSubNavItem = {
@@ -595,7 +609,6 @@ export type PhraseSubNavItem = {
   label: string;
 };
 
-/** Tiểu mục mẫu câu cho mục lục / dropdown (từ subLessonId hoặc legacy theo unit). */
 export function getPhraseSubNavItems(unit: Unit): PhraseSubNavItem[] {
   const subIds = collectSubLessonIdsFromUnit(unit);
   if (subIds.length > 0) {
