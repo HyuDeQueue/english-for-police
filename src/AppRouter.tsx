@@ -63,9 +63,7 @@ const GeneralTestPage = lazy(() =>
     default: m.GeneralTestPage,
   })),
 );
-const UnitsProgressPage = lazy(
-  () => import("@/pages/admin/UnitsProgressPage"),
-);
+const UnitsProgressPage = lazy(() => import("@/pages/admin/UnitsProgressPage"));
 const StudentEvaluationPage = lazy(
   () => import("@/pages/admin/StudentEvaluationPage"),
 );

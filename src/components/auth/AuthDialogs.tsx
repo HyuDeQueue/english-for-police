@@ -37,7 +37,6 @@ export function AuthDialogs({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
@@ -74,11 +73,10 @@ export function AuthDialogs({
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await register({ email, fullName, password, dateOfBirth });
+      await register({ email, fullName, password });
       handleViewChange("login");
       setError(null);
       setFullName("");
-      setDateOfBirth("");
     } catch {
       // Error notification is handled inside hook.
     }
@@ -248,29 +246,10 @@ export function AuthDialogs({
 
                 <div className="space-y-2 group">
                   <Label
-                    htmlFor="dateOfBirth"
-                    className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-focus-within:text-primary"
-                  >
-                    Ngày sinh
-                  </Label>
-                  <div className="tactical-border">
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={dateOfBirth}
-                      onChange={(e) => setDateOfBirth(e.target.value)}
-                      required
-                      className="border-none bg-transparent h-11 px-0 focus-visible:ring-0"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2 group">
-                  <Label
                     htmlFor="registerEmail"
                     className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground group-focus-within:text-primary"
                   >
-                    Email công vụ
+                    Email
                   </Label>
                   <div className="tactical-border">
                     <Input
